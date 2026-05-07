@@ -195,6 +195,12 @@ select.input{appearance:auto;cursor:pointer;}
 .si-done{background:var(--success);color:#fff;}
 .si-idle{background:var(--surface2);color:var(--muted);}
 @media(max-width:520px){.g4,.g3{grid-template-columns:1fr 1fr;}.nav-logo{font-size:11px;}}
+
+.th-sort{cursor:pointer;user-select:none;white-space:nowrap;}
+.th-sort:hover{background:var(--border);}
+.th-sort::after{content:' ⇅';opacity:.35;font-size:10px;}
+.th-sort.asc::after{content:' ↑';opacity:1;}
+.th-sort.desc::after{content:' ↓';opacity:1;}
 </style>
 </head>
 <body>
@@ -261,7 +267,7 @@ select.input{appearance:auto;cursor:pointer;}
       var label = u.label||u.name;
       var click = isOutro ? 'window._showOutro()' : 'window._loginPreset('+JSON.stringify(u.name)+')';
       var removeBtn = u.isExtra
-        ? '<button onclick="event.stopPropagation();window._removeExtra('+JSON.stringify(u.name)+')" style="position:absolute;top:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;line-height:18px;text-align:center;padding:0;">✕</button>'
+        ? '<button onmousedown="event.stopPropagation();event.preventDefault();window._removeExtra('+JSON.stringify(u.name)+')" style="position:absolute;top:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;line-height:18px;text-align:center;padding:0;z-index:10;">✕</button>'
         : '';
       var div = document.createElement('div');
       div.setAttribute('onclick', click);
@@ -362,13 +368,18 @@ select.input{appearance:auto;cursor:pointer;}
 
 <nav class="nav">
   <div class="nav-logo">Armazém<span>·</span>NH</div>
-  <button class="nav-tab t-db active" data-page="skudb"   onclick="showPage('skudb',this)">🗃 Base SKUs</button>
-  <button class="nav-tab"             data-page="stock"   onclick="showPage('stock',this)">📦 Stock</button>
-  <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)">🛒 Encomendas</button>
-  <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)">📦 Para Preparação</button>
-  <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)">↩️ Devoluções</button>
+  <button class="nav-tab t-db active" data-page="skudb"   onclick="showPage('skudb',this)" data-tip-i="tip_skudb"><span data-i="nav_skudb">🗃 Base SKUs</span></button>
+  <button class="nav-tab"             data-page="stock"   onclick="showPage('stock',this)" data-tip-i="tip_stock"><span data-i="nav_stock">📦 Stock</span></button>
+  <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)"><span data-i="nav_orders">🛒 Encomendas</span></button>
+  <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)" data-tip-i="tip_pick_list"><span data-i="nav_pick">📦 Para Preparação</span></button>
+  <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)"><span data-i="nav_ret">↩️ Devoluções</span></button>
   <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)">↩️ Para Devolução</button>
-  <button class="nav-tab" onclick="showAuditLog()" style="margin-left:auto;">📋 Atividade</button>
+  <button class="nav-tab" onclick="showAuditLog()" style="margin-left:auto;" data-i="nav_activity">📋 <span data-i="nav_activity_lbl">Atividade</span></button>
+  <div class="lang-sel" style="padding:0 8px;flex-shrink:0;">
+    <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')">PT</button>
+    <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" id="lang-es" onclick="setLang('es')">ES</button>
+  </div>
 </nav>
 
 <!-- SKU DB -->
@@ -411,14 +422,14 @@ select.input{appearance:auto;cursor:pointer;}
         <select class="input input-sans" id="stockFilter" style="width:95px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
           <option value="">Todos</option><option value="mista">Mistas</option><option value="exclusiva">Exclusivas</option>
         </select>
-        <button class="btn btn-success btn-sm" onclick="openEntrada()">＋ Dar entrada</button>
-        <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" id="btnTeorico">📊 Stock teórico</button>
+        <button class="btn btn-success btn-sm" onclick="openEntrada()" data-tip-i="tip_dar_entrada" data-i="btn_dar_entrada">＋ Dar entrada</button>
+        <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">📊 Stock teórico</button>
         <button class="btn btn-ghost btn-sm" onclick="clearStock()">🗑</button>
       </div>
     </div>
     
     <div style="overflow-x:auto;"><table class="tbl">
-      <thead id="stockThead"><tr><th>SKU</th><th>Produto</th><th>Posição</th><th>Stock real</th><th>Tipo</th><th>Estado</th><th></th></tr></thead>
+      <thead id="stockThead"></thead>
       <tbody id="stockBody"></tbody>
     </table></div>
   </div>
@@ -430,7 +441,7 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-title">Encomendas</div><div class="page-sub">Pedidos de preparação e saída</div>
   <div class="card">
     <div class="card-header"><span class="card-title">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')">＋ Nova</button></div>
-    <div id="ordersList"><div class="empty"><div class="empty-icon">🛒</div>Sem encomendas.</div></div>
+    <div id="ordersList"><div class="empty"><div class="empty-icon">🛒</div><span data-i="misc_no_orders">Sem encomendas.</span></div></div>
   </div>
   <div id="orderEditor" style="display:none;">
     <div class="card">
@@ -438,11 +449,11 @@ select.input{appearance:auto;cursor:pointer;}
         <span class="card-title" id="editorTitle">Encomenda</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="closeEd('order')">Fechar</button>
-          <button class="btn btn-success btn-sm" onclick="emitirGuia()">📦 Emitir Guia Preparação</button>
+          <button class="btn btn-success btn-sm" onclick="emitirGuia()" data-tip-i="tip_emit_pick" data-i="btn_emit_pick">📦 Emitir Guia Preparação</button>
         </div>
       </div>
       <div class="card-body">
-        <div class="field"><label>Cliente</label><input class="input input-sans" id="o-client" placeholder="Nome do cliente..." oninput="updClient('order')"></div>
+        <div class="field"><label>Cliente</label><div class="input input-sans" id="o-client" style="background:var(--surface2);color:var(--text);font-weight:600;cursor:default;"></div></div>
         <div class="inner-tabs">
           <button class="inner-tab active" onclick="switchTab('order','scanner')">📷 Scanner</button>
           <button class="inner-tab" onclick="switchTab('order','search')">🔍 Pesquisa</button>
@@ -526,7 +537,7 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-title">Devoluções</div><div class="page-sub">Artigos devolvidos</div>
   <div class="card">
     <div class="card-header"><span class="card-title">Devoluções</span><button class="btn btn-purple btn-sm" onclick="newDoc('return')">＋ Nova</button></div>
-    <div id="returnsList"><div class="empty"><div class="empty-icon">↩️</div>Sem devoluções.</div></div>
+    <div id="returnsList"><div class="empty"><div class="empty-icon">↩️</div><span data-i="misc_no_rets">Sem devoluções.</span></div></div>
   </div>
   <div id="returnEditor" style="display:none;">
     <div class="card">
@@ -534,11 +545,11 @@ select.input{appearance:auto;cursor:pointer;}
         <span class="card-title" id="retEdTitle">Devolução</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="closeEd('return')">Fechar</button>
-          <button class="btn btn-purple btn-sm" onclick="genDoc('return')">↩️ Emitir Guia Devolução</button>
+          <button class="btn btn-purple btn-sm" onclick="genDoc('return')" data-tip-i="tip_emit_put" data-i="btn_emit_put">↩️ Emitir Guia Devolução</button>
         </div>
       </div>
       <div class="card-body">
-        <div class="field"><label>Cliente</label><input class="input input-sans" id="r-client" placeholder="Nome do cliente..." oninput="updClient('return')"></div>
+        <div class="field"><label>Cliente</label><div class="input input-sans" id="r-client" style="background:var(--surface2);color:var(--text);font-weight:600;cursor:default;"></div></div>
         <div class="inner-tabs">
           <button class="inner-tab active" onclick="switchTab('return','scanner')">📷 Scanner</button>
           <button class="inner-tab" onclick="switchTab('return','search')">🔍 Pesquisa</button>
@@ -895,37 +906,157 @@ function dlSkuTpl(){
 }
 
 // ══ STOCK TABLE ══
+// ══ STOCK METRICS ══
+function calcStockMetrics() {
+  // Returns {sku: {carteira, emPrep, faturado, devPedidas, devPrep, devFeitas}}
+  const m = {};
+  const ensure = sku => { if(!m[sku]) m[sku]={carteira:0,emPrep:0,faturado:0,devPedidas:0,devPrep:0,devFeitas:0}; };
+
+  // ORDERS
+  orders.forEach(o => {
+    o.lines.forEach(l => {
+      ensure(l.sku);
+      if (o.status === 'open')                          m[l.sku].carteira  += l.qty;
+      if (o.status === 'guia-emitida')                  m[l.sku].emPrep    += l.qty;
+      if (['em-preparacao','parcial','picked'].includes(o.status)) m[l.sku].faturado  += l.qty;
+    });
+  });
+
+  // RETURNS (devoluções)
+  rets.forEach(r => {
+    r.lines.forEach(l => {
+      ensure(l.sku);
+      if (r.status === 'open')                                    m[l.sku].devPedidas += l.qty;
+      if (['guia-emitida','em-colocacao'].includes(r.status))     m[l.sku].devPrep    += l.qty;
+      if (r.status === 'returned') {
+        // Sum actually confirmed quantities from guide
+        const confirmed = r.putawayGuide?.lines?.filter(g=>g.status==='confirmed') || [];
+        const qty = confirmed.length ? confirmed.reduce((a,g)=>a+g.qtyDone,0) : l.qty;
+        m[l.sku].devFeitas += qty;
+      }
+    });
+  });
+
+  return m;
+}
+
+function calcDisponivel(sku, realQty, metrics) {
+  const m = metrics[sku] || {};
+  return realQty - (m.carteira||0) - (m.emPrep||0) + (m.devFeitas||0);
+}
+
 function renderStock(){
   const q=document.getElementById('stockSearch').value.toLowerCase();
   const ft=document.getElementById('stockFilter').value;
-  const hasTeorico=teorico.length>0;
+  const hasTeorico=Object.keys(teorico).length>0;
+  const metrics = calcStockMetrics();
+
+  // Aggregate real qty per SKU for disponivel calculation
+  const realBySku={};
+  stock.forEach(s=>{ realBySku[s.sku]=(realBySku[s.sku]||0)+s.qty; });
+
   const filtered=stock.filter(s=>{
     const i=skuInfo(s.sku);const str=[s.sku,s.position,i?.name,i?.brand,i?.category].filter(Boolean).join(' ').toLowerCase();
     return str.includes(q)&&(!ft||s.boxType===ft);
   }).sort((a,b)=>{
-    const pa=parsePos(a.position),pb=parsePos(b.position);
-    if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
-    if(pa.floor!==pb.floor)return pa.floor-pb.floor;
-    return pa.slot-pb.slot;
+    const rb={};stock.forEach(s=>{rb[s.sku]=(rb[s.sku]||0)+s.qty;});
+    const mx=calcStockMetrics();
+    const getV=(s,col)=>{
+      const m=mx[s.sku]||{};
+      const disp=calcDisponivel(s.sku,rb[s.sku]||0,mx);
+      const info=skuInfo(s.sku);
+      if(col==='sku')     return s.sku;
+      if(col==='name')    return info?.name||'';
+      if(col==='position'){const p=parsePos(s.position);return p.shelf+'|'+(p.floor*10+p.slot);}
+      if(col==='qty')     return s.qty;
+      if(col==='carteira')return m.carteira||0;
+      if(col==='emPrep')  return m.emPrep||0;
+      if(col==='faturado')return m.faturado||0;
+      if(col==='devPedidas')return m.devPedidas||0;
+      if(col==='devPrep') return m.devPrep||0;
+      if(col==='devFeitas')return m.devFeitas||0;
+      if(col==='disponivel')return disp;
+      if(col==='teorico') return teorico[s.sku]!==undefined?teorico[s.sku]:-1;
+      if(col==='diff')    return teorico[s.sku]!==undefined?s.qty-teorico[s.sku]:0;
+      return 0;
+    };
+    const va=getV(a,stockSort.col), vb=getV(b,stockSort.col);
+    if(va<vb) return -1*stockSort.dir;
+    if(va>vb) return  1*stockSort.dir;
+    // secondary sort by position
+    const pa=parsePos(a.position),pb2=parsePos(b.position);
+    if(pa.shelf!==pb2.shelf)return pa.shelf.localeCompare(pb2.shelf);
+    if(pa.floor!==pb2.floor)return pa.floor-pb2.floor;
+    return pa.slot-pb2.slot;
   });
+
   const thead=document.getElementById('stockThead');
-  thead.innerHTML='<tr><th>SKU</th><th>Produto</th><th>Posição</th><th>Stock real</th>'+(hasTeorico?'<th>Teórico</th><th>Diferença</th>':'')+'<th>Tipo</th><th>Estado</th><th></th></tr>';
-  const cols=hasTeorico?9:7;
+  const hasMov = orders.length>0||rets.length>0;
+
+  function th(col, label, tip, style) {
+    const cls = stockSort.col===col ? (stockSort.dir===1?'asc':'desc') : '';
+    const ts = tip ? ' data-tip="'+tip+'"' : '';
+    const st = style ? ' style="'+style+'"' : '';
+    return '<th class="th-sort '+cls+'"'+ts+st+' onclick="sortStock(''+col+'')">'+label+'</th>';
+  }
+  let thCols = '<tr>'+
+    th('sku','SKU')+
+    th('name','Produto')+
+    th('position','Posição')+
+    th('qty','Real','Stock físico contado no armazém');
+  if(hasMov){
+    thCols += th('carteira','Em carteira','Pedidos abertos ainda sem guia emitida');
+    thCols += th('emPrep','Em preparação','Pedidos com guia emitida mas ainda não em preparação ativa');
+    thCols += th('faturado','Faturado','Pedidos já em curso ou concluídos');
+    thCols += th('devPedidas','Dev. pedidas','Devoluções pedidas sem guia emitida');
+    thCols += th('devPrep','Dev. em colocação','Devoluções com guia emitida, a aguardar colocação');
+    thCols += th('devFeitas','Dev. realizadas','Devoluções já processadas e em stock');
+    thCols += th('disponivel','Disponível','Stock real − Em carteira − Em preparação + Devoluções realizadas','background:#e8f4f0;color:#065f46;font-weight:800;');
+  }
+  if(hasTeorico){
+    thCols += th('teorico','Teórico');
+    thCols += th('diff','Diferença');
+  }
+  thCols += '<th>Tipo</th><th>Estado</th><th></th></tr>';
+  thead.innerHTML = thCols;
+
+  const totalCols = 4 + (hasMov?7:0) + (hasTeorico?2:0) + 3;
   const body=document.getElementById('stockBody');
-  if(!filtered.length){body.innerHTML='<tr><td colspan="'+cols+'"><div class="empty"><div class="empty-icon">📦</div>'+(stock.length?'Sem resultados.':'Sem stock. Clica em "Dar entrada" para começar.')+'</div></td></tr>';return;}
+  if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+t('misc_no_stock')+'</div></td></tr>';return;}
+
   body.innerHTML=filtered.map(s=>{
-    const st=s.qty===0?'<span class="badge bdg-rd">Esgotado</span>':s.qty<=5?'<span class="badge bdg-or">Baixo</span>':'<span class="badge bdg-gn">OK</span>';
-    const bb=s.boxType==='mista'?'<span class="badge bdg-mx">Mista</span>':'<span class="badge bdg-ex">Exclusiva</span>';
+    const st=s.qty===0?'<span class="badge bdg-rd">'+t('st_empty')+'</span>':s.qty<=5?'<span class="badge bdg-or">'+t('st_low')+'</span>':'<span class="badge bdg-gn">'+t('st_ok')+'</span>';
+    const bb=s.boxType==='mista'?'<span class="badge bdg-mx">'+t('box_mixed')+'</span>':'<span class="badge bdg-ex">'+t('box_excl')+'</span>';
+
+    let movCols='';
+    if(hasMov){
+      const m=metrics[s.sku]||{};
+      const disponivel=calcDisponivel(s.sku, realBySku[s.sku]||0, metrics);
+      const dispClass=disponivel<=0?'color:#dc2626;font-weight:800':disponivel<=5?'color:#d97706;font-weight:700':'color:#065f46;font-weight:700';
+      const cell = v => v>0?'<td class="mono" style="color:#1e40af">'+v+'</td>':'<td class="mono" style="color:var(--muted)">—</td>';
+      movCols=cell(m.carteira||0)+cell(m.emPrep||0)+cell(m.faturado||0)+cell(m.devPedidas||0)+cell(m.devPrep||0)+cell(m.devFeitas||0)+
+        '<td class="mono" style="'+dispClass+';background:#f0fdf4;padding:8px 10px;">'+disponivel+'</td>';
+    }
+
     let tCols='';
     if(hasTeorico){
-      const te=teorico.find(t=>t.sku===s.sku);
-      const tq=te?te.qty:null;
+      const tq=teorico[s.sku]!==undefined?teorico[s.sku]:null;
       const diff=tq!==null?s.qty-tq:null;
       tCols=(tq!==null?'<td class="mono">'+tq+'</td>':'<td style="color:var(--muted)">—</td>');
       tCols+=diff===null?'<td style="color:var(--muted)">—</td>':diff===0?'<td><span class="badge bdg-gy">=</span></td>':diff>0?'<td><span class="badge bdg-gn">+'+diff+'</span></td>':'<td><span class="badge bdg-rd">'+diff+'</span></td>';
     }
-    return '<tr><td class="mono" style="font-weight:700">'+s.sku+'</td><td>'+skuPill(s.sku)+'</td><td class="mono">'+s.position+'</td><td class="mono" style="font-weight:700">'+s.qty+'</td>'+tCols+'<td>'+bb+'</td><td>'+st+'</td><td><button class="btn btn-ghost btn-sm" onclick="delStk('+JSON.stringify(s.id)+')">✕</button></td></tr>';
+
+    return '<tr><td class="mono" style="font-weight:700">'+s.sku+'</td><td>'+skuPill(s.sku)+'</td><td class="mono">'+s.position+'</td>'+
+      '<td class="mono" style="font-weight:700">'+s.qty+'</td>'+movCols+tCols+
+      '<td>'+bb+'</td><td>'+st+'</td>'+
+      '<td><button class="btn btn-ghost btn-sm" onclick="delStk('+JSON.stringify(s.id)+')">✕</button></td></tr>';
   }).join('');
+}
+
+function sortStock(col) {
+  if (stockSort.col === col) stockSort.dir *= -1;
+  else { stockSort.col = col; stockSort.dir = col==='sku'||col==='name'||col==='position'?1:-1; }
+  renderStock();
 }
 function delStk(id){stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
 function clearStock(){if(!confirm(`Apagar ${stock.length} entradas?`))return;stock=[];saveStk();renderStock();toast('Stock limpo');}
@@ -1220,6 +1351,7 @@ function cancelDocFromList(t, id) {
     if (!confirm('Cancelar '+verb+' '+id+'?')) return;
   }
   doc.status = 'cancelled';
+  doc.cancelledBy = currentUser?currentUser.name:'—';
   logAction(t==='order'?'Encomenda cancelada':'Devolucao cancelada', id);
   docSv(t); renderDocs(t);
   if (t==='order') renderPickingGuides();
@@ -1232,24 +1364,60 @@ function docSv(t){t==='order'?saveOrd():saveRet();}
 function actId(t){return t==='order'?activeOrd:activeRet;}
 function setAct(t,id){if(t==='order')activeOrd=id;else activeRet=id;}
 
+const CLIENTS = ['P&C Colombo','Sephora Colombo','Primor Colombo','Douglas Colombo','Wells Garret','Primor Garret'];
+let _pendingDocType = null;
+
 function newDoc(t){
-  const id=(t==='order'?'ORD':'RET')+'-'+Date.now();
-  docSt(t).unshift({id,client:'',lines:[],status:'open',createdAt:new Date().toLocaleString('pt-PT'),snapshot:null});
-  docSv(t);renderDocs(t);openEd(t,id);
+  _pendingDocType = t;
+  const isOrder = t==='order';
+  document.getElementById('clientModalTitle').textContent = isOrder ? '🛒 Novo pedido' : '↩️ Nova devolução';
+  const list = document.getElementById('clientBtnList');
+  list.innerHTML = CLIENTS.map(c => {
+    // Count existing docs for this client+type to get next number
+    const count = docSt(t).filter(d=>d.client===c).length + 1;
+    const prefix = isOrder ? 'Pedido' : 'Devolução';
+    const preview = prefix+' '+c+' '+count;
+    return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" onclick="selectClient('+JSON.stringify(c)+')">' +
+      '<span style="font-weight:600">'+c+'</span>' +
+      '<span style="font-size:11px;color:var(--muted)">→ '+preview+'</span>' +
+      '</button>';
+  }).join('');
+  document.getElementById('clientModal').classList.add('visible');
+}
+
+function closeClientModal(){
+  document.getElementById('clientModal').classList.remove('visible');
+  _pendingDocType = null;
+}
+
+function selectClient(client){
+  closeClientModal();
+  const t = _pendingDocType;
+  const isOrder = t==='order';
+  const prefix = isOrder ? 'Pedido' : 'Devolução';
+  const count = docSt(t).filter(d=>d.client===client).length + 1;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const id = prefix+' '+client+' '+count;
+  docSt(t).unshift({id, client, lines:[], status:'open',
+    createdAt: dateStr, createdBy: currentUser?currentUser.name:'—', snapshot:null});
+  docSv(t); renderDocs(t); openEd(t, id);
 }
 function renderDocs(t){
   const el=document.getElementById(t==='order'?'ordersList':'returnsList');
   const st=docSt(t);
   if(!st.length){el.innerHTML=`<div class="empty"><div class="empty-icon">${t==='order'?'🛒':'↩️'}</div>Sem ${t==='order'?'encomendas':'devoluções'}.</div>`;return;}
   el.innerHTML=st.map(d=>{
-    const sl={open:'Aberta',picked:'Concluída',cancelled:'Anulada',returned:'Concluída','guia-emitida':'📋 Guia emitida','em-preparacao':'🚶 Em preparação','em-colocacao':'🚶 Em colocação','parcial':'⚠️ Parcial'}[d.status]||d.status;
+    const _stMap={open:'st_open',picked:'st_picked',cancelled:'st_cancelled',returned:'st_returned','guia-emitida':'st_emitted','em-preparacao':'st_prep','em-colocacao':'st_coloc','parcial':'st_parcial'};
+    const sl=t(_stMap[d.status]||d.status)||d.status;
+    const slSuffix = d.confirmedBy&&['picked','returned','parcial'].includes(d.status)?' · 👤 '+d.confirmedBy:d.cancelledBy&&d.status==='cancelled'?' · 👤 '+d.cancelledBy:'';
     const tq=d.lines.reduce((a,l)=>a+l.qty,0);
     const canEdit=d.status==='open';
     return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
       <div><div class="mono" style="font-weight:700;font-size:13px">${d.id}${d.client?` <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· ${d.client}</span>`:''}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${d.lines.length} SKUs · ${tq} unid. · ${d.createdAt}</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <span class="badge s-${d.status}">${sl}</span>
+        <span class="badge s-${d.status}">${sl}${slSuffix}</span>
         ${canEdit?`<button class="btn btn-ghost btn-sm" onclick="openEd('${t}','${d.id}')">✏️</button>`:''}
         ${(d.status==='open'||d.status==='guia-emitida')?`<button class="btn btn-danger btn-sm" onclick="cancelDocFromList('${t}','${d.id}')">✕ Cancelar</button>`:''}
         <button class="btn btn-ghost btn-sm" onclick="delDoc('${t}','${d.id}')">🗑</button>
@@ -1265,13 +1433,14 @@ function delDoc(t,id){
 function openEd(t,id){
   setAct(t,id);const doc=docSt(t).find(d=>d.id===id);
   document.getElementById(t==='order'?'editorTitle':'retEdTitle').textContent=doc.id;
-  document.getElementById(t==='order'?'o-client':'r-client').value=doc.client||'';
+  const _clientEl=document.getElementById(t==='order'?'o-client':'r-client');
+  if(_clientEl) _clientEl.textContent=doc.client||'';
   const edEl=t==='order'?'orderEditor':'returnEditor';
   document.getElementById(edEl).style.display='block';
   renderDocLines(t);document.getElementById(edEl).scrollIntoView({behavior:'smooth'});
 }
 function closeEd(t){document.getElementById(t==='order'?'orderEditor':'returnEditor').style.display='none';setAct(t,null);stopScan(t);}
-function updClient(t){const v=document.getElementById(t==='order'?'o-client':'r-client').value;const d=docSt(t).find(d=>d.id===actId(t));if(d){d.client=v;docSv(t);}}
+function updClient(t){} // client set at creation
 function switchTab(t,tab){
   const p=t==='order'?'o':'r';const tabs=['scanner','search','manual','import'];
   tabs.forEach(x=>document.getElementById(p+'tab-'+x).style.display=x===tab?'':'none');
@@ -1970,6 +2139,7 @@ function finalizePutaway() {
   doc.putawayGuide.lines=putawayLines;
   doc.putawayGuide.finishedAt=new Date().toLocaleString('pt-PT');
   doc.putawayGuide.finishedBy=currentUser?currentUser.name:'—';
+  doc.confirmedBy=currentUser?currentUser.name:'—';
   logAction('Colocacao finalizada', doc.id+' · '+confirmed.length+' linhas');
   saveStk(); saveRet();
   putawayOrderId=null; putawayLines=[];
@@ -2079,7 +2249,7 @@ function renderAvatarGrid() {
     const label = u.label || u.name;
     const clickFn = isOutro ? 'showOutro()' : 'doLoginPreset(' + JSON.stringify(u.name) + ')';
     const removeBtn = u.isExtra
-      ? '<button onclick="event.stopPropagation();removeExtraUser(' + JSON.stringify(u.name) + ')" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>'
+      ? '<button onmousedown="event.stopPropagation();event.preventDefault();removeExtraUser(' + JSON.stringify(u.name) + ')" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:10;">✕</button>'
       : '';
     var fs = u.initials.length>2?'16':'20';
     return '<div onclick="'+clickFn+'" class="av-item">'+
@@ -2119,12 +2289,13 @@ window._doLoginFn = _doLogin;
 
 function _doLogin(name) {
   window._doLoginFn = _doLogin;
+  // Load user language preference
+  const _userLang = localStorage.getItem('wms_lang_' + name);
+  if (_userLang && LANGS[_userLang]) setLang(_userLang);
   currentUser = {name, loginAt: new Date().toLocaleString('pt-PT')};
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('userBadge').style.display='flex';
   document.getElementById('userBadgeName').textContent = '👤 ' + name;
-  document.getElementById('assistBtn').style.display='block';
-  showAssistBtn();
   logAction('Login', 'Sessão iniciada');
   localStorage.setItem('wms_session', JSON.stringify({name, loginAt: new Date().toLocaleString('pt-PT')}));
   initApp();
@@ -2136,7 +2307,6 @@ function doLogout() {
   currentUser = null;
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('userBadge').style.display='none';
-  document.getElementById('assistBtn').style.display='none';
   // Reset to avatar grid
   hideOutro();
   document.getElementById('loginError').style.display='none';
@@ -2154,8 +2324,8 @@ function initApp() {
     docs.forEach(d => {
       if (d.id === 'skuDb')   { skuDb = d.items||[]; renderSkuDb(); }
       if (d.id === 'stock')   { stock = d.items||[]; renderStock(); if(invPos) renderInvLines(); }
-      if (d.id === 'orders')  { orders = d.items||[]; renderDocs('order'); if(activeOrd) renderDocLines('order'); }
-      if (d.id === 'returns') { rets = d.items||[]; renderDocs('return'); if(activeRet) renderDocLines('return'); }
+      if (d.id === 'orders')  { orders = d.items||[]; renderDocs('order'); if(activeOrd) renderDocLines('order'); renderStock(); }
+      if (d.id === 'returns') { rets = d.items||[]; renderDocs('return'); if(activeRet) renderDocLines('return'); renderStock(); }
       if (d.id === 'teorico') { teorico = d.items||[]; renderStock(); }
     });
   });
@@ -2207,89 +2377,230 @@ function _exportAudit(entries) {
 }
 
 
-// ══ ASSISTENTE AI ══
-let assistOpen = false;
-let assistHistory = [];
 
-const ASSIST_SYSTEM = `És o assistente de suporte da app Armazém NH, um sistema de gestão de armazém (WMS).
-A tua função é apenas explicar como funciona a app. Não executes ações, não acedes a dados reais do utilizador.
-Responde sempre em português europeu, de forma concisa e clara.
-
-A app tem os seguintes módulos:
-- Base SKUs: catálogo de produtos (SKU, EAN, nome, marca, categoria, ml). Importação só por Excel.
-- Stock: tabela de consulta de stock por posição. Botão "Dar entrada" para adicionar stock (peça a peça com scanner ou por Excel). Botão "Stock teórico" para comparar com ficheiro do fornecedor.
-- Encomendas: criação de pedidos de saída de stock. Adiciona SKUs por scanner, pesquisa inteligente, manual ou Excel. Ao clicar "Emitir Guia Preparação" gera o percurso de picking otimizado por posição de armazém (estantes A-K, andares 1-5, posições 1-4). Pode cancelar enquanto "Aberta" ou "Guia emitida".
-- Para Preparação (Picking): lista de guias emitidas. Ao iniciar pede loja de destino. Picking linha a linha — confirma cada posição, ajusta quantidade se necessário, marca rutura se não houver stock. Stock só é deduzido ao finalizar.
-- Devoluções: criação de pedidos de entrada de stock devolvido. Mesmo fluxo das encomendas mas em sentido inverso.
-- Para Devolução (Colocação): lista de guias de devolução. Ao iniciar pede loja de origem. Colocação linha a linha. Stock acrescido ao finalizar.
-- Encomendas ao Fornecedor (PO): removido — substituído pelo Stock Teórico.
-- Login: cada utilizador identifica-se com o nome. Todas as ações ficam registadas no log de atividade (botão "📋 Atividade" na nav). Os dados são partilhados em tempo real via Firebase entre todos os utilizadores.
-- Estados de encomenda/devolução: Aberta → Guia emitida → Em preparação/colocação → Confirmada/Parcial. Cancelamento só possível em "Aberta" ou "Guia emitida".`;
-
-function toggleAssist() {
-  assistOpen = !assistOpen;
-  document.getElementById('assistPanel').style.display = assistOpen ? 'flex' : 'none';
-  if (assistOpen) setTimeout(() => document.getElementById('assistInput').focus(), 100);
-}
-
-function showAssistBtn() {
-  document.getElementById('assistBtn').style.display = 'block';
-}
-
-async function sendAssist() {
-  const input = document.getElementById('assistInput');
-  const msg = input.value.trim();
-  if (!msg) return;
-  input.value = '';
-
-  // Add user message
-  appendAssistMsg(msg, 'user');
-  assistHistory.push({role:'user', content: msg});
-
-  // Loading indicator
-  const loadId = 'assist-load-' + Date.now();
-  appendAssistMsg('...', 'bot', loadId);
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
-        system: ASSIST_SYSTEM,
-        messages: assistHistory
-      })
-    });
-    const data = await response.json();
-    const reply = data.content?.[0]?.text || 'Não consegui responder. Tenta novamente.';
-
-    // Replace loading with reply
-    const loadEl = document.getElementById(loadId);
-    if (loadEl) { loadEl.textContent = reply; loadEl.classList.remove('assist-loading'); }
-
-    assistHistory.push({role:'assistant', content: reply});
-    // Keep history manageable
-    if (assistHistory.length > 20) assistHistory = assistHistory.slice(-20);
-
-  } catch(e) {
-    const loadEl = document.getElementById(loadId);
-    if (loadEl) { loadEl.textContent = 'Erro de ligação. Verifica a tua conexão e tenta novamente.'; loadEl.classList.remove('assist-loading'); }
+// ══ i18n ══
+const LANGS = {
+  pt: {
+    nav_skudb:'🗃 Base SKUs', nav_stock:'📦 Stock', nav_orders:'🛒 Encomendas',
+    nav_pick:'📦 Para Preparação', nav_ret:'↩️ Devoluções', nav_putaway:'📍 Para Devolução',
+    nav_activity_lbl:'Atividade',
+    // Page titles & subs
+    skudb_title:'Base de Dados de SKUs', skudb_sub:'Catálogo central de produtos — EAN, nome, marca, categoria, ml',
+    stock_title:'Stock', stock_sub:'Consulta de stock por posição no armazém',
+    orders_title:'Encomendas', orders_sub:'Pedidos de preparação e saída de stock',
+    pick_title:'Para Preparação', pick_sub:'Guias de saída — preparação linha a linha',
+    ret_title:'Devoluções', ret_sub:'Registo de artigos devolvidos',
+    putaway_title:'Para Devolução', putaway_sub:'Guias de entrada — colocação linha a linha',
+    // Buttons
+    btn_new_order:'＋ Nova encomenda', btn_new_ret:'＋ Nova devolução',
+    btn_emit_pick:'📦 Emitir Guia Preparação', btn_emit_put:'↩️ Emitir Guia Devolução',
+    btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
+    btn_finalize_pick:'✓ Finalizar e deduzir stock', btn_finalize_put:'✓ Finalizar e acrescentar ao stock',
+    btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Fechar',
+    btn_dar_entrada:'＋ Dar entrada', btn_teorico:'📊 Stock teórico',
+    btn_export:'⬇ Excel', btn_template:'⬇ Template',
+    btn_login:'Entrar →', btn_outro:'Outro', btn_back:'← Voltar',
+    // Status
+    st_open:'Aberta', st_picked:'Concluída', st_cancelled:'Anulada',
+    st_returned:'Concluída', st_emitted:'📋 Guia emitida',
+    st_prep:'🚶 Em preparação', st_coloc:'🚶 Em colocação', st_parcial:'⚠️ Parcial',
+    // Stock
+    st_ok:'OK', st_low:'Baixo', st_empty:'Esgotado',
+    box_mixed:'📦 Mista', box_excl:'🔹 Exclusiva',
+    // Labels
+    lbl_client:'Cliente', lbl_store_dest:'Loja de destino', lbl_store_orig:'Loja de origem',
+    lbl_sku:'SKU', lbl_pos:'Posição', lbl_qty:'Quantidade', lbl_type:'Tipo',
+    lbl_product:'Produto', lbl_status:'Estado', lbl_diff:'Diferença',
+    lbl_theorical:'Teórico', lbl_real:'Real',
+    lbl_lines:'linhas', lbl_units:'unid.', lbl_skus:'SKUs',
+    // Tooltips
+    tip_skudb:'Catálogo de produtos com EAN, nome, marca, categoria e ml. Importa via Excel.',
+    tip_stock:'Mapa de stock real por posição. Usa "Dar entrada" para registar artigos recebidos.',
+    tip_teorico:'Compara stock real com quantidades encomendadas ao fornecedor. Importa o ficheiro do fornecedor.',
+    tip_dar_entrada:'Dá entrada de stock: peça a peça com scanner ou em lote por Excel.',
+    tip_emit_pick:'Gera a guia de picking com percurso otimizado pelo armazém. O stock só sai após confirmação.',
+    tip_emit_put:'Gera a guia de colocação para arrumar os artigos devolvidos. O stock só entra após confirmação.',
+    tip_pick_list:'Lista de guias emitidas à espera de preparação. Clica em "Iniciar" para começar.',
+    tip_put_list:'Lista de guias de devolução à espera de colocação. Clica em "Iniciar" para começar.',
+    tip_cancel_doc:'Cancela o documento se ainda não foi para o armazém. Documentos confirmados não podem ser cancelados.',
+    tip_scanner:'Lê códigos de barras com a câmara. Cada leitura adiciona 1 unidade.',
+    tip_search:'Pesquisa por nome, marca, categoria, EAN ou SKU.',
+    tip_lang:'Seleciona o idioma da interface.',
+    // Login
+    login_who:'Quem és tu?',
+    // Misc
+    misc_no_orders:'Sem encomendas.', misc_no_rets:'Sem devoluções.',
+    misc_no_guides_pick:'Nenhuma guia emitida. Vai a Encomendas e clica em "Emitir Guia Preparação".',
+    misc_no_guides_put:'Nenhuma guia emitida. Vai a Devoluções e clica em "Emitir Guia Devolução".',
+    misc_no_stock:'Sem stock. Clica em "Dar entrada" para começar.',
+    misc_no_skus:'Base de dados vazia.',
+    diff_ok:'✓ Conforme', diff_over:'▲ Excesso', diff_under:'▼ Em falta', diff_missing:'✕ Não recebido',
+  },
+  en: {
+    nav_skudb:'🗃 SKU Database', nav_stock:'📦 Stock', nav_orders:'🛒 Orders',
+    nav_pick:'📦 For Preparation', nav_ret:'↩️ Returns', nav_putaway:'📍 For Return',
+    nav_activity_lbl:'Activity',
+    skudb_title:'SKU Database', skudb_sub:'Product catalogue — EAN, name, brand, category, ml',
+    stock_title:'Stock', stock_sub:'Stock by warehouse position',
+    orders_title:'Orders', orders_sub:'Outbound stock orders',
+    pick_title:'For Preparation', pick_sub:'Outbound guides — line by line picking',
+    ret_title:'Returns', ret_sub:'Register returned items',
+    putaway_title:'For Return', putaway_sub:'Inbound guides — line by line putaway',
+    btn_new_order:'＋ New order', btn_new_ret:'＋ New return',
+    btn_emit_pick:'📦 Issue Picking Guide', btn_emit_put:'↩️ Issue Return Guide',
+    btn_start_pick:'▶ Start picking', btn_start_put:'▶ Start',
+    btn_finalize_pick:'✓ Finalize & deduct stock', btn_finalize_put:'✓ Finalize & add to stock',
+    btn_confirm:'✓ Confirm', btn_cancel:'✕ Cancel', btn_close:'Close',
+    btn_dar_entrada:'＋ Stock in', btn_teorico:'📊 Theoretical stock',
+    btn_export:'⬇ Excel', btn_template:'⬇ Template',
+    btn_login:'Enter →', btn_outro:'Other', btn_back:'← Back',
+    st_open:'Open', st_picked:'Done', st_cancelled:'Cancelled',
+    st_returned:'Done', st_emitted:'📋 Guide issued',
+    st_prep:'🚶 In preparation', st_coloc:'🚶 In putaway', st_parcial:'⚠️ Partial',
+    st_ok:'OK', st_low:'Low', st_empty:'Out of stock',
+    box_mixed:'📦 Mixed', box_excl:'🔹 Exclusive',
+    lbl_client:'Client', lbl_store_dest:'Destination store', lbl_store_orig:'Origin store',
+    lbl_sku:'SKU', lbl_pos:'Position', lbl_qty:'Quantity', lbl_type:'Type',
+    lbl_product:'Product', lbl_status:'Status', lbl_diff:'Difference',
+    lbl_theorical:'Theoretical', lbl_real:'Actual',
+    lbl_lines:'lines', lbl_units:'units', lbl_skus:'SKUs',
+    tip_skudb:'Product catalogue with EAN, name, brand, category and ml. Import via Excel.',
+    tip_stock:'Actual stock by position. Use "Stock in" to register received items.',
+    tip_teorico:'Compare actual stock with supplier order quantities. Import the supplier file.',
+    tip_dar_entrada:'Record incoming stock: item by item with scanner or batch by Excel.',
+    tip_emit_pick:'Generate picking guide with optimized warehouse route. Stock only leaves after confirmation.',
+    tip_emit_put:'Generate putaway guide for returned items. Stock only enters after confirmation.',
+    tip_pick_list:'List of issued guides waiting for preparation. Click "Start" to begin.',
+    tip_put_list:'List of return guides waiting for putaway. Click "Start" to begin.',
+    tip_cancel_doc:'Cancel document if it has not gone to the warehouse. Confirmed documents cannot be cancelled.',
+    tip_scanner:'Read barcodes with the camera. Each scan adds 1 unit.',
+    tip_search:'Search by name, brand, category, EAN or SKU.',
+    tip_lang:'Select interface language.',
+    login_who:'Who are you?',
+    misc_no_orders:'No orders.', misc_no_rets:'No returns.',
+    misc_no_guides_pick:'No guide issued. Go to Orders and click "Issue Picking Guide".',
+    misc_no_guides_put:'No guide issued. Go to Returns and click "Issue Return Guide".',
+    misc_no_stock:'No stock. Click "Stock in" to begin.',
+    misc_no_skus:'Empty database.',
+    diff_ok:'✓ Correct', diff_over:'▲ Excess', diff_under:'▼ Short', diff_missing:'✕ Not received',
+  },
+  es: {
+    nav_skudb:'🗃 Base SKUs', nav_stock:'📦 Stock', nav_orders:'🛒 Pedidos',
+    nav_pick:'📦 Para Preparación', nav_ret:'↩️ Devoluciones', nav_putaway:'📍 Para Devolución',
+    nav_activity_lbl:'Actividad',
+    skudb_title:'Base de Datos SKU', skudb_sub:'Catálogo de productos — EAN, nombre, marca, categoría, ml',
+    stock_title:'Stock', stock_sub:'Stock por posición en almacén',
+    orders_title:'Pedidos', orders_sub:'Pedidos de salida de stock',
+    pick_title:'Para Preparación', pick_sub:'Guías de salida — preparación línea a línea',
+    ret_title:'Devoluciones', ret_sub:'Registro de artículos devueltos',
+    putaway_title:'Para Devolución', putaway_sub:'Guías de entrada — colocación línea a línea',
+    btn_new_order:'＋ Nuevo pedido', btn_new_ret:'＋ Nueva devolución',
+    btn_emit_pick:'📦 Emitir Guía Preparación', btn_emit_put:'↩️ Emitir Guía Devolución',
+    btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
+    btn_finalize_pick:'✓ Finalizar y deducir stock', btn_finalize_put:'✓ Finalizar y añadir al stock',
+    btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Cerrar',
+    btn_dar_entrada:'＋ Entrada de stock', btn_teorico:'📊 Stock teórico',
+    btn_export:'⬇ Excel', btn_template:'⬇ Plantilla',
+    btn_login:'Entrar →', btn_outro:'Otro', btn_back:'← Volver',
+    st_open:'Abierto', st_picked:'Completado', st_cancelled:'Anulado',
+    st_returned:'Completado', st_emitted:'📋 Guía emitida',
+    st_prep:'🚶 En preparación', st_coloc:'🚶 En colocación', st_parcial:'⚠️ Parcial',
+    st_ok:'OK', st_low:'Bajo', st_empty:'Sin stock',
+    box_mixed:'📦 Mixta', box_excl:'🔹 Exclusiva',
+    lbl_client:'Cliente', lbl_store_dest:'Tienda destino', lbl_store_orig:'Tienda origen',
+    lbl_sku:'SKU', lbl_pos:'Posición', lbl_qty:'Cantidad', lbl_type:'Tipo',
+    lbl_product:'Producto', lbl_status:'Estado', lbl_diff:'Diferencia',
+    lbl_theorical:'Teórico', lbl_real:'Real',
+    lbl_lines:'líneas', lbl_units:'unid.', lbl_skus:'SKUs',
+    tip_skudb:'Catálogo de productos con EAN, nombre, marca, categoría y ml. Importa vía Excel.',
+    tip_stock:'Mapa de stock real por posición. Usa "Entrada de stock" para registrar artículos.',
+    tip_teorico:'Compara stock real con cantidades pedidas al proveedor.',
+    tip_dar_entrada:'Registra stock entrante: artículo a artículo con escáner o en lote por Excel.',
+    tip_emit_pick:'Genera guía de picking con ruta optimizada. El stock sale solo tras confirmación.',
+    tip_emit_put:'Genera guía de colocación para artículos devueltos. El stock entra solo tras confirmación.',
+    tip_pick_list:'Lista de guías emitidas pendientes de preparación.',
+    tip_put_list:'Lista de guías de devolución pendientes de colocación.',
+    tip_cancel_doc:'Cancela el documento si no ha ido al almacén. Los confirmados no se pueden cancelar.',
+    tip_scanner:'Lee códigos de barras con la cámara. Cada lectura añade 1 unidad.',
+    tip_search:'Busca por nombre, marca, categoría, EAN o SKU.',
+    tip_lang:'Selecciona el idioma de la interfaz.',
+    login_who:'¿Quién eres?',
+    misc_no_orders:'Sin pedidos.', misc_no_rets:'Sin devoluciones.',
+    misc_no_guides_pick:'Ninguna guía emitida. Ve a Pedidos y haz clic en "Emitir Guía Preparación".',
+    misc_no_guides_put:'Ninguna guía emitida. Ve a Devoluciones y haz clic en "Emitir Guía Devolución".',
+    misc_no_stock:'Sin stock. Haz clic en "Entrada de stock" para comenzar.',
+    misc_no_skus:'Base de datos vacía.',
+    diff_ok:'✓ Correcto', diff_over:'▲ Exceso', diff_under:'▼ Falta', diff_missing:'✕ No recibido',
   }
+};
 
-  // Scroll to bottom
-  const msgs = document.getElementById('assistMessages');
-  msgs.scrollTop = msgs.scrollHeight;
+let currentLang = 'pt';
+
+function t(key) {
+  return (LANGS[currentLang] && LANGS[currentLang][key]) || LANGS['pt'][key] || key;
 }
 
-function appendAssistMsg(text, type, id) {
-  const msgs = document.getElementById('assistMessages');
-  const div = document.createElement('div');
-  div.className = 'assist-msg assist-' + (type==='user'?'user':'bot') + (id?' assist-loading':'');
-  div.textContent = text;
-  if (id) div.id = id;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
+function setLang(lang) {
+  currentLang = lang;
+  // Save per user
+  if (currentUser) localStorage.setItem('wms_lang_' + currentUser.name, lang);
+  // Update nav buttons
+  ['pt','en','es'].forEach(l => {
+    const b = document.getElementById('lang-'+l);
+    if (b) b.classList.toggle('active', l===lang);
+  });
+  // Update all data-i elements
+  document.querySelectorAll('[data-i]').forEach(el => {
+    const key = el.getAttribute('data-i');
+    const val = t(key);
+    if (val) el.textContent = val;
+  });
+  // Update tooltips
+  document.querySelectorAll('[data-tip-i]').forEach(el => {
+    const key = el.getAttribute('data-tip-i');
+    const val = t(key);
+    if (val) el.setAttribute('data-tip', val);
+  });
+  // Re-render dynamic content
+  renderStock();
+  renderDocs('order');
+  renderDocs('return');
+  renderPickingGuides();
+  renderPutawayGuides();
+  renderSkuDb();
+  // Update login subtitle
+  const sub = document.querySelector('#loginScreen [style*="margin-bottom:40px"]');
+  if (sub) sub.textContent = t('login_who');
+  // Update page titles/subs
+  applyStaticTranslations();
+}
+
+function applyStaticTranslations() {
+  const map = {
+    'page-skudb': ['skudb_title','skudb_sub'],
+    'page-stock': ['stock_title','stock_sub'],
+    'page-orders': ['orders_title','orders_sub'],
+    'page-picking': ['pick_title','pick_sub'],
+    'page-returns': ['ret_title','ret_sub'],
+    'page-putaway': ['putaway_title','putaway_sub'],
+  };
+  Object.entries(map).forEach(([pageId, [titleKey, subKey]]) => {
+    const page = document.getElementById(pageId);
+    if (!page) return;
+    const title = page.querySelector('.page-title');
+    const sub = page.querySelector('.page-sub');
+    if (title) title.textContent = t(titleKey);
+    if (sub) sub.textContent = t(subKey);
+  });
+  // Nav tabs
+  const navMap = {
+    'skudb': 'nav_skudb', 'stock': 'nav_stock', 'orders': 'nav_orders',
+    'picking': 'nav_pick', 'returns': 'nav_ret', 'putaway': 'nav_putaway'
+  };
+  document.querySelectorAll('[data-page]').forEach(btn => {
+    const key = navMap[btn.getAttribute('data-page')];
+    if (key) btn.childNodes.forEach(n => { if (n.nodeType===3 && n.textContent.trim()) n.textContent = t(key); });
+  });
 }
 
 // ══ INIT ══
@@ -2311,38 +2622,6 @@ if (document.readyState === 'loading') {
 }
 </script>
 
-<!-- ASSISTENTE AI -->
-<button id="assistBtn" onclick="toggleAssist()"
-  style="position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--accent2);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:500;display:none;transition:transform .2s;"
-  class="assist-fab">💬</button>
-
-<div id="assistPanel" style="position:fixed;bottom:88px;right:24px;width:340px;max-height:520px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.2);z-index:500;display:none;flex-direction:column;overflow:hidden;">
-  <div style="background:var(--accent2);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
-    <div>
-      <div style="font-weight:700;font-size:14px;color:#fff;">Assistente Armazém NH</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:1px;">Tira dúvidas sobre o funcionamento</div>
-    </div>
-    <button onclick="toggleAssist()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;padding:4px;">✕</button>
-  </div>
-  <div id="assistMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;max-height:360px;">
-    <div class="assist-msg assist-bot">Olá! Sou o assistente do Armazém NH. Podes perguntar-me como funciona qualquer parte da app — stock, encomendas, picking, devoluções, base de SKUs, etc.</div>
-  </div>
-  <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">
-    <input id="assistInput" class="input input-sans" placeholder="Escreve a tua dúvida..." style="flex:1;font-size:13px;padding:8px 12px;"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAssist();}">
-    <button onclick="sendAssist()" class="btn btn-dark btn-sm" style="flex-shrink:0;">→</button>
-  </div>
-</div>
-
-<style>
-.assist-msg{padding:9px 12px;border-radius:10px;font-size:13px;line-height:1.5;max-width:90%;}
-.assist-bot{background:var(--surface2);color:var(--text);align-self:flex-start;border-bottom-left-radius:3px;}
-.assist-user{background:var(--accent2);color:#fff;align-self:flex-end;border-bottom-right-radius:3px;}
-.assist-loading{opacity:.6;font-style:italic;}
-.assist-fab:hover{transform:scale(1.1)!important;}
-.av-c{transition:transform .15s;}
-.av-item{cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;}
-.av-item:hover .av-c{transform:scale(1.1);}
-</style>
+</script>
 </body>
 </html>
