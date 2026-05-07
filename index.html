@@ -201,6 +201,10 @@ select.input{appearance:auto;cursor:pointer;}
 .th-sort::after{content:' ⇅';opacity:.35;font-size:10px;}
 .th-sort.asc::after{content:' ↑';opacity:1;}
 .th-sort.desc::after{content:' ↓';opacity:1;}
+
+.page-desc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--muted);line-height:1.7;}
+.page-desc strong{color:var(--text);font-weight:700;}
+.page-desc em{color:var(--accent);font-style:normal;font-weight:600;}
 </style>
 </head>
 <body>
@@ -217,8 +221,8 @@ select.input{appearance:auto;cursor:pointer;}
         <input id="loginName" placeholder="O teu nome..."
           style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:11px 14px;font-size:15px;color:#fff;outline:none;margin-bottom:10px;font-family:'Barlow',sans-serif;box-sizing:border-box;">
         <div style="display:flex;gap:8px;">
-          <button onclick="hideOutro()" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,255,255,.2);border-radius:7px;color:rgba(255,255,255,.7);cursor:pointer;font-size:13px;font-family:'Barlow',sans-serif;">← Voltar</button>
-          <button onclick="doLoginName()" style="flex:1;padding:10px;background:#e8420a;border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;font-family:'Barlow',sans-serif;">Entrar →</button>
+          <button onclick="hideOutro()" data-tip="Voltar à lista de utilizadores" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,255,255,.2);border-radius:7px;color:rgba(255,255,255,.7);cursor:pointer;font-size:13px;font-family:'Barlow',sans-serif;">← Voltar</button>
+          <button onclick="doLoginName()" data-tip="Entrar na aplicação com este nome" style="flex:1;padding:10px;background:#e8420a;border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;font-family:'Barlow',sans-serif;">Entrar →</button>
         </div>
       </div>
     </div>
@@ -374,11 +378,14 @@ select.input{appearance:auto;cursor:pointer;}
   <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)" data-tip-i="tip_pick_list"><span data-i="nav_pick">📦 Para Preparação</span></button>
   <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)"><span data-i="nav_ret">↩️ Devoluções</span></button>
   <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)">↩️ Para Devolução</button>
-  <button class="nav-tab" onclick="showAuditLog()" style="margin-left:auto;" data-i="nav_activity">📋 <span data-i="nav_activity_lbl">Atividade</span></button>
-  <div class="lang-sel" style="padding:0 8px;flex-shrink:0;">
-    <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')">PT</button>
-    <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
-    <button class="lang-btn" id="lang-es" onclick="setLang('es')">ES</button>
+  <button class="nav-tab" onclick="showAuditLog()" data-tip="Ver registo de todas as ações realizadas na app" style="margin-left:auto;" data-i="nav_activity">📋 <span data-i="nav_activity_lbl">Atividade</span></button>
+  <button class="nav-tab" onclick="exportBackup()" data-tip="Exportar backup completo em JSON" data-tip="Exportar cópia de segurança completa de todos os dados (JSON)" style="color:rgba(255,255,255,.5);font-size:11px;" data-tip="Exportar cópia de segurança de todos os dados">💾</button>
+  <label class="nav-tab" style="color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" data-tip="Restaurar cópia de segurança anterior" title="Restaurar backup"><input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">↩ Restaurar</label>
+  <div class="lang-sel" style="padding:0 8px;flex-shrink:0;" data-tip="Idioma da interface">
+    <span style="font-size:10px;color:rgba(255,255,255,.35);margin-right:2px;">🌐</span>
+    <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')" data-tip="Português">PT</button>
+    <button class="lang-btn" id="lang-en" onclick="setLang('en')" data-tip="English">EN</button>
+    <button class="lang-btn" id="lang-es" onclick="setLang('es')" data-tip="Español">ES</button>
   </div>
 </nav>
 
@@ -386,8 +393,9 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page active" id="page-skudb">
   <div class="page-title">Base de Dados de SKUs</div>
   <div class="page-sub">Catálogo central — EAN, nome, marca, categoria, ml</div>
+  <div class="page-desc">Catálogo central de todos os produtos. Importa um ficheiro Excel com SKU, EAN, nome, marca, categoria e ml. Esta base é usada em toda a app para <strong>pesquisa inteligente</strong>, preenchimento automático e identificação de produtos no picking. Sem esta base, os SKUs aparecem sem nome — começa sempre por aqui.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()">⬇ Template</button></div>
+    <div class="card-header"><span class="card-title">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()" data-tip="Descarregar template Excel para importar produtos">⬇ Template</button></div>
     <div class="card-body">
       <div class="alert a-sky">ℹ️ Colunas: <strong>SKU | EAN | Nome | Marca | Categoria | ML</strong></div>
       <input type="file" id="skuFile" accept=".xlsx,.xls" onchange="importSkuDb()" class="input" style="padding:8px;">
@@ -398,7 +406,7 @@ select.input{appearance:auto;cursor:pointer;}
     <div class="card-header"><span class="card-title">Catálogo</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <input class="input input-sans" id="dbSearch" placeholder="Pesquisar..." style="width:180px;padding:5px 10px;font-size:12px;" oninput="renderSkuDb()">
-        <button class="btn btn-ghost btn-sm" onclick="clearSkuDb()">🗑 Limpar</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSkuDb()" data-tip="Apagar todo o catálogo de produtos">🗑 Limpar</button>
       </div>
     </div>
     <div style="overflow-x:auto;"><table class="tbl">
@@ -412,6 +420,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-stock">
   <div class="page-title">Stock</div>
   <div class="page-sub">Consulta de stock por posição</div>
+  <div class="page-desc">Mapa de stock real por posição de armazém (estantes A→K, andares 1→5, posições 1→4). Usa <strong>＋ Dar entrada</strong> para registar mercadoria recebida peça a peça ou por Excel. Usa <strong>📊 Stock teórico</strong> para comparar com o ficheiro do fornecedor e detetar diferenças. As colunas de <em>Em carteira</em>, <em>Em preparação</em> e <em>Disponível</em> atualizam automaticamente com os pedidos em curso.</div>
 
   <!-- STOCK TABLE -->
   <div class="card">
@@ -422,9 +431,9 @@ select.input{appearance:auto;cursor:pointer;}
         <select class="input input-sans" id="stockFilter" style="width:95px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
           <option value="">Todos</option><option value="mista">Mistas</option><option value="exclusiva">Exclusivas</option>
         </select>
-        <button class="btn btn-success btn-sm" onclick="openEntrada()" data-tip-i="tip_dar_entrada" data-i="btn_dar_entrada">＋ Dar entrada</button>
-        <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">📊 Stock teórico</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearStock()">🗑</button>
+        <button class="btn btn-success btn-sm" onclick="openEntrada()" data-tip="Dar entrada de mercadoria recebida — peça a peça com scanner ou por Excel" data-tip-i="tip_dar_entrada" data-i="btn_dar_entrada">＋ Dar entrada</button>
+        <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" data-tip="Comparar stock real com quantidades encomendadas ao fornecedor" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">📊 Stock teórico</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearStock()" data-tip="Apagar todo o stock do armazém">🗑</button>
       </div>
     </div>
     
@@ -438,9 +447,11 @@ select.input{appearance:auto;cursor:pointer;}
 
 <!-- ORDERS -->
 <div class="page" id="page-orders">
-  <div class="page-title">Encomendas</div><div class="page-sub">Pedidos de preparação e saída</div>
+  <div class="page-title">Encomendas</div>
+  <div class="page-sub">Pedidos de preparação e saída</div>
+  <div class="page-desc">Cria pedidos de saída de stock. Escolhe o cliente, adiciona SKUs por scanner, pesquisa ou Excel, e emite a guia de preparação. O stock só é deduzido após o operador confirmar o picking linha a linha. Pedidos podem ser cancelados enquanto estiverem em estado <em>Aberto</em> ou <em>Guia emitida</em>.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')">＋ Nova</button></div>
+    <div class="card-header"><span class="card-title">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')" data-tip="Criar novo pedido de saída de stock">＋ Nova</button></div>
     <div id="ordersList"><div class="empty"><div class="empty-icon">🛒</div><span data-i="misc_no_orders">Sem encomendas.</span></div></div>
   </div>
   <div id="orderEditor" style="display:none;">
@@ -448,8 +459,8 @@ select.input{appearance:auto;cursor:pointer;}
       <div class="card-header">
         <span class="card-title" id="editorTitle">Encomenda</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap;">
-          <button class="btn btn-ghost btn-sm" onclick="closeEd('order')">Fechar</button>
-          <button class="btn btn-success btn-sm" onclick="emitirGuia()" data-tip-i="tip_emit_pick" data-i="btn_emit_pick">📦 Emitir Guia Preparação</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeEd('order')" data-tip="Fechar o editor sem perder os dados">Fechar</button>
+          <button class="btn btn-success btn-sm" onclick="emitirGuia()" data-tip="Gerar guia de picking com percurso otimizado — o stock só sai após confirmação" data-tip-i="tip_emit_pick" data-i="btn_emit_pick">📦 Emitir Guia Preparação</button>
         </div>
       </div>
       <div class="card-body">
@@ -499,6 +510,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-picking">
   <div class="page-title">Para Preparação</div>
   <div class="page-sub">Guias de saída — preparação linha a linha</div>
+  <div class="page-desc">Lista de guias de picking emitidas e à espera de preparação. Clica em <strong>▶ Iniciar picking</strong> para começar — o sistema pede a loja de destino e guia o operador posição a posição pelo armazém. O percurso é otimizado por ordem de estante. O stock só sai quando o picking é finalizado.</div>
 
   <!-- GUIDES LIST -->
   <div id="pickingListSection">
@@ -511,9 +523,9 @@ select.input{appearance:auto;cursor:pointer;}
   <!-- ACTIVE PICKING SESSION (inline, hidden until started) -->
   <div id="prepContent" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <button class="btn btn-ghost btn-sm" onclick="cancelPrep()">← Voltar à lista</button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelPrep()" data-tip="Suspender o picking — a guia fica disponível para retomar">← Voltar à lista</button>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcel()">⬇ Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcel()" data-tip="Exportar guia de picking em Excel">⬇ Excel</button>
         <button class="btn btn-danger btn-sm" onclick="cancelPrep()">✕ Cancelar</button>
       </div>
     </div>
@@ -527,16 +539,18 @@ select.input{appearance:auto;cursor:pointer;}
     </div>
     <div id="prepLines"></div>
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-      <button class="btn btn-success" style="flex:1;padding:12px;" onclick="finalizePicking()">✓ Finalizar e deduzir stock</button>
+      <button class="btn btn-success" style="flex:1;padding:12px;" onclick="finalizePicking()" data-tip="Confirmar todas as recolhas e deduzir o stock — ação irreversível">✓ Finalizar e deduzir stock</button>
     </div>
   </div>
 </div>
 
 <!-- RETURNS -->
 <div class="page" id="page-returns">
-  <div class="page-title">Devoluções</div><div class="page-sub">Artigos devolvidos</div>
+  <div class="page-title">Devoluções</div>
+  <div class="page-sub">Artigos devolvidos</div>
+  <div class="page-desc">Regista artigos devolvidos pelas lojas. Escolhe o cliente, adiciona os SKUs devolvidos e emite a guia de colocação. O stock só entra no sistema após o operador confirmar a colocação linha a linha. Devolução por scanner, pesquisa inteligente ou Excel.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Devoluções</span><button class="btn btn-purple btn-sm" onclick="newDoc('return')">＋ Nova</button></div>
+    <div class="card-header"><span class="card-title">Devoluções</span><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução de artigos">＋ Nova</button></div>
     <div id="returnsList"><div class="empty"><div class="empty-icon">↩️</div><span data-i="misc_no_rets">Sem devoluções.</span></div></div>
   </div>
   <div id="returnEditor" style="display:none;">
@@ -544,8 +558,8 @@ select.input{appearance:auto;cursor:pointer;}
       <div class="card-header">
         <span class="card-title" id="retEdTitle">Devolução</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap;">
-          <button class="btn btn-ghost btn-sm" onclick="closeEd('return')">Fechar</button>
-          <button class="btn btn-purple btn-sm" onclick="genDoc('return')" data-tip-i="tip_emit_put" data-i="btn_emit_put">↩️ Emitir Guia Devolução</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeEd('return')" data-tip="Fechar o editor sem perder os dados">Fechar</button>
+          <button class="btn btn-purple btn-sm" onclick="genDoc('return')" data-tip="Gerar guia de colocação — o stock só entra após confirmação" data-tip-i="tip_emit_put" data-i="btn_emit_put">↩️ Emitir Guia Devolução</button>
         </div>
       </div>
       <div class="card-body">
@@ -595,6 +609,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-putaway">
   <div class="page-title">Para Devolução</div>
   <div class="page-sub">Guias de entrada — colocação linha a linha</div>
+  <div class="page-desc">Lista de guias de colocação de devoluções. Clica em <strong>▶ Iniciar</strong> para começar — o sistema indica a posição de armazém onde cada artigo deve ser colocado, com base no stock existente. O percurso é otimizado. O stock só entra quando a colocação é finalizada.</div>
 
   <!-- GUIDES LIST -->
   <div id="putawayListSection">
@@ -607,7 +622,7 @@ select.input{appearance:auto;cursor:pointer;}
   <!-- ACTIVE PUTAWAY SESSION -->
   <div id="putawayPrepContent" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <button class="btn btn-ghost btn-sm" onclick="cancelPutawayPrep()">← Voltar à lista</button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelPutawayPrep()" data-tip="Suspender a colocação — a guia fica disponível para retomar">← Voltar à lista</button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-ghost btn-sm" onclick="exportPutawayExcel()">⬇ Excel</button>
         <button class="btn btn-danger btn-sm" onclick="cancelPutawayPrep()">✕ Cancelar</button>
@@ -622,7 +637,7 @@ select.input{appearance:auto;cursor:pointer;}
     </div>
     <div id="putawayPrepLines"></div>
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-      <button class="btn btn-purple" style="flex:1;padding:12px;" onclick="finalizePutaway()">✓ Finalizar e acrescentar ao stock</button>
+      <button class="btn btn-purple" style="flex:1;padding:12px;" onclick="finalizePutaway()" data-tip="Confirmar todas as colocações e acrescentar ao stock — ação irreversível">✓ Finalizar e acrescentar ao stock</button>
     </div>
   </div>
 </div>
@@ -2603,6 +2618,64 @@ function applyStaticTranslations() {
     const key = navMap[btn.getAttribute('data-page')];
     if (key) btn.childNodes.forEach(n => { if (n.nodeType===3 && n.textContent.trim()) n.textContent = t(key); });
   });
+}
+
+
+// ══ BACKUP & RESTORE ══
+function exportBackup() {
+  const backup = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    exportedBy: currentUser ? currentUser.name : '—',
+    skuDb, stock, orders, rets,
+    teorico
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const d = new Date();
+  const stamp = d.toISOString().slice(0,16).replace('T','_').replace(':','h');
+  a.download = 'armazem_backup_' + stamp + '.json';
+  a.click();
+  toast('Backup exportado ✓', 'win');
+  logAction('Backup exportado', stamp);
+}
+
+function importBackup() {
+  const file = document.getElementById('restoreFile').files[0];
+  if (!file) return;
+  if (!confirm('Restaurar backup de "' + file.name + '"?\n\nTodos os dados atuais serão substituídos. Esta ação não pode ser desfeita.')) {
+    document.getElementById('restoreFile').value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.version || !backup.stock) { toast('Ficheiro inválido', 'err'); return; }
+      // Restore all collections
+      skuDb  = backup.skuDb  || [];
+      stock  = backup.stock  || [];
+      orders = backup.orders || [];
+      rets   = backup.rets   || [];
+      teorico = backup.teorico || {};
+      // Save to Firestore
+      await saveDb();
+      await saveStk();
+      await saveOrd();
+      await saveRet();
+      // Re-render
+      renderSkuDb(); renderStock(); renderDocs('order'); renderDocs('return');
+      renderPickingGuides(); renderPutawayGuides();
+      toast('Backup restaurado ✓ — ' + (backup.exportedAt||'').slice(0,16).replace('T',' '), 'win');
+      logAction('Backup restaurado', backup.exportedAt||file.name);
+    } catch(err) {
+      toast('Erro ao restaurar: ' + err.message, 'err');
+    }
+    document.getElementById('restoreFile').value = '';
+  };
+  reader.readAsText(file);
 }
 
 // ══ INIT ══
