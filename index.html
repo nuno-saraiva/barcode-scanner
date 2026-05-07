@@ -297,7 +297,7 @@ select.input{appearance:auto;cursor:pointer;}
       var label = u.label||u.name;
       var click = isOutro ? 'window._showOutro()' : 'window._loginPreset('+JSON.stringify(u.name)+')';
       var removeBtn = u.isExtra
-        ? '<button onmousedown="event.stopPropagation();event.preventDefault();window._removeExtra('+JSON.stringify(u.name)+')" style="position:absolute;top:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;line-height:18px;text-align:center;padding:0;z-index:10;">✕</button>'
+        ? '<button data-remove-user="'+u.name+'" style="position:absolute;top:-3px;right:-3px;width:20px;height:20px;border-radius:50%;background:#dc2626;border:2px solid #1a1a2e;color:#fff;font-size:11px;cursor:pointer;line-height:16px;text-align:center;padding:0;z-index:20;font-weight:700;">✕</button>'
         : '';
       var div = document.createElement('div');
       div.setAttribute('onclick', click);
@@ -2372,7 +2372,7 @@ function renderAvatarGrid() {
     const label = u.label || u.name;
     const clickFn = isOutro ? 'showOutro()' : 'doLoginPreset(' + JSON.stringify(u.name) + ')';
     const removeBtn = u.isExtra
-      ? '<button onmousedown="event.stopPropagation();event.preventDefault();removeExtraUser(' + JSON.stringify(u.name) + ')" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:10;">✕</button>'
+      ? '<button data-remove-user="' + u.name + '" style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:#dc2626;border:2px solid #1a1a2e;color:#fff;font-size:11px;cursor:pointer;text-align:center;line-height:16px;padding:0;z-index:20;font-weight:700;">✕</button>'
       : '';
     var fs = u.initials.length>2?'16':'20';
     return '<div onclick="'+clickFn+'" class="av-item">'+
@@ -3038,7 +3038,7 @@ function renderImportOrderList(q) {
     const total = o.lines.reduce((a,l) => a+l.qty, 0);
     const skus = o.lines.length;
     return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:background .15s;" ' +
-      'onmouseover="this.style.background='var(--surface2)'" ' +
+      'onmouseover="this.style.background=var(--surface2)" ' +
       'onmouseout="this.style.background=''" ' +
       'onclick="importOrderAsReturn(' + JSON.stringify(o.id) + ')">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;">' +
@@ -3121,6 +3121,18 @@ function createReturnFromOrder(client, lines) {
   toast('✓ Devolução criada com ' + lines.length + ' SKUs do pedido', 'win');
   logAction('Devolução de pedido', id + ' ← ' + lines.length + ' linhas');
 }
+
+
+// ── Global handler for avatar remove buttons ──
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('[data-remove-user]');
+  if (!btn) return;
+  e.stopPropagation();
+  e.preventDefault();
+  const name = btn.getAttribute('data-remove-user');
+  if (typeof window._removeExtra === 'function') window._removeExtra(name);
+  else if (typeof removeExtraUser === 'function') removeExtraUser(name);
+}, true); // capture phase — fires before parent handlers
 
 // ══ INIT ══
 function _initApp() {
