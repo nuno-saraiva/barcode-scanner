@@ -205,6 +205,26 @@ select.input{appearance:auto;cursor:pointer;}
 .page-desc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--muted);line-height:1.7;}
 .page-desc strong{color:var(--text);font-weight:700;}
 .page-desc em{color:var(--accent);font-style:normal;font-weight:600;}
+
+/* RESPONSIVE NAV */
+.nav{overflow:visible!important;}
+.nav-tabs-desktop{display:flex;align-items:stretch;flex:1;}
+.nav-right{display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;}
+.nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:8px 10px;line-height:1;}
+.mob-nav-btn{display:flex;width:100%;background:none;border:none;color:rgba(255,255,255,.75);font-family:'Barlow',sans-serif;font-weight:600;font-size:14px;padding:12px 14px;cursor:pointer;border-radius:8px;text-align:left;transition:all .15s;}
+.mob-nav-btn:hover,.mob-nav-btn.active{background:rgba(255,255,255,.1);color:#fff;}
+.mob-nav-btn.t-ret.active{background:rgba(167,139,250,.2);}
+.mob-nav-btn.t-db.active{background:rgba(56,189,248,.15);}
+@media(max-width:768px){
+  .nav-tabs-desktop{display:none;}
+  .nav-hamburger{display:block;}
+  .nav-right .lang-sel{display:none;}
+  [data-tip]:hover::after,[data-tip]:hover::before{display:none;}
+}
+@media(min-width:769px){
+  #mobileMenuOverlay,#mobileMenu{display:none!important;}
+  #navHamburger{display:none!important;}
+}
 </style>
 </head>
 <body>
@@ -372,22 +392,62 @@ select.input{appearance:auto;cursor:pointer;}
 
 <nav class="nav">
   <div class="nav-logo">Armazém<span>·</span>NH</div>
-  <button class="nav-tab t-db active" data-page="skudb"   onclick="showPage('skudb',this)" data-tip-i="tip_skudb"><span data-i="nav_skudb">🗃 Base SKUs</span></button>
-  <button class="nav-tab"             data-page="stock"   onclick="showPage('stock',this)" data-tip-i="tip_stock"><span data-i="nav_stock">📦 Stock</span></button>
-  <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)"><span data-i="nav_orders">🛒 Encomendas</span></button>
-  <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)" data-tip-i="tip_pick_list"><span data-i="nav_pick">📦 Para Preparação</span></button>
-  <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)"><span data-i="nav_ret">↩️ Devoluções</span></button>
-  <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)">↩️ Para Devolução</button>
-  <button class="nav-tab" onclick="showAuditLog()" data-tip="Ver registo de todas as ações realizadas na app" style="margin-left:auto;" data-i="nav_activity">📋 <span data-i="nav_activity_lbl">Atividade</span></button>
-  <button class="nav-tab" onclick="exportBackup()" data-tip="Exportar backup completo em JSON" data-tip="Exportar cópia de segurança completa de todos os dados (JSON)" style="color:rgba(255,255,255,.5);font-size:11px;" data-tip="Exportar cópia de segurança de todos os dados">💾</button>
-  <label class="nav-tab" style="color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" data-tip="Restaurar cópia de segurança anterior" title="Restaurar backup"><input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">↩ Restaurar</label>
-  <div class="lang-sel" style="padding:0 8px;flex-shrink:0;" data-tip="Idioma da interface">
-    <span style="font-size:10px;color:rgba(255,255,255,.35);margin-right:2px;">🌐</span>
-    <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')" data-tip="Português">PT</button>
-    <button class="lang-btn" id="lang-en" onclick="setLang('en')" data-tip="English">EN</button>
-    <button class="lang-btn" id="lang-es" onclick="setLang('es')" data-tip="Español">ES</button>
+  <!-- Desktop nav tabs -->
+  <div class="nav-tabs-desktop">
+    <button class="nav-tab t-db active" data-page="skudb"   onclick="showPage('skudb',this)" data-tip-i="tip_skudb"><span data-i="nav_skudb">🗃 Base SKUs</span></button>
+    <button class="nav-tab"             data-page="stock"   onclick="showPage('stock',this)" data-tip-i="tip_stock"><span data-i="nav_stock">📦 Stock</span></button>
+    <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)"><span data-i="nav_orders">🛒 Encomendas</span></button>
+    <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)" data-tip-i="tip_pick_list"><span data-i="nav_pick">📦 Para Preparação</span></button>
+    <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)"><span data-i="nav_ret">↩️ Devoluções</span></button>
+    <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)"><span data-i="nav_putaway">📍 Para Devolução</span></button>
+  </div>
+  <!-- Right side: always visible -->
+  <div class="nav-right">
+    <button class="nav-tab" onclick="showAuditLog()" data-tip="Registo de atividade" style="display:none;" id="nav-activity-btn">📋</button>
+    <button class="nav-tab" onclick="exportBackup()" data-tip="Exportar backup" style="font-size:16px;">💾</button>
+    <label class="nav-tab" data-tip="Restaurar backup" style="cursor:pointer;font-size:11px;color:rgba(255,255,255,.5);"><input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">↩</label>
+    <div class="lang-sel" data-tip="Idioma">
+      <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')">PT</button>
+      <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="lang-es" onclick="setLang('es')">ES</button>
+    </div>
+    <div id="userBadge" style="display:none;align-items:center;gap:6px;padding:0 8px;">
+      <span id="userBadgeName" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;"></span>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="color:rgba(255,255,255,.6);font-size:11px;padding:3px 8px;">Sair</button>
+    </div>
+    <!-- Hamburger -->
+    <button class="nav-hamburger" onclick="toggleMobileMenu()" id="navHamburger" aria-label="Menu">☰</button>
   </div>
 </nav>
+
+<!-- Mobile menu drawer -->
+<div id="mobileMenuOverlay" onclick="closeMobileMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;"></div>
+<div id="mobileMenu" style="display:none;position:fixed;top:0;left:0;bottom:0;width:280px;background:var(--accent2);z-index:201;flex-direction:column;box-shadow:4px 0 20px rgba(0,0,0,.3);overflow-y:auto;">
+  <div style="padding:20px 16px 12px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:18px;color:#fff;">Armazém<span style="color:#e8420a;">·</span>NH</div>
+    <button onclick="closeMobileMenu()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:22px;cursor:pointer;">✕</button>
+  </div>
+  <div style="padding:12px 8px;flex:1;">
+    <button class="mob-nav-btn t-db active" data-page="skudb"   onclick="showPage('skudb',this);closeMobileMenu()"><span data-i="nav_skudb">🗃 Base SKUs</span></button>
+    <button class="mob-nav-btn"             data-page="stock"   onclick="showPage('stock',this);closeMobileMenu()"><span data-i="nav_stock">📦 Stock</span></button>
+    <button class="mob-nav-btn"             data-page="orders"  onclick="showPage('orders',this);closeMobileMenu()"><span data-i="nav_orders">🛒 Encomendas</span></button>
+    <button class="mob-nav-btn"             data-page="picking" onclick="showPage('picking',this);closeMobileMenu()"><span data-i="nav_pick">📦 Para Preparação</span></button>
+    <button class="mob-nav-btn t-ret"       data-page="returns" onclick="showPage('returns',this);closeMobileMenu()"><span data-i="nav_ret">↩️ Devoluções</span></button>
+    <button class="mob-nav-btn t-ret"       data-page="putaway" onclick="showPage('putaway',this);closeMobileMenu()"><span data-i="nav_putaway">📍 Para Devolução</span></button>
+    <div style="height:1px;background:rgba(255,255,255,.1);margin:8px 0;"></div>
+    <button class="mob-nav-btn" onclick="showAuditLog();closeMobileMenu()">📋 Atividade</button>
+    <button class="mob-nav-btn" onclick="exportBackup();closeMobileMenu()">💾 Exportar backup</button>
+    <label class="mob-nav-btn" style="cursor:pointer;"><input type="file" id="restoreFileMob" accept=".json" onchange="importBackupMob()" style="display:none;">↩ Restaurar backup</label>
+  </div>
+  <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);">
+    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">🌐 Idioma</div>
+    <div style="display:flex;gap:6px;">
+      <button class="lang-btn active" id="lang-pt-mob" onclick="setLang('pt')">PT</button>
+      <button class="lang-btn" id="lang-en-mob" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="lang-es-mob" onclick="setLang('es')">ES</button>
+    </div>
+  </div>
+</div>
 
 <!-- SKU DB -->
 <div class="page active" id="page-skudb">
@@ -420,7 +480,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-stock">
   <div class="page-title">Stock</div>
   <div class="page-sub">Consulta de stock por posição</div>
-  <div class="page-desc">Mapa de stock real por posição de armazém (estantes A→K, andares 1→5, posições 1→4). Usa <strong>＋ Dar entrada</strong> para registar mercadoria recebida peça a peça ou por Excel. Usa <strong>📊 Stock teórico</strong> para comparar com o ficheiro do fornecedor e detetar diferenças. As colunas de <em>Em carteira</em>, <em>Em preparação</em> e <em>Disponível</em> atualizam automaticamente com os pedidos em curso.</div>
+  <div class="page-desc">Mapa de stock real por posição de armazém (estantes A→K, andares 1→5, posições 1→4). Usa <strong>＋ Dar entrada</strong> para registar mercadoria recebida peça a peça ou por Excel. Usa <strong>📊 Stock teórico</strong> para carregar o ficheiro do fornecedor com as quantidades que devias ter recebido — a tabela mostra imediatamente as diferenças entre o stock real e o esperado. <strong>Nota:</strong> só existe um stock teórico de cada vez; cada nova importação substitui o anterior. As colunas de <em>Em carteira</em>, <em>Em preparação</em> e <em>Disponível</em> atualizam automaticamente com os pedidos em curso.</div>
 
   <!-- STOCK TABLE -->
   <div class="card">
@@ -449,7 +509,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-orders">
   <div class="page-title">Encomendas</div>
   <div class="page-sub">Pedidos de preparação e saída</div>
-  <div class="page-desc">Cria pedidos de saída de stock. Escolhe o cliente, adiciona SKUs por scanner, pesquisa ou Excel, e emite a guia de preparação. O stock só é deduzido após o operador confirmar o picking linha a linha. Pedidos podem ser cancelados enquanto estiverem em estado <em>Aberto</em> ou <em>Guia emitida</em>.</div>
+  <div class="page-desc">Cria pedidos de saída de stock. Escolhe o cliente e adiciona SKUs por scanner, pesquisa inteligente ou Excel. Ao criar um pedido, as unidades ficam imediatamente em <em>Em carteira</em> e reduzem o <strong>stock disponível</strong> — evitando que dois pedidos em simultâneo comprometam as mesmas unidades. O stock real só é deduzido quando o operador confirma o picking linha a linha. Ao cancelar um pedido em estado <em>Aberto</em> ou <em>Guia emitida</em>, as unidades são libertadas e o stock disponível é revisto automaticamente.</div>
   <div class="card">
     <div class="card-header"><span class="card-title">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')" data-tip="Criar novo pedido de saída de stock">＋ Nova</button></div>
     <div id="ordersList"><div class="empty"><div class="empty-icon">🛒</div><span data-i="misc_no_orders">Sem encomendas.</span></div></div>
@@ -510,7 +570,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-picking">
   <div class="page-title">Para Preparação</div>
   <div class="page-sub">Guias de saída — preparação linha a linha</div>
-  <div class="page-desc">Lista de guias de picking emitidas e à espera de preparação. Clica em <strong>▶ Iniciar picking</strong> para começar — o sistema pede a loja de destino e guia o operador posição a posição pelo armazém. O percurso é otimizado por ordem de estante. O stock só sai quando o picking é finalizado.</div>
+  <div class="page-desc">Lista de guias de picking emitidas e à espera de preparação. A guia tem o nome <em>Guia_</em> seguido do nome do pedido. Clica em <strong>▶ Iniciar picking</strong> para começar — o operador é guiado posição a posição pelo armazém, com o percurso otimizado por ordem de estante. O stock só é deduzido quando o picking é finalizado e confirmado.</div>
 
   <!-- GUIDES LIST -->
   <div id="pickingListSection">
@@ -609,7 +669,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-putaway">
   <div class="page-title">Para Devolução</div>
   <div class="page-sub">Guias de entrada — colocação linha a linha</div>
-  <div class="page-desc">Lista de guias de colocação de devoluções. Clica em <strong>▶ Iniciar</strong> para começar — o sistema indica a posição de armazém onde cada artigo deve ser colocado, com base no stock existente. O percurso é otimizado. O stock só entra quando a colocação é finalizada.</div>
+  <div class="page-desc">Lista de guias de colocação de devoluções, com nome <em>Guia_</em> seguido do nome da devolução. Clica em <strong>▶ Iniciar</strong> — o operador é indicado posição a posição onde colocar cada artigo, com percurso otimizado. O stock só é acrescido quando a colocação é finalizada e confirmada.</div>
 
   <!-- GUIDES LIST -->
   <div id="putawayListSection">
@@ -673,22 +733,20 @@ select.input{appearance:auto;cursor:pointer;}
   </div>
 </div>
 
-<!-- LOJA MODAL (reparação) -->
-<div class="overlay" id="lojaModal">
-  <div class="modal" style="max-width:380px;">
-    <div class="modal-title">📦 Para Preparação</div>
-    <div class="modal-sub" id="lojaModalSub">Indica a loja de destino antes de começar.</div>
-    <div class="field">
-      <label>Loja de destino</label>
-      <input class="input input-sans" id="lojaInput" placeholder="ex: Loja Lisboa Centro..."
-        onkeydown="if(event.key==='Enter')lojaConfirm()" style="font-size:15px;padding:11px 14px;">
-    </div>
+
+<!-- CLIENT MODAL -->
+<div class="overlay" id="clientModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-title" id="clientModalTitle">Novo pedido</div>
+    <div class="modal-sub">Seleciona o cliente. O nome é gerado automaticamente.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;" id="clientBtnList"></div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="lojaCancel()">Cancelar</button>
-      <button class="btn btn-primary" onclick="lojaConfirm()">Iniciar →</button>
+      <button class="btn btn-ghost" onclick="closeClientModal()">Cancelar</button>
     </div>
   </div>
 </div>
+
+<!-- lojaModal removed — client already set in order -->
 
 <!-- ORIGEM MODAL (devolução) -->
 <div class="overlay" id="origemModal">
@@ -1039,11 +1097,11 @@ function renderStock(){
 
   const totalCols = 4 + (hasMov?7:0) + (hasTeorico?2:0) + 3;
   const body=document.getElementById('stockBody');
-  if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+t('misc_no_stock')+'</div></td></tr>';return;}
+  if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+tr('misc_no_stock')+'</div></td></tr>';return;}
 
   body.innerHTML=filtered.map(s=>{
-    const st=s.qty===0?'<span class="badge bdg-rd">'+t('st_empty')+'</span>':s.qty<=5?'<span class="badge bdg-or">'+t('st_low')+'</span>':'<span class="badge bdg-gn">'+t('st_ok')+'</span>';
-    const bb=s.boxType==='mista'?'<span class="badge bdg-mx">'+t('box_mixed')+'</span>':'<span class="badge bdg-ex">'+t('box_excl')+'</span>';
+    const st=s.qty===0?'<span class="badge bdg-rd">'+tr('st_empty')+'</span>':s.qty<=5?'<span class="badge bdg-or">'+tr('st_low')+'</span>':'<span class="badge bdg-gn">'+tr('st_ok')+'</span>';
+    const bb=s.boxType==='mista'?'<span class="badge bdg-mx">'+tr('box_mixed')+'</span>':'<span class="badge bdg-ex">'+tr('box_excl')+'</span>';
 
     let movCols='';
     if(hasMov){
@@ -1426,7 +1484,7 @@ function renderDocs(t){
   if(!st.length){el.innerHTML=`<div class="empty"><div class="empty-icon">${t==='order'?'🛒':'↩️'}</div>Sem ${t==='order'?'encomendas':'devoluções'}.</div>`;return;}
   el.innerHTML=st.map(d=>{
     const _stMap={open:'st_open',picked:'st_picked',cancelled:'st_cancelled',returned:'st_returned','guia-emitida':'st_emitted','em-preparacao':'st_prep','em-colocacao':'st_coloc','parcial':'st_parcial'};
-    const sl=t(_stMap[d.status]||d.status)||d.status;
+    const sl=tr(_stMap[d.status]||d.status)||d.status;
     const slSuffix = d.confirmedBy&&['picked','returned','parcial'].includes(d.status)?' · 👤 '+d.confirmedBy:d.cancelledBy&&d.status==='cancelled'?' · 👤 '+d.cancelledBy:'';
     const tq=d.lines.reduce((a,l)=>a+l.qty,0);
     const canEdit=d.status==='open';
@@ -1700,50 +1758,25 @@ let prepPendingOrderId = null; // waiting for loja confirmation
 function iniciarPrep(orderId) {
   const doc = orders.find(d => d.id === orderId);
   if (!doc || !doc.guide) return;
-  prepPendingOrderId = orderId;
-  // Show loja modal
-  document.getElementById('lojaModalSub').textContent = 'Encomenda ' + orderId + (doc.client ? ' · ' + doc.client : '') + '. Indica a loja de destino.';
-  document.getElementById('lojaInput').value = doc.guide.loja || '';
-  document.getElementById('lojaModal').classList.add('visible');
-  setTimeout(() => document.getElementById('lojaInput').focus(), 80);
-}
-
-function lojaCancel() {
-  document.getElementById('lojaModal').classList.remove('visible');
-  prepPendingOrderId = null;
-}
-
-function lojaConfirm() {
-  const loja = document.getElementById('lojaInput').value.trim();
-  if (!loja) { document.getElementById('lojaInput').style.borderColor='#dc2626'; return; }
-  document.getElementById('lojaInput').style.borderColor='';
-  document.getElementById('lojaModal').classList.remove('visible');
-
-  const orderId = prepPendingOrderId;
-  prepPendingOrderId = null;
-  const doc = orders.find(d => d.id === orderId);
-  if (!doc) return;
-
-  doc.guide.loja = loja;
+  // Client already identified in the order — start directly
+  doc.guide.loja = doc.client || '';
   prepOrderId = orderId;
   prepLines = JSON.parse(JSON.stringify(doc.guide.lines));
   doc.status = 'em-preparacao';
   doc.guide.status = 'in-progress';
   saveOrd();
-
-  // Show picking inline on picking page
   document.getElementById('pickingListSection').style.display = 'none';
   document.getElementById('prepContent').style.display = 'block';
   renderPrepContent();
-
-  // Make sure we are on picking page
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('page-picking').classList.add('active');
   document.querySelector('[data-page="picking"]').classList.add('active');
-
-  logAction('Preparacao iniciada', orderId + ' → ' + loja);
+  logAction('Preparacao iniciada', orderId);
 }
+
+function lojaCancel() {} // kept for compatibility
+function lojaConfirm() {} // kept for compatibility
 
 function renderPrepContent() {
   if (!prepOrderId) {
@@ -1755,14 +1788,12 @@ function renderPrepContent() {
   if (!doc) return;
   document.getElementById('pickingListSection').style.display = 'none';
   document.getElementById('prepContent').style.display = 'block';
-  const loja = doc.guide?.loja || '';
   document.getElementById('prepHeader').innerHTML =
     '<div>' +
     '<div class="pick-id">' + doc.id + '</div>' +
     '<div class="pick-meta">' +
-      (doc.client ? '👤 ' + doc.client + ' · ' : '') +
-      (loja ? '🏪 ' + loja + ' · ' : '') +
-      '🏷 ' + (doc.guide.emittedBy || '—') +
+      (doc.client ? '🏪 ' + doc.client + ' · ' : '') +
+      '🏷 ' + (doc.guide.emittedBy || '—') + ' · ' + (doc.guide.emittedAt || '') +
     '</div>' +
     '</div>' +
     '<div style="text-align:right">' +
@@ -1933,7 +1964,7 @@ function exportGuiaExcelById(orderId) {
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [{wch:8},{wch:12},{wch:28},{wch:16},{wch:8},{wch:12},{wch:14},{wch:12}];
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Guia');
-  XLSX.writeFile(wb, `guia_${doc.id}.xlsx`);
+  XLSX.writeFile(wb, 'Guia_' + doc.id + '.xlsx');
   toast('Excel exportado', 'win');
 }
 
@@ -2187,7 +2218,7 @@ function exportPutawayExcel() {
     ['Posicao','SKU','Nome','Marca','ML','Qty pedida','Qty colocada','Estado']];
   putawayLines.forEach(l=>{ const i=skuInfo(l.sku); rows.push([l.position,l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,l.qtyDone||0,l.status==='confirmed'?'Confirmado':'Pendente']); });
   const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Devolucao');
-  XLSX.writeFile(wb,'devolucao_'+doc.id+'.xlsx');toast('Excel exportado','win');
+  XLSX.writeFile(wb,'Guia_'+doc.id+'.xlsx');toast('Excel exportado','win');
 }
 
 // Legacy stubs (no longer used but kept to avoid reference errors)
@@ -2553,7 +2584,7 @@ const LANGS = {
 
 let currentLang = 'pt';
 
-function t(key) {
+function tr(key) {
   return (LANGS[currentLang] && LANGS[currentLang][key]) || LANGS['pt'][key] || key;
 }
 
@@ -2561,21 +2592,23 @@ function setLang(lang) {
   currentLang = lang;
   // Save per user
   if (currentUser) localStorage.setItem('wms_lang_' + currentUser.name, lang);
-  // Update nav buttons
+  // Update nav buttons (desktop + mobile)
   ['pt','en','es'].forEach(l => {
     const b = document.getElementById('lang-'+l);
     if (b) b.classList.toggle('active', l===lang);
+    const bm = document.getElementById('lang-'+l+'-mob');
+    if (bm) bm.classList.toggle('active', l===lang);
   });
   // Update all data-i elements
   document.querySelectorAll('[data-i]').forEach(el => {
     const key = el.getAttribute('data-i');
-    const val = t(key);
+    const val = tr(key);
     if (val) el.textContent = val;
   });
   // Update tooltips
   document.querySelectorAll('[data-tip-i]').forEach(el => {
     const key = el.getAttribute('data-tip-i');
-    const val = t(key);
+    const val = tr(key);
     if (val) el.setAttribute('data-tip', val);
   });
   // Re-render dynamic content
@@ -2587,7 +2620,7 @@ function setLang(lang) {
   renderSkuDb();
   // Update login subtitle
   const sub = document.querySelector('#loginScreen [style*="margin-bottom:40px"]');
-  if (sub) sub.textContent = t('login_who');
+  if (sub) sub.textContent = tr('login_who');
   // Update page titles/subs
   applyStaticTranslations();
 }
@@ -2606,8 +2639,8 @@ function applyStaticTranslations() {
     if (!page) return;
     const title = page.querySelector('.page-title');
     const sub = page.querySelector('.page-sub');
-    if (title) title.textContent = t(titleKey);
-    if (sub) sub.textContent = t(subKey);
+    if (title) title.textContent = tr(titleKey);
+    if (sub) sub.textContent = tr(subKey);
   });
   // Nav tabs
   const navMap = {
@@ -2616,7 +2649,7 @@ function applyStaticTranslations() {
   };
   document.querySelectorAll('[data-page]').forEach(btn => {
     const key = navMap[btn.getAttribute('data-page')];
-    if (key) btn.childNodes.forEach(n => { if (n.nodeType===3 && n.textContent.trim()) n.textContent = t(key); });
+    if (key) btn.childNodes.forEach(n => { if (n.nodeType===3 && n.textContent.trim()) n.textContent = tr(key); });
   });
 }
 
@@ -2678,6 +2711,36 @@ function importBackup() {
   reader.readAsText(file);
 }
 
+
+// ══ MOBILE MENU ══
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobileMenu');
+  const overlay = document.getElementById('mobileMenuOverlay');
+  const open = menu.style.display === 'flex';
+  menu.style.display = open ? 'none' : 'flex';
+  overlay.style.display = open ? 'none' : 'block';
+}
+function closeMobileMenu() {
+  document.getElementById('mobileMenu').style.display = 'none';
+  document.getElementById('mobileMenuOverlay').style.display = 'none';
+}
+function importBackupMob() {
+  const file = document.getElementById('restoreFileMob').files[0];
+  if (!file) return;
+  document.getElementById('restoreFile').files; // reuse main handler logic
+  // Create a fake event on the main file input
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  document.getElementById('restoreFile').files = dt.files;
+  importBackup();
+}
+
+function syncMobileLang() {
+  ['pt','en','es'].forEach(l => {
+    const b = document.getElementById('lang-'+l+'-mob');
+    if (b) b.classList.toggle('active', l === currentLang);
+  });
+}
 // ══ INIT ══
 function _initApp() {
   renderAvatarGrid();
