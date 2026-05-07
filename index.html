@@ -995,11 +995,13 @@ function renderStock(){
 
   function th(col, label, tip, style) {
     const cls = stockSort.col===col ? (stockSort.dir===1?'asc':'desc') : '';
-    const ts = tip ? ' data-tip="'+tip+'"' : '';
-    const st = style ? ' style="'+style+'"' : '';
-    return '<th class="th-sort '+cls+'"'+ts+st+' onclick="sortStock(''+col+'')">'+label+'</th>';
+    let h = '<th class="th-sort '+cls+'" onclick="sortStock(this.dataset.col)" data-col="'+col+'"';
+    if(tip) h += ' data-tip="'+tip+'"';
+    if(style) h += ' style="'+style+'"';
+    h += '>'+label+'</th>';
+    return h;
   }
-  let thCols = '<tr>'+
+    let thCols = '<tr>'+
     th('sku','SKU')+
     th('name','Produto')+
     th('position','Posição')+
