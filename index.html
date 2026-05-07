@@ -201,31 +201,111 @@ select.input{appearance:auto;cursor:pointer;}
 
 <!-- LOGIN SCREEN -->
 <div id="loginScreen" style="position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
-  <div style="max-width:480px;width:100%;text-align:center;">
+  <div style="max-width:520px;width:100%;text-align:center;">
     <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:26px;color:#fff;margin-bottom:6px;">Armazém<span style="color:#e8420a;">·</span>NH</div>
     <div style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:40px;">Quem és tu?</div>
-
-    <!-- Avatar grid -->
-    <div id="avatarGrid" style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;"></div>
-    <script>if(typeof renderAvatarGrid==="function")renderAvatarGrid();</script>
-
-    <!-- Outro option -->
-    <div id="outroSection" style="display:none;margin-bottom:16px;">
-      <div style="background:rgba(255,255,255,.08);border-radius:12px;padding:20px;">
+    <div id="avatarGrid" style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;min-height:100px;"></div>
+    <div id="outroSection" style="display:none;">
+      <div style="background:rgba(255,255,255,.08);border-radius:12px;padding:20px;max-width:300px;margin:0 auto;">
         <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">Outro utilizador</div>
-        <input id="loginName" class="input input-sans" placeholder="O teu nome..."
-          style="font-size:15px;padding:11px 14px;margin-bottom:10px;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;"
-          onkeydown="if(event.key==='Enter')doLoginName()">
+        <input id="loginName" placeholder="O teu nome..."
+          style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:11px 14px;font-size:15px;color:#fff;outline:none;margin-bottom:10px;font-family:'Barlow',sans-serif;box-sizing:border-box;">
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" style="flex:1;color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2);" onclick="hideOutro()">← Voltar</button>
-          <button class="btn btn-primary" style="flex:1;" onclick="doLoginName()">Entrar →</button>
+          <button onclick="hideOutro()" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,255,255,.2);border-radius:7px;color:rgba(255,255,255,.7);cursor:pointer;font-size:13px;font-family:'Barlow',sans-serif;">← Voltar</button>
+          <button onclick="doLoginName()" style="flex:1;padding:10px;background:#e8420a;border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;font-family:'Barlow',sans-serif;">Entrar →</button>
         </div>
       </div>
     </div>
-
-    <div id="loginError" style="color:#fca5a5;font-size:12px;margin-bottom:10px;display:none;">Introduz o teu nome.</div>
+    <div id="loginError" style="color:#fca5a5;font-size:12px;margin-top:10px;display:none;">Introduz o teu nome.</div>
   </div>
 </div>
+
+<!-- Self-contained login script — runs immediately after its own HTML -->
+<script>
+(function() {
+  var PRESET = [
+    {name:'Constança', initials:'Co', color:'#7c3aed'},
+    {name:'Nuno F.',   initials:'NF', color:'#e8420a'},
+    {name:'Ricardo',   initials:'Ri', color:'#0ea5e9'}
+  ];
+
+  function getExtras() {
+    try { return JSON.parse(localStorage.getItem('wms_extra_users')||'[]'); } catch(e){ return []; }
+  }
+  function saveExtra(name) {
+    if (PRESET.find(function(u){return u.name===name;})) return;
+    var ex = getExtras().filter(function(n){return n!==name;});
+    ex.unshift(name); ex.splice(8,99);
+    localStorage.setItem('wms_extra_users', JSON.stringify(ex));
+  }
+  function initials(name) {
+    var p = name.trim().split(/\s+/);
+    return p.length>=2 ? (p[0][0]+p[p.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+  }
+  function color(name) {
+    var colors=['#059669','#d97706','#db2777','#0284c7','#7c3aed','#dc2626','#16a34a','#ea580c'];
+    var h=0; for(var i=0;i<name.length;i++) h=name.charCodeAt(i)+((h<<5)-h);
+    return colors[Math.abs(h)%colors.length];
+  }
+
+  window._renderAvatarGrid = function() {
+    var grid = document.getElementById('avatarGrid');
+    if (!grid) return;
+    var extras = getExtras();
+    var all = PRESET.slice();
+    extras.forEach(function(n){ all.push({name:n, initials:initials(n), color:color(n), isExtra:true}); });
+    all.push({name:'__outro__', initials:'+', color:'rgba(255,255,255,.15)', label:'Outro'});
+
+    grid.innerHTML = all.map(function(u) {
+      var isOutro = u.name==='__outro__';
+      var label = u.label||u.name;
+      var click = isOutro ? 'window._showOutro()' : 'window._loginPreset('+JSON.stringify(u.name)+')';
+      var removeBtn = u.isExtra
+        ? '<button onclick="event.stopPropagation();window._removeExtra('+JSON.stringify(u.name)+')" style="position:absolute;top:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;line-height:18px;text-align:center;padding:0;">✕</button>'
+        : '';
+      return '<div onclick="'+click+'" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;" onmouseover="this.children[0].style.transform='scale(1.1)'" onmouseout="this.children[0].style.transform='scale(1)'">'
+        +'<div style="position:relative;transition:transform .15s;">'
+        +'<div style="width:72px;height:72px;border-radius:50%;background:'+u.color+';display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:'+(u.initials&&u.initials.length>2?'15':'20')+'px;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);">'+u.initials+'</div>'
+        +removeBtn+'</div>'
+        +'<div style="font-size:13px;color:rgba(255,255,255,'+(isOutro?'.4':'.9')+');font-family:'Barlow',sans-serif;font-weight:600;max-width:80px;text-align:center;">'+label+'</div>'
+        +'</div>';
+    }).join('');
+  };
+
+  window._loginPreset = function(name) { window._doLoginFn(name); };
+  window._showOutro = function() {
+    document.getElementById('avatarGrid').style.display='none';
+    document.getElementById('outroSection').style.display='block';
+    setTimeout(function(){document.getElementById('loginName').focus();},80);
+  };
+  window.hideOutro = function() {
+    document.getElementById('avatarGrid').style.display='flex';
+    document.getElementById('outroSection').style.display='none';
+    document.getElementById('loginName').value='';
+    document.getElementById('loginError').style.display='none';
+  };
+  window.doLoginName = function() {
+    var name = document.getElementById('loginName').value.trim();
+    if (!name) { document.getElementById('loginError').style.display='block'; return; }
+    saveExtra(name);
+    window._doLoginFn(name);
+  };
+  window._removeExtra = function(name) {
+    var ex = getExtras().filter(function(n){return n!==name;});
+    localStorage.setItem('wms_extra_users', JSON.stringify(ex));
+    window._renderAvatarGrid();
+  };
+
+  // Wire up Enter key
+  setTimeout(function(){
+    var inp = document.getElementById('loginName');
+    if(inp) inp.addEventListener('keydown', function(e){ if(e.key==='Enter') window.doLoginName(); });
+  }, 100);
+
+  // Render immediately
+  window._renderAvatarGrid();
+})();
+</script>
 
 <!-- USER BADGE (top right of nav) -->
 <div id="userBadge" style="display:none;position:fixed;top:0;right:0;z-index:101;padding:8px 14px;background:rgba(26,26,46,.95);border-bottom-left-radius:10px;display:flex;align-items:center;gap:8px;">
@@ -1945,7 +2025,8 @@ function saveExtraUser(name) {
 function removeExtraUser(name) {
   const extras = getExtraUsers().filter(u => u !== name);
   localStorage.setItem('wms_extra_users', JSON.stringify(extras));
-  renderAvatarGrid();
+  if(window._renderAvatarGrid) window._renderAvatarGrid();
+  else renderAvatarGrid();
 }
 
 function getInitials(name) {
@@ -1963,6 +2044,7 @@ function getExtraColor(name) {
 }
 
 function renderAvatarGrid() {
+  if(window._renderAvatarGrid) { window._renderAvatarGrid(); return; }
   const grid = document.getElementById('avatarGrid');
   if (!grid) return;
   const extras = getExtraUsers();
@@ -2009,10 +2091,12 @@ function doLoginName() {
   _doLogin(name);
 }
 
-// Legacy alias (called from session restore)
+// Legacy alias
 function doLogin() { doLoginName(); }
+window._doLoginFn = _doLogin;
 
 function _doLogin(name) {
+  window._doLoginFn = _doLogin;
   currentUser = {name, loginAt: new Date().toLocaleString('pt-PT')};
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('userBadge').style.display='flex';
