@@ -3,1122 +3,1974 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WMS · Picking & Stock</title>
+<title>Armazém NH</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Firebase compat (global SDK — no ES modules needed) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+const _fbConfig = {
+  apiKey: "AIzaSyBe5UBlSgcpmkkz8TqD5VHYjZjd91wpL-Q",
+  authDomain: "armazem-nh-45a2f.firebaseapp.com",
+  projectId: "armazem-nh-45a2f",
+  storageBucket: "armazem-nh-45a2f.firebasestorage.app",
+  messagingSenderId: "968387603023",
+  appId: "1:968387603023:web:0dd44c9149e6516167583a"
+};
+firebase.initializeApp(_fbConfig);
+window._db = firebase.firestore();
+window._dbReady = true;
+</script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #f4f3ef;
-  --surface: #ffffff;
-  --surface2: #eceae4;
-  --border: #d8d5cc;
-  --accent: #e8420a;
-  --accent2: #1a1a2e;
-  --text: #1a1a1a;
-  --muted: #888880;
-  --success: #2d8a4e;
-  --warning: #d97706;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'Barlow', sans-serif;
-}
+:root{--bg:#f4f3ef;--surface:#fff;--surface2:#eceae4;--border:#d8d5cc;--accent:#e8420a;--accent2:#1a1a2e;--purple:#7c3aed;--sky:#0ea5e9;--text:#1a1a1a;--muted:#888880;--success:#2d8a4e;--mono:'IBM Plex Mono',monospace;--sans:'Barlow',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+.nav{background:var(--accent2);padding:0 16px;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.15);overflow-x:auto;}
+.nav-logo{font-family:var(--mono);font-weight:700;font-size:14px;color:#fff;padding:16px 16px 16px 0;border-right:1px solid rgba(255,255,255,.1);margin-right:6px;white-space:nowrap;flex-shrink:0;}
+.nav-logo span{color:var(--accent);}
+.nav-tab{background:none;border:none;color:rgba(255,255,255,.5);font-family:var(--sans);font-weight:600;font-size:12px;padding:0 11px;cursor:pointer;transition:all .2s;border-bottom:3px solid transparent;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;flex-shrink:0;}
+.nav-tab:hover{color:rgba(255,255,255,.8);}
+.nav-tab.active{color:#fff;border-bottom-color:var(--accent);}
+.nav-tab.t-ret.active{border-bottom-color:#a78bfa;}
+.nav-tab.t-po.active{border-bottom-color:#fbbf24;}
+.nav-tab.t-db.active{border-bottom-color:#38bdf8;}
+.page{display:none;padding:20px 16px;max-width:860px;margin:0 auto;}
+.page.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);gap:10px;flex-wrap:wrap;}
+.card-title{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);white-space:nowrap;}
+.card-body{padding:16px;}
+.page-title{font-size:24px;font-weight:800;letter-spacing:-.8px;margin-bottom:2px;}
+.page-sub{color:var(--muted);font-size:13px;margin-bottom:18px;}
+label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:5px;}
+.field{margin-bottom:12px;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:7px;font-family:var(--sans);font-weight:600;font-size:12px;cursor:pointer;transition:all .18s;border:none;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{background:#c73508;}
+.btn-dark{background:var(--accent2);color:#fff;}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--text);}.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-success{background:var(--success);color:#fff;}
+.btn-purple{background:var(--purple);color:#fff;}
+.btn-sky{background:var(--sky);color:#fff;}
+.btn-danger{background:#dc2626;color:#fff;}
+.btn-warn{background:#d97706;color:#fff;}.btn-warn:hover{background:#b45309;}
+.btn-sm{padding:5px 9px;font-size:11px;}
+.input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;transition:border-color .2s;}
+.input:focus{border-color:var(--accent);}
+.input::placeholder{color:var(--muted);font-family:var(--sans);}
+.input-sans{font-family:var(--sans);}
+select.input{appearance:auto;cursor:pointer;}
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  min-height: 100vh;
-}
+/* PREP PICKING */
+.prep-line{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;background:var(--surface);transition:all .2s;}
+.prep-line.confirmed{border-color:#6ee7b7;background:#f0fdf4;}
+.prep-line.ruptura{border-color:#fca5a5;background:#fff5f5;}
+.prep-line.skipped{opacity:.55;}
+.prep-line-header{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.prep-line-body{padding:0 14px 14px;display:none;}
+.prep-line.active .prep-line-body{display:block;}
+.prep-pos{color:#fff;font-family:var(--mono);font-weight:700;font-size:13px;padding:5px 12px;border-radius:6px;background:var(--accent);min-width:60px;text-align:center;}
+.prep-pos.confirmed{background:var(--success);}
+.prep-pos.ruptura{background:#dc2626;}
+.prep-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;transition:all .2s;}
+.prep-check.done{background:var(--success);border-color:var(--success);color:#fff;}
+.prep-check.rupt{background:#dc2626;border-color:#dc2626;color:#fff;}
+.ruptura-badge{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
 
-/* NAV */
-.nav {
-  background: var(--accent2);
-  padding: 0 20px;
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-}
+/* PO */
+.po-status-open{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
+.po-status-closed{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;}
+.diff-ok{background:#d1fae5;color:#065f46;}
+.diff-over{background:#dbeafe;color:#1e40af;}
+.diff-under{background:#fee2e2;color:#991b1b;}
+.diff-missing{background:#f3f4f6;color:#374151;}
+.semaphore{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
 
-.nav-logo {
-  font-family: var(--mono);
-  font-weight: 700;
-  font-size: 15px;
-  color: #fff;
-  padding: 16px 20px 16px 0;
-  border-right: 1px solid rgba(255,255,255,0.1);
-  margin-right: 8px;
-  letter-spacing: -0.5px;
-  white-space: nowrap;
-}
-.nav-logo span { color: var(--accent); }
+/* SEARCH PANEL */
+.search-panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:60px 16px 20px;}
+.search-panel-overlay.open{display:flex;}
+.search-panel{background:var(--surface);border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;max-height:80vh;display:flex;flex-direction:column;}
+.search-panel-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.search-panel-head input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--sans);font-size:14px;color:var(--text);outline:none;}
+.search-panel-head input:focus{border-color:var(--accent);}
+.search-panel-results{overflow-y:auto;flex:1;}
+.sp-item{padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;transition:background .15s;}
+.sp-item:hover,.sp-item.sp-hi{background:var(--surface2);}
+.sp-item:last-child{border-bottom:none;}
+.sp-sku{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--accent);min-width:80px;}
+.sp-name{font-weight:600;font-size:13px;}
+.sp-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.sp-ean{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.sp-empty{padding:32px;text-align:center;color:var(--muted);font-size:13px;}
+.sp-qty-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface2);}
+.sp-selected-info{flex:1;font-size:13px;}
+.sp-selected-sku{font-family:var(--mono);font-weight:700;color:var(--accent);}
 
-.nav-tab {
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.5);
-  font-family: var(--sans);
-  font-weight: 600;
-  font-size: 13px;
-  padding: 0 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 3px solid transparent;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-.nav-tab:hover { color: rgba(255,255,255,0.8); }
-.nav-tab.active { color: #fff; border-bottom-color: var(--accent); }
-
-/* PAGES */
-.page { display: none; padding: 24px 20px; max-width: 800px; margin: 0 auto; }
-.page.active { display: block; }
-
-/* CARDS */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-
-.card-header {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--surface2);
-}
-
-.card-title {
-  font-weight: 700;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--muted);
-}
-
-.card-body { padding: 18px; }
-
-/* PAGE TITLES */
-.page-title {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.8px;
-  margin-bottom: 4px;
-}
-.page-sub {
-  color: var(--muted);
-  font-size: 14px;
-  margin-bottom: 20px;
-}
-
-/* BUTTONS */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 16px;
-  border-radius: 8px;
-  font-family: var(--sans);
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.18s;
-  border: none;
-}
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: #c73508; }
-.btn-dark { background: var(--accent2); color: #fff; }
-.btn-dark:hover { background: #0f0f1e; }
-.btn-ghost { background: none; border: 1px solid var(--border); color: var(--text); }
-.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-.btn-success { background: var(--success); color: #fff; }
-.btn-success:hover { background: #236e3e; }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.btn-danger { background: #dc2626; color: #fff; }
-
-/* INPUTS */
-.input {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--text);
-  outline: none;
-  transition: border-color 0.2s;
-}
-.input:focus { border-color: var(--accent); }
-.input::placeholder { color: var(--muted); font-family: var(--sans); }
-
-.input-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-label {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--muted);
-  display: block;
-  margin-bottom: 6px;
-}
-
-.field { margin-bottom: 14px; }
-
-/* TABLES */
-.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
-.tbl th {
-  background: var(--surface2);
-  padding: 8px 12px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-}
-.tbl td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-.tbl tr:last-child td { border-bottom: none; }
-.tbl tr:hover td { background: var(--bg); }
-
-.mono { font-family: var(--mono); }
-
-.badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: var(--mono);
-}
-.badge-orange { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
-.badge-green { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
-.badge-red { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-.badge-blue { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
-
-/* SCANNER */
-.scanner-box {
-  border: 2px dashed var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  position: relative;
-  background: #000;
-  aspect-ratio: 16/9;
-  display: none;
-}
-.scanner-box.visible { display: block; }
-.scanner-box video { width: 100%; height: 100%; object-fit: cover; }
-.scanner-box canvas { display: none; }
-
-.scan-aim {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.aim-rect {
-  width: 60%;
-  aspect-ratio: 3/1;
-  border: 2px solid var(--accent);
-  border-radius: 6px;
-  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
-  position: relative;
-}
-.aim-line {
-  position: absolute;
-  left: 0; right: 0;
-  top: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  animation: aimline 1.8s linear infinite;
-}
-@keyframes aimline {
-  from { top: 0; } to { top: 100%; }
-}
-
-/* TOAST */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  padding: 10px 22px;
-  border-radius: 30px;
-  font-weight: 700;
-  font-size: 13px;
-  font-family: var(--mono);
-  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  z-index: 999;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.toast.show { transform: translateX(-50%) translateY(0); }
-.toast-ok { background: var(--accent2); color: #fff; }
-.toast-err { background: #dc2626; color: #fff; }
-.toast-win { background: var(--success); color: #fff; }
-
-/* STATUS DOT */
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
-.dot.on { background: var(--success); animation: blink 1.5s infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-/* EMPTY */
-.empty {
-  text-align: center;
-  padding: 32px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.8;
-}
-.empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
-
-/* PICKING SHEET */
-.pick-header {
-  background: var(--accent2);
-  color: #fff;
-  border-radius: 10px;
-  padding: 16px 20px;
-  margin-bottom: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-.pick-order-id {
-  font-family: var(--mono);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
-.pick-meta { font-size: 12px; opacity: 0.6; margin-top: 2px; }
-
-.pick-row {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  margin-bottom: 10px;
-  overflow: hidden;
-  background: var(--surface);
-}
-.pick-sku-bar {
-  background: var(--surface2);
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-}
-.pick-sku { font-family: var(--mono); font-weight: 700; font-size: 14px; }
-.pick-total { font-size: 12px; color: var(--muted); }
-
-.pick-location {
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.pick-location:last-child { border-bottom: none; }
-.loc-badge {
-  background: var(--accent);
-  color: #fff;
-  font-family: var(--mono);
-  font-weight: 700;
-  font-size: 13px;
-  padding: 4px 12px;
-  border-radius: 6px;
-  min-width: 80px;
-  text-align: center;
-}
-.loc-qty { font-size: 14px; font-weight: 700; }
-.loc-arrow { color: var(--muted); font-size: 18px; }
-
-/* ALERTS */
-.alert {
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-.alert-warn { background: #fef3c7; border: 1px solid #fcd34d; color: #78350f; }
-.alert-info { background: #dbeafe; border: 1px solid #93c5fd; color: #1e3a8a; }
-.alert-err { background: #fee2e2; border: 1px solid #fca5a5; color: #7f1d1d; }
-
-/* STOCK LOW */
-.low-stock td { background: #fff7ed !important; }
-
-/* DIVIDER */
-.divider { height: 1px; background: var(--border); margin: 16px 0; }
-
-/* QTY INPUT */
-.qty-input {
-  width: 70px;
-  text-align: center;
-  font-family: var(--mono);
-  font-weight: 700;
-  font-size: 15px;
-}
-
-/* TABS inside page */
-.inner-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 16px;
-  background: var(--surface2);
-  border-radius: 10px;
-  padding: 4px;
-}
-.inner-tab {
-  flex: 1;
-  background: none;
-  border: none;
-  border-radius: 7px;
-  padding: 8px;
-  font-family: var(--sans);
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  color: var(--muted);
-  transition: all 0.18s;
-}
-.inner-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-
-/* CONFIRM overlay */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 200;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.overlay.visible { display: flex; }
-.modal {
-  background: var(--surface);
-  border-radius: 16px;
-  padding: 28px;
-  max-width: 480px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
-.modal-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-.modal-sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
-
-@media(max-width:480px) {
-  .nav-logo { font-size: 13px; padding-right: 12px; }
-  .nav-tab { padding: 0 10px; font-size: 11px; }
-  .page { padding: 16px 12px; }
-}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{background:var(--surface2);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--bg);}
+.mono{font-family:var(--mono);}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
+.bdg-or{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
+.bdg-gn{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;}
+.bdg-rd{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
+.bdg-bl{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;}
+.bdg-gy{background:#f3f4f6;color:#374151;border:1px solid #d1d5db;}
+.bdg-mx{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff;}
+.bdg-ex{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;}
+.bdg-sk{background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;}
+.bdg-pu{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;}
+.s-open{background:#dbeafe;color:#1e40af;}
+.s-picked{background:#d1fae5;color:#065f46;}
+.s-cancelled{background:#fee2e2;color:#991b1b;}
+.s-returned{background:#ede9fe;color:#5b21b6;}
+.scanner-box{border:2px dashed var(--border);border-radius:10px;overflow:hidden;position:relative;background:#000;aspect-ratio:16/9;display:none;}
+.scanner-box.visible{display:block;}
+.scanner-box video{width:100%;height:100%;object-fit:cover;}
+.scanner-box canvas{display:none;}
+.scan-aim{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.aim-rect{width:60%;aspect-ratio:3/1;border:2px solid var(--accent);border-radius:6px;box-shadow:0 0 0 2000px rgba(0,0,0,.35);position:relative;}
+.aim-line{position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:aimline 1.8s linear infinite;}
+@keyframes aimline{from{top:0}to{top:100%}}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);padding:9px 20px;border-radius:30px;font-weight:700;font-size:12px;font-family:var(--mono);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.t-ok{background:var(--accent2);color:#fff;}.t-err{background:#dc2626;color:#fff;}.t-win{background:var(--success);color:#fff;}.t-pur{background:var(--purple);color:#fff;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;}
+.dot.on{background:var(--success);animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.empty{text-align:center;padding:28px;color:var(--muted);font-size:13px;line-height:1.8;}
+.empty-icon{font-size:26px;margin-bottom:8px;opacity:.4;}
+.alert{padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
+.a-warn{background:#fef3c7;border:1px solid #fcd34d;color:#78350f;}
+.a-info{background:#dbeafe;border:1px solid #93c5fd;color:#1e3a8a;}
+.a-pur{background:#ede9fe;border:1px solid #c4b5fd;color:#4c1d95;}
+.a-sky{background:#e0f2fe;border:1px solid #7dd3fc;color:#0c4a6e;}
+.pick-hdr{border-radius:10px;padding:16px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:flex-start;}
+.ph-ord{background:var(--accent2);color:#fff;}.ph-ret{background:var(--purple);color:#fff;}
+.pick-id{font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:-.5px;}
+.pick-meta{font-size:11px;opacity:.6;margin-top:2px;}
+.pick-row{border:1px solid var(--border);border-radius:9px;margin-bottom:8px;overflow:hidden;background:var(--surface);}
+.pick-loc{padding:10px 14px;display:flex;align-items:center;gap:10px;}
+.loc-bdg{color:#fff;font-family:var(--mono);font-weight:700;font-size:12px;padding:4px 10px;border-radius:5px;min-width:72px;text-align:center;}
+.lb-ord{background:var(--accent);}.lb-ret{background:var(--purple);}
+.loc-arrow{color:var(--muted);font-size:16px;}
+.loc-qty{font-size:14px;font-weight:700;white-space:nowrap;}
+.inner-tabs{display:flex;gap:3px;margin-bottom:14px;background:var(--surface2);border-radius:9px;padding:3px;}
+.inner-tab{flex:1;background:none;border:none;border-radius:6px;padding:7px;font-family:var(--sans);font-weight:600;font-size:12px;cursor:pointer;color:var(--muted);transition:all .18s;}
+.inner-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+.overlay.visible{display:flex;}
+.modal{background:var(--surface);border-radius:14px;padding:24px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:6px;}
+.modal-sub{color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:flex-end;}
+.g-add{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:flex-end;}
+.qty-in{width:68px;text-align:center;font-family:var(--mono);font-weight:700;font-size:14px;}
+.divider{height:1px;background:var(--border);margin:14px 0;}
+/* AUTOCOMPLETE */
+.ac-wrap{position:relative;}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:50;max-height:260px;overflow-y:auto;display:none;}
+.ac-list.open{display:block;}
+.ac-item{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.hi{background:var(--surface2);}
+.ac-sku{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--accent);}
+.ac-name{font-size:13px;font-weight:600;margin:1px 0;}
+.ac-meta{font-size:11px;color:var(--muted);}
+/* SKU pill */
+.sku-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;}
+.sku-pname{font-weight:600;}
+.sku-pbrand{color:var(--muted);}
+/* STEPS */
+.steps{display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.step-ind{flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;transition:all .2s;}
+.si-active{background:var(--accent);color:#fff;}
+.si-done{background:var(--success);color:#fff;}
+.si-idle{background:var(--surface2);color:var(--muted);}
+@media(max-width:520px){.g4,.g3{grid-template-columns:1fr 1fr;}.nav-logo{font-size:11px;}}
 </style>
 </head>
 <body>
 
-<nav class="nav">
-  <div class="nav-logo">WMS<span>·</span>pick</div>
-  <button class="nav-tab active" onclick="showPage('stock')">📦 Stock</button>
-  <button class="nav-tab" onclick="showPage('orders')">🛒 Encomendas</button>
-  <button class="nav-tab" onclick="showPage('picking')">📋 Picking</button>
-</nav>
-
-<!-- ═══════════════════════════════════ STOCK PAGE ═══ -->
-<div class="page active" id="page-stock">
-  <div class="page-title">Stock</div>
-  <div class="page-sub">Gestão de SKUs e posições de armazém</div>
-
-  <!-- Import -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Importar Excel</span>
-      <button class="btn btn-ghost btn-sm" onclick="downloadStockTemplate()">⬇ Template</button>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.4);text-align:center;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:22px;color:#1a1a2e;margin-bottom:4px;">Armazém<span style="color:#e8420a;">·</span>NH</div>
+    <div style="font-size:13px;color:#888;margin-bottom:28px;">Identifica-te para continuar</div>
+    <div style="text-align:left;margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#888;display:block;margin-bottom:5px;">O teu nome</label>
+      <input id="loginName" class="input input-sans" placeholder="ex: João Silva" style="font-size:15px;padding:11px 14px;"
+        onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <div class="card-body">
-      <div class="alert alert-info">
-        ℹ️ O ficheiro Excel deve ter 3 colunas: <strong>SKU | Posição | Quantidade</strong> — uma linha por posição.
-      </div>
-      <label>Ficheiro Excel (.xlsx)</label>
-      <input type="file" id="stockFile" accept=".xlsx,.xls" onchange="importStock()" class="input" style="padding:8px;">
-    </div>
-  </div>
-
-  <!-- Add manual -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Adicionar / Editar entrada</span>
-    </div>
-    <div class="card-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:flex-end;">
-        <div class="field" style="margin:0">
-          <label>SKU</label>
-          <input class="input mono" id="s-sku" placeholder="ex: SKU-001">
-        </div>
-        <div class="field" style="margin:0">
-          <label>Posição</label>
-          <input class="input mono" id="s-pos" placeholder="ex: A-01-02">
-        </div>
-        <div class="field" style="margin:0">
-          <label>Quantidade</label>
-          <input class="input mono qty-input" id="s-qty" type="number" min="0" placeholder="0">
-        </div>
-        <button class="btn btn-primary" onclick="addStockEntry()">＋ Adicionar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Stock table -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Stock atual</span>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input class="input" id="stockSearch" placeholder="Pesquisar SKU ou posição..." style="width:180px;padding:6px 10px;font-size:12px;" oninput="renderStock()">
-        <button class="btn btn-ghost btn-sm" onclick="clearStock()">🗑 Limpar</button>
-      </div>
-    </div>
-    <div style="overflow-x:auto;">
-      <table class="tbl" id="stockTable">
-        <thead>
-          <tr>
-            <th>SKU</th>
-            <th>Posição</th>
-            <th>Quantidade</th>
-            <th>Estado</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="stockBody">
-          <tr><td colspan="5"><div class="empty"><div class="empty-icon">📦</div>Sem stock carregado.<br>Importa um Excel ou adiciona manualmente.</div></td></tr>
-        </tbody>
-      </table>
+    <div id="loginError" style="color:#dc2626;font-size:12px;margin-bottom:10px;display:none;">Introduz o teu nome para entrar.</div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;" onclick="doLogin()">Entrar →</button>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee;">
+      <div id="loginRecentList" style="font-size:12px;color:#888;"></div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════ ORDERS PAGE ═══ -->
-<div class="page" id="page-orders">
-  <div class="page-title">Encomendas</div>
-  <div class="page-sub">Cria e gere pedidos de picking</div>
+<!-- USER BADGE (top right of nav) -->
+<div id="userBadge" style="display:none;position:fixed;top:0;right:0;z-index:101;padding:8px 14px;background:rgba(26,26,46,.95);border-bottom-left-radius:10px;display:flex;align-items:center;gap:8px;">
+  <span id="userBadgeName" style="font-size:12px;color:#fff;font-family:'Barlow',sans-serif;font-weight:600;"></span>
+  <button onclick="doLogout()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;">Sair</button>
+</div>
 
-  <!-- Order list -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Encomendas ativas</span>
-      <button class="btn btn-primary btn-sm" onclick="newOrder()">＋ Nova encomenda</button>
+<!-- AUDIT LOG PANEL -->
+<div class="overlay" id="auditOverlay">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-title">📋 Registo de atividade</div>
+    <div style="max-height:420px;overflow-y:auto;margin:0 -24px;padding:0 24px;">
+      <table class="tbl" style="font-size:12px;">
+        <thead><tr><th>Hora</th><th>Utilizador</th><th>Ação</th><th>Detalhe</th></tr></thead>
+        <tbody id="auditBody"></tbody>
+      </table>
     </div>
-    <div id="ordersList">
-      <div class="empty"><div class="empty-icon">🛒</div>Sem encomendas.<br>Clica em "Nova encomenda" para começar.</div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost btn-sm" onclick="exportAuditExcel()">⬇ Exportar</button>
+      <button class="btn btn-ghost" onclick="closeAuditLog()">Fechar</button>
     </div>
   </div>
+</div>
 
-  <!-- Active order editor -->
+<nav class="nav">
+  <div class="nav-logo">Armazém<span>·</span>NH</div>
+  <button class="nav-tab t-db active" data-page="skudb"   onclick="showPage('skudb',this)">🗃 Base SKUs</button>
+  <button class="nav-tab"             data-page="stock"   onclick="showPage('stock',this)">📦 Stock</button>
+  <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)">🛒 Encomendas</button>
+  <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)">📋 Picking</button>
+  <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)">↩️ Devoluções</button>
+  <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)">📍 Colocação</button>
+  <button class="nav-tab t-po"          data-page="po"      onclick="showPage('po',this)">📥 Encomendas Fornecedor</button>
+  <button class="nav-tab"                  data-page="prep"    onclick="showPage('prep',this)" id="nav-prep">🚶 Preparação</button>
+  <button class="nav-tab" onclick="showAuditLog()" style="margin-left:auto;">📋 Atividade</button>
+</nav>
+
+<!-- SKU DB -->
+<div class="page active" id="page-skudb">
+  <div class="page-title">Base de Dados de SKUs</div>
+  <div class="page-sub">Catálogo central — EAN, nome, marca, categoria, ml</div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()">⬇ Template</button></div>
+    <div class="card-body">
+      <div class="alert a-sky">ℹ️ Colunas: <strong>SKU | EAN | Nome | Marca | Categoria | ML</strong></div>
+      <input type="file" id="skuFile" accept=".xlsx,.xls" onchange="importSkuDb()" class="input" style="padding:8px;">
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Adicionar manualmente</span></div>
+    <div class="card-body">
+      <div class="g3">
+        <div class="field" style="margin:0"><label>SKU</label><input class="input mono" id="db-sku" placeholder="SKU-001"></div>
+        <div class="field" style="margin:0"><label>EAN</label><input class="input mono" id="db-ean" placeholder="3614273..."></div>
+        <div class="field" style="margin:0"><label>Nome</label><input class="input input-sans" id="db-name" placeholder="Nome do produto"></div>
+      </div>
+      <div class="g3" style="margin-top:8px;">
+        <div class="field" style="margin:0"><label>Marca</label><input class="input input-sans" id="db-brand" placeholder="Marca"></div>
+        <div class="field" style="margin:0"><label>Categoria</label><input class="input input-sans" id="db-cat" placeholder="Categoria"></div>
+        <div class="field" style="margin:0"><label>ML / Tamanho</label><input class="input mono" id="db-ml" placeholder="50ml"></div>
+      </div>
+      <div style="margin-top:10px;"><button class="btn btn-sky" onclick="addSkuEntry()">＋ Adicionar produto</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Catálogo</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input class="input input-sans" id="dbSearch" placeholder="Pesquisar..." style="width:180px;padding:5px 10px;font-size:12px;" oninput="renderSkuDb()">
+        <button class="btn btn-ghost btn-sm" onclick="clearSkuDb()">🗑 Limpar</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;"><table class="tbl">
+      <thead><tr><th>SKU</th><th>EAN</th><th>Nome</th><th>Marca</th><th>Categoria</th><th>ML</th><th></th></tr></thead>
+      <tbody id="skuDbBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- STOCK -->
+<div class="page" id="page-stock">
+  <div class="page-title">Stock</div>
+  <div class="page-sub">Posições e quantidades</div>
+  <div class="inner-tabs">
+    <button class="inner-tab active" id="stab-excel-btn"     onclick="switchStockMode('excel')">📂 Excel</button>
+    <button class="inner-tab"        id="stab-inventory-btn" onclick="switchStockMode('inventory')">🔍 Inventário</button>
+    <button class="inner-tab"        id="stab-manual-btn"    onclick="switchStockMode('manual')">✏️ Manual</button>
+  </div>
+  <!-- EXCEL -->
+  <div id="stab-excel"><div class="card">
+    <div class="card-header"><span class="card-title">Importar Excel</span><button class="btn btn-ghost btn-sm" onclick="dlStockTpl()">⬇ Template</button></div>
+    <div class="card-body">
+      <div class="alert a-info">ℹ️ Colunas: <strong>SKU | Posição | Quantidade | Tipo de Caixa</strong></div>
+      <input type="file" id="stockFile" accept=".xlsx,.xls" onchange="importStock()" class="input" style="padding:8px;">
+    </div>
+  </div></div>
+  <!-- INVENTORY -->
+  <div id="stab-inventory" style="display:none;">
+    <div class="steps"><div class="step-ind si-active" id="inv-s1">1 · Posição</div><div class="step-ind si-idle" id="inv-s2">2 · Contagem</div></div>
+    <div id="inv-step1" class="card">
+      <div class="card-header"><span class="card-title">Seleciona a posição</span></div>
+      <div class="card-body">
+        <div class="alert a-info" style="font-size:12px;">Posições carregadas do stock existente.</div>
+        <div class="field"><label>Posição</label>
+          <select class="input mono" id="inv-pos-select" style="font-size:15px;padding:11px 12px;" onchange="previewPos()"><option value="">— Escolhe —</option></select>
+        </div>
+        <div id="inv-pos-preview" style="display:none;background:var(--surface2);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.7;"></div>
+        <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="startInvCount()">Iniciar contagem →</button>
+      </div>
+    </div>
+    <div id="inv-step2" class="card" style="display:none;">
+      <div class="card-header">
+        <div><span class="card-title">Contagem</span><div class="mono" style="font-size:16px;font-weight:700;color:var(--accent);margin-top:2px;" id="inv-pos-label"></div></div>
+        <div style="display:flex;gap:6px;align-items:center;"><span class="badge" id="inv-box-label"></span><button class="btn btn-ghost btn-sm" onclick="backInvStep1()">← Posição</button></div>
+      </div>
+      <div class="card-body">
+        <div id="invScannerBox" class="scanner-box"><div id="invInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+          <button class="btn btn-dark btn-sm" id="btnInvScan" onclick="toggleScan('inv')">📷 Scanner</button>
+          <span class="dot" id="invScanDot"></span><span style="font-size:11px;color:var(--muted)" id="invScanStatus">Inativo</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input class="input mono" id="inv-sku-manual" placeholder="SKU ou EAN direto..." onkeydown="if(event.key==='Enter')invManualAdd()">
+          <button class="btn btn-dark btn-sm" onclick="openSearchPanel('inv')">🔍</button>
+          <button class="btn btn-primary btn-sm" onclick="invManualAdd()">＋</button>
+        </div>
+        <div class="alert a-info" style="font-size:12px;">Scanner e pesquisa adicionam 1 unidade. Edita na tabela.</div>
+        <div style="overflow-x:auto;margin-top:8px;"><table class="tbl">
+          <thead><tr><th>SKU</th><th>Produto</th><th>Contado</th><th>Anterior</th><th>Dif.</th><th></th></tr></thead>
+          <tbody id="invLinesBody"></tbody>
+        </table></div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-success" onclick="commitInv(false)">✓ Guardar</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="commitInv(true)">✓ Guardar e próxima posição</button>
+        </div>
+      </div>
+    </div>
+    <div id="inv-session" class="card" style="display:none;margin-top:8px;">
+      <div class="card-header"><span class="card-title">Sessão</span><button class="btn btn-ghost btn-sm" onclick="clearInvSess()">Limpar</button></div>
+      <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Posição</th><th>Tipo</th><th>SKUs</th><th>Unid.</th><th></th></tr></thead><tbody id="invSessBody"></tbody></table></div>
+    </div>
+  </div>
+  <!-- MANUAL -->
+  <div id="stab-manual" style="display:none;"><div class="card">
+    <div class="card-header"><span class="card-title">Entrada manual</span></div>
+    <div class="card-body">
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+        <button class="btn btn-sky" onclick="openSearchPanel('stock')">🔍 Pesquisar produto</button>
+        <span style="font-size:12px;color:var(--muted)">ou introduz o SKU abaixo</span>
+      </div>
+      <div class="g4">
+        <div class="field" style="margin:0"><label>SKU</label><input class="input mono" id="s-sku" placeholder="SKU" readonly style="background:var(--surface2);"></div>
+        <div class="field" style="margin:0"><label>Posição</label><input class="input mono" id="s-pos" placeholder="A-01-02"></div>
+        <div class="field" style="margin:0"><label>Quantidade</label><input class="input mono qty-in" id="s-qty" type="number" min="0" placeholder="0" style="width:100%;"></div>
+        <div></div>
+      </div>
+      <div class="g2" style="margin-top:8px;">
+        <div class="field" style="margin:0"><label>Tipo de caixa</label>
+          <select class="input" id="s-boxtype"><option value="mista">📦 Mista</option><option value="exclusiva">🔹 Exclusiva</option></select>
+        </div>
+        <div style="display:flex;align-items:flex-end;"><button class="btn btn-primary" style="width:100%;" onclick="addStockEntry()">＋ Adicionar</button></div>
+      </div>
+    </div>
+  </div></div>
+  <!-- TABLE -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Stock atual</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input class="input input-sans" id="stockSearch" placeholder="Pesquisar..." style="width:140px;padding:5px 10px;font-size:12px;" oninput="renderStock()">
+        <select class="input input-sans" id="stockFilter" style="width:110px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
+          <option value="">Todos</option><option value="mista">Mistas</option><option value="exclusiva">Exclusivas</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="clearStock()">🗑</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;"><table class="tbl">
+      <thead><tr><th>SKU</th><th>Produto</th><th>Posição</th><th>Qty</th><th>Tipo</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="stockBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ORDERS -->
+<div class="page" id="page-orders">
+  <div class="page-title">Encomendas</div><div class="page-sub">Pedidos de picking</div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')">＋ Nova</button></div>
+    <div id="ordersList"><div class="empty"><div class="empty-icon">🛒</div>Sem encomendas.</div></div>
+  </div>
   <div id="orderEditor" style="display:none;">
     <div class="card">
       <div class="card-header">
-        <span class="card-title" id="editorTitle">Editar encomenda</span>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost btn-sm" onclick="closeEditor()">Fechar</button>
-          <button class="btn btn-success btn-sm" onclick="generatePicking()">📋 Gerar Picking</button>
+        <span class="card-title" id="editorTitle">Encomenda</span>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="closeEd('order')">Fechar</button>
+          <button class="btn btn-success btn-sm" onclick="emitirGuia()">📋 Emitir Guia</button>
         </div>
       </div>
       <div class="card-body">
-
+        <div class="field"><label>Cliente</label><input class="input input-sans" id="o-client" placeholder="Nome do cliente..." oninput="updClient('order')"></div>
         <div class="inner-tabs">
-          <button class="inner-tab active" onclick="switchOrderTab('scanner')">📷 Scanner</button>
-          <button class="inner-tab" onclick="switchOrderTab('manual')">⌨️ Manual</button>
-          <button class="inner-tab" onclick="switchOrderTab('import')">📂 Importar</button>
+          <button class="inner-tab active" onclick="switchTab('order','scanner')">📷 Scanner</button>
+          <button class="inner-tab" onclick="switchTab('order','search')">🔍 Pesquisa</button>
+          <button class="inner-tab" onclick="switchTab('order','manual')">⌨️ Manual</button>
+          <button class="inner-tab" onclick="switchTab('order','import')">📂 Import</button>
         </div>
-
-        <!-- Scanner tab -->
         <div id="otab-scanner">
-          <div id="orderScannerBox" class="scanner-box">
-            <div id="orderInteractive"></div>
-            <div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div>
+          <div id="orderScannerBox" class="scanner-box"><div id="orderInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
+          <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:10px;align-items:center;">
+            <button class="btn btn-dark btn-sm" id="btnOrderScan" onclick="toggleScan('order')">📷 Iniciar</button>
+            <span class="dot" id="orderScanDot"></span><span style="font-size:11px;color:var(--muted)" id="orderScanStatus">Inativo</span>
           </div>
-          <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
-            <button class="btn btn-dark" id="btnOrderScan" onclick="toggleOrderScanner()">📷 Iniciar Scanner</button>
-            <span class="dot" id="orderScanDot"></span>
-            <span style="font-size:12px;color:var(--muted)" id="orderScanStatus">Scanner inativo</span>
-          </div>
-          <div class="divider"></div>
-          <div class="alert alert-info" style="font-size:12px;">
-            Cada leitura adiciona 1 unidade do SKU. Podes ajustar a quantidade na tabela abaixo.
+          <div class="alert a-info" style="font-size:12px;">Cada leitura adiciona 1 unidade.</div>
+        </div>
+        <div id="otab-search" style="display:none;">
+          <div style="padding:20px 0;text-align:center;">
+            <button class="btn btn-primary" style="padding:12px 28px;font-size:14px;" onclick="openSearchPanel('order')">🔍 Abrir pesquisa de produtos</button>
+            <div style="font-size:12px;color:var(--muted);margin-top:10px;">Pesquisa por nome, marca, categoria, EAN ou SKU.<br>Seleciona o produto e indica a quantidade.</div>
           </div>
         </div>
-
-        <!-- Manual tab -->
         <div id="otab-manual" style="display:none;">
-          <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:flex-end;">
-            <div class="field" style="margin:0">
-              <label>SKU</label>
-              <input class="input mono" id="o-sku" placeholder="Código ou SKU...">
-            </div>
-            <div class="field" style="margin:0">
-              <label>Qty</label>
-              <input class="input mono qty-input" id="o-qty" type="number" min="1" value="1">
-            </div>
-            <button class="btn btn-primary" onclick="addOrderLine()">＋</button>
+          <div class="g-add">
+            <div class="field" style="margin:0"><label>SKU / EAN</label><input class="input mono" id="o-sku" placeholder="Código..."></div>
+            <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="o-qty" type="number" min="1" value="1" style="width:100%;"></div>
+            <button class="btn btn-primary" onclick="addDocLine('order')">＋</button>
           </div>
         </div>
-
-        <!-- Import tab -->
         <div id="otab-import" style="display:none;">
-          <div class="alert alert-info" style="font-size:12px;">
-            Excel com 2 colunas: <strong>SKU | Quantidade</strong>
-          </div>
-          <input type="file" id="orderFile" accept=".xlsx,.xls" onchange="importOrder()" class="input" style="padding:8px;">
+          <div class="alert a-info" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('order')">⬇ Template</button></div>
+          <input type="file" id="orderFile" accept=".xlsx,.xls" onchange="importDocLines('order')" class="input" style="padding:8px;">
         </div>
-
-        <!-- Order lines -->
         <div class="divider"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <strong style="font-size:13px;">Linhas da encomenda</strong>
-          <span id="orderLineCount" style="font-size:12px;color:var(--muted)">0 SKUs</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong style="font-size:13px;">Linhas</strong><span id="orderLineCount" style="font-size:11px;color:var(--muted)">0</span>
         </div>
-        <div style="overflow-x:auto;">
-          <table class="tbl">
-            <thead>
-              <tr><th>SKU</th><th>Quantidade pedida</th><th>Stock disponível</th><th></th></tr>
-            </thead>
-            <tbody id="orderLinesBody">
-              <tr><td colspan="4"><div class="empty" style="padding:16px;">Sem linhas.</div></td></tr>
-            </tbody>
-          </table>
-        </div>
+        <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>SKU</th><th>Qty</th><th>Stock</th><th></th></tr></thead><tbody id="orderLinesBody"></tbody></table></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════ PICKING PAGE ═══ -->
+<!-- PICKING -->
 <div class="page" id="page-picking">
-  <div class="page-title">Folha de Picking</div>
-  <div class="page-sub">Lista de recolha ordenada por posição</div>
+  <div class="page-title">Guia de Picking</div>
+  <div class="page-sub">Guias emitidas — prontas para preparação</div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Guias emitidas</span>
+    </div>
+    <div id="pickingGuidesList"><div class="empty"><div class="empty-icon">📋</div>Nenhuma guia emitida. Vai a <strong>Encomendas</strong> e clica em "Emitir Guia".</div></div>
+  </div>
+</div>
 
-  <div id="pickingEmpty" class="card">
-    <div class="card-body">
-      <div class="empty">
-        <div class="empty-icon">📋</div>
-        Ainda não geraste nenhuma folha de picking.<br>
-        Vai a <strong>Encomendas</strong> e clica em "Gerar Picking".
+<!-- RETURNS -->
+<div class="page" id="page-returns">
+  <div class="page-title">Devoluções</div><div class="page-sub">Artigos devolvidos</div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Devoluções</span><button class="btn btn-purple btn-sm" onclick="newDoc('return')">＋ Nova</button></div>
+    <div id="returnsList"><div class="empty"><div class="empty-icon">↩️</div>Sem devoluções.</div></div>
+  </div>
+  <div id="returnEditor" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" id="retEdTitle">Devolução</span>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="closeEd('return')">Fechar</button>
+          <button class="btn btn-purple btn-sm" onclick="genDoc('return')">📍 Gerar Colocação</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field"><label>Cliente</label><input class="input input-sans" id="r-client" placeholder="Nome do cliente..." oninput="updClient('return')"></div>
+        <div class="inner-tabs">
+          <button class="inner-tab active" onclick="switchTab('return','scanner')">📷 Scanner</button>
+          <button class="inner-tab" onclick="switchTab('return','search')">🔍 Pesquisa</button>
+          <button class="inner-tab" onclick="switchTab('return','manual')">⌨️ Manual</button>
+          <button class="inner-tab" onclick="switchTab('return','import')">📂 Import</button>
+        </div>
+        <div id="rtab-scanner">
+          <div id="returnScannerBox" class="scanner-box"><div id="returnInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
+          <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:10px;align-items:center;">
+            <button class="btn btn-dark btn-sm" id="btnReturnScan" onclick="toggleScan('return')">📷 Iniciar</button>
+            <span class="dot" id="returnScanDot"></span><span style="font-size:11px;color:var(--muted)" id="returnScanStatus">Inativo</span>
+          </div>
+          <div class="alert a-pur" style="font-size:12px;">Lê o código de cada artigo devolvido.</div>
+        </div>
+        <div id="rtab-search" style="display:none;">
+          <div style="padding:20px 0;text-align:center;">
+            <button class="btn btn-purple" style="padding:12px 28px;font-size:14px;" onclick="openSearchPanel('return')">🔍 Abrir pesquisa de produtos</button>
+            <div style="font-size:12px;color:var(--muted);margin-top:10px;">Pesquisa por nome, marca, categoria, EAN ou SKU.<br>Seleciona o produto e indica a quantidade.</div>
+          </div>
+        </div>
+        <div id="rtab-manual" style="display:none;">
+          <div class="g-add">
+            <div class="field" style="margin:0"><label>SKU / EAN</label><input class="input mono" id="r-sku" placeholder="Código..."></div>
+            <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="r-qty" type="number" min="1" value="1" style="width:100%;"></div>
+            <button class="btn btn-purple" onclick="addDocLine('return')">＋</button>
+          </div>
+        </div>
+        <div id="rtab-import" style="display:none;">
+          <div class="alert a-pur" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('return')">⬇ Template</button></div>
+          <input type="file" id="returnFile" accept=".xlsx,.xls" onchange="importDocLines('return')" class="input" style="padding:8px;">
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong style="font-size:13px;">Artigos</strong><span id="returnLineCount" style="font-size:11px;color:var(--muted)">0</span>
+        </div>
+        <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>SKU</th><th>Qty</th><th>Stock</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PUTAWAY -->
+<div class="page" id="page-putaway">
+  <div class="page-title">Folha de Colocação</div><div class="page-sub">Arrumação de devoluções</div>
+  <div id="putawayEmpty" class="card"><div class="card-body"><div class="empty"><div class="empty-icon">📍</div>Vai a <strong>Devoluções</strong> → "Gerar Colocação".</div></div></div>
+  <div id="putawayContent" style="display:none;">
+    <div id="putawaySheet"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn btn-purple" onclick="confirmDoc('return')">✓ Confirmar</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportDocXls('return')">⬇ Excel</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- PREPARAÇÃO PAGE -->
+<div class="page" id="page-prep">
+  <div class="page-title">Preparação</div>
+  <div class="page-sub">Picking em curso — linha a linha</div>
+
+  <!-- Active picking session -->
+  <div id="prepEmpty" class="card">
+    <div class="card-body"><div class="empty"><div class="empty-icon">🚶</div>Seleciona uma guia na lista de <strong>Picking</strong> para iniciar a preparação.</div></div>
+  </div>
+
+  <div id="prepContent" style="display:none;">
+    <!-- Header -->
+    <div class="pick-hdr ph-ord" id="prepHeader" style="margin-bottom:14px;"></div>
+
+    <!-- Progress bar -->
+    <div style="background:var(--surface2);border-radius:30px;height:8px;margin-bottom:6px;overflow:hidden;">
+      <div id="prepProgress" style="height:100%;background:var(--success);border-radius:30px;transition:width .4s;width:0%;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:16px;">
+      <span id="prepProgressLabel">0 / 0 linhas confirmadas</span>
+      <span id="prepRupturaLabel" style="color:#dc2626;display:none;"></span>
+    </div>
+
+    <!-- Lines -->
+    <div id="prepLines"></div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+      <button class="btn btn-success" style="flex:1;" onclick="finalizePicking()">✓ Finalizar e deduzir stock</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcel()">⬇ Excel</button>
+      <button class="btn btn-danger btn-sm" onclick="cancelPrep()">✕ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PO PAGE -->
+<div class="page" id="page-po">
+  <div class="page-title">Encomendas ao Fornecedor</div>
+  <div class="page-sub">POs em aberto — comparação com stock recebido</div>
+
+  <!-- PO LIST + NEW -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Purchase Orders</span>
+      <button class="btn btn-warn btn-sm" onclick="newPO()">＋ Nova PO</button>
+    </div>
+    <div id="poList"><div class="empty"><div class="empty-icon">📥</div>Sem encomendas ao fornecedor.</div></div>
+  </div>
+
+  <!-- PO EDITOR -->
+  <div id="poEditor" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <span class="card-title" id="poEdTitle">PO</span>
+          <div class="mono" style="font-size:11px;color:var(--muted);margin-top:2px;" id="poEdRef"></div>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="closePOEditor()">Fechar</button>
+          <button class="btn btn-warn btn-sm" onclick="showPOComparison()">📊 Comparar com stock</button>
+          <button class="btn btn-success btn-sm" onclick="closePO()">✓ Fechar PO</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="g2">
+          <div class="field"><label>Referência PO</label><input class="input input-sans" id="po-ref" placeholder="ex: PO-2026-001" oninput="updPO()"></div>
+          <div class="field"><label>Fornecedor</label><input class="input input-sans" id="po-supplier" placeholder="Nome do fornecedor" oninput="updPO()"></div>
+        </div>
+        <div class="inner-tabs">
+          <button class="inner-tab active" onclick="switchPOTab('search')">🔍 Pesquisa</button>
+          <button class="inner-tab" onclick="switchPOTab('manual')">⌨️ Manual</button>
+          <button class="inner-tab" onclick="switchPOTab('import')">📂 Importar</button>
+        </div>
+        <div id="potab-search">
+          <div style="padding:16px 0;text-align:center;">
+            <button class="btn btn-warn" style="padding:12px 28px;font-size:14px;" onclick="openSearchPanel('po')">🔍 Pesquisar produto</button>
+            <div style="font-size:12px;color:var(--muted);margin-top:10px;">Seleciona o produto e indica a quantidade encomendada.</div>
+          </div>
+        </div>
+        <div id="potab-manual" style="display:none;">
+          <div class="g-add">
+            <div class="field" style="margin:0"><label>SKU / EAN</label><input class="input mono" id="po-sku" placeholder="Código..."></div>
+            <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="po-qty" type="number" min="1" value="1" style="width:100%;"></div>
+            <button class="btn btn-warn" onclick="addPOLine()">＋</button>
+          </div>
+        </div>
+        <div id="potab-import" style="display:none;">
+          <div class="alert a-info" style="font-size:12px;">Excel: <strong>SKU | EAN | Quantidade</strong> (SKU e EAN podem ser usados em alternativa) &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlPOTpl()">⬇ Template</button></div>
+          <input type="file" id="poFile" accept=".xlsx,.xls" onchange="importPOLines()" class="input" style="padding:8px;">
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong style="font-size:13px;">Linhas encomendadas</strong>
+          <span id="poLineCount" style="font-size:11px;color:var(--muted)">0 SKUs</span>
+        </div>
+        <div style="overflow-x:auto;"><table class="tbl">
+          <thead><tr><th>SKU</th><th>Produto</th><th>Qty encomendada</th><th>Stock atual</th><th></th></tr></thead>
+          <tbody id="poLinesBody"></tbody>
+        </table></div>
       </div>
     </div>
   </div>
 
-  <div id="pickingContent" style="display:none;">
-    <div id="pickingSheet"></div>
-    <div style="display:flex;gap:10px;margin-top:16px;">
-      <button class="btn btn-success" onclick="confirmPicking()">✓ Confirmar picking e atualizar stock</button>
-      <button class="btn btn-ghost" onclick="exportPickingExcel()">⬇ Exportar Excel</button>
+  <!-- COMPARISON PANEL -->
+  <div id="poComparison" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📊 Comparação PO vs Stock recebido</span>
+        <button class="btn btn-ghost btn-sm" onclick="exportDiffExcel()">⬇ Exportar Excel</button>
+      </div>
+      <div class="card-body">
+        <div class="alert a-info" style="font-size:12px;">
+          Compara as quantidades encomendadas ao fornecedor com o stock atualmente registado. Usa esta vista <strong>antes de confirmar a entrada</strong> para detetar divergências.
+        </div>
+        <div id="poCompSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
+        <div style="overflow-x:auto;"><table class="tbl">
+          <thead><tr><th>SKU</th><th>Produto</th><th>Encomendado</th><th>Stock atual</th><th>Diferença</th><th>Estado</th></tr></thead>
+          <tbody id="poCompBody"></tbody>
+        </table></div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- CONFIRM MODAL -->
-<div class="overlay" id="confirmModal">
-  <div class="modal">
-    <div class="modal-title">Confirmar picking</div>
-    <div class="modal-sub" id="confirmModalText">O stock vai ser atualizado com base nas quantidades desta folha de picking. Esta ação não pode ser desfeita.</div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-success" onclick="doConfirmPicking()">✓ Confirmar e atualizar stock</button>
+<!-- SEARCH PANEL -->
+<div class="search-panel-overlay" id="spOverlay" onclick="spClose(event)">
+  <div class="search-panel" onclick="event.stopPropagation()">
+    <div class="search-panel-head">
+      <input id="spInput" placeholder="Nome, marca, categoria, EAN, SKU..." autocomplete="off"
+        oninput="spSearch()" onkeydown="spKey(event)">
+      <button class="btn btn-ghost btn-sm" onclick="closeSearchPanel()">✕</button>
+    </div>
+    <div class="search-panel-results" id="spResults">
+      <div class="sp-empty">Começa a escrever para pesquisar no catálogo...</div>
+    </div>
+    <div class="sp-qty-row" id="spQtyRow" style="display:none;">
+      <div class="sp-selected-info">
+        <div class="sp-selected-sku" id="spSelSku"></div>
+        <div style="font-size:11px;color:var(--muted)" id="spSelName"></div>
+      </div>
+      <label style="margin:0;text-transform:none;font-size:12px;color:var(--muted);">Qty</label>
+      <input class="input qty-in" id="spQty" type="number" min="1" value="1" style="width:68px;">
+      <button class="btn btn-primary" id="spAddBtn" onclick="spConfirm()">＋ Adicionar</button>
     </div>
   </div>
 </div>
-
+<div class="overlay" id="modal">
+  <div class="modal"><div class="modal-title" id="mTitle"></div><div class="modal-sub" id="mText"></div><div class="modal-actions" id="mActs"></div></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════ STATE ══════════════════════
-let stock = JSON.parse(localStorage.getItem('wms_stock') || '[]');
-// [{id, sku, position, qty}]
+// STATE — synced with Firebase Firestore
+let skuDb  = [];
+let stock  = [];
+let orders = [];
+let rets   = [];
+let pos_orders = [];
+let currentUser = null; // {name, loginAt}
+let auditLog = []; // local session audit trail
 
-let orders = JSON.parse(localStorage.getItem('wms_orders') || '[]');
-// [{id, name, lines:[{sku,qty}], status}]
+let activeOrd=null, activeRet=null;
+let scanning={order:false,return:false,inv:false};
+let scanCD={order:false,return:false,inv:false};
+let curPick=null;
+let invPos='',invBox='mista',invLines=[],invSess=[];
 
-let activeOrderId = null;
-let currentPicking = null; // {orderId, lines:[{sku,position,qty}]}
-let orderScanning = false;
-let orderScanCooldown = false;
-
-function saveStock() { localStorage.setItem('wms_stock', JSON.stringify(stock)); }
-function saveOrders() { localStorage.setItem('wms_orders', JSON.stringify(orders)); }
-
-// ══════════════════════ NAV ══════════════════════
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  event.currentTarget.classList.add('active');
-  if (id === 'stock') renderStock();
-  if (id === 'orders') renderOrders();
-  if (orderScanning && id !== 'orders') stopOrderScanner();
+// ── Firebase helpers (compat SDK) ──
+async function fbSet(col, id, data) {
+  if (!window._db) return;
+  await window._db.collection(col).doc(id).set({...data, _updated: firebase.firestore.FieldValue.serverTimestamp()});
+}
+async function fbDel(col, id) {
+  if (!window._db) return;
+  await window._db.collection(col).doc(id).delete();
+}
+function fbListen(col, cb) {
+  if (!window._db) return;
+  return window._db.collection(col).onSnapshot(snap => {
+    const items = snap.docs.map(d => ({...d.data(), id: d.id}));
+    cb(items);
+  });
 }
 
-// ══════════════════════ TOAST ══════════════════════
-function toast(msg, type='ok') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast toast-${type} show`;
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), 2500);
-}
+// ── Save functions (write to Firestore) ──
+async function saveDb()  { await fbSet('config', 'skuDb',  {items: skuDb}); }
+async function saveStk() { await fbSet('config', 'stock',  {items: stock}); }
+async function saveOrd() { await fbSet('config', 'orders', {items: orders}); }
+async function saveRet() { await fbSet('config', 'returns',{items: rets}); }
+async function savePO()  { await fbSet('config', 'pos',    {items: pos_orders}); }
 
-// ══════════════════════ STOCK ══════════════════════
-function importStock() {
-  const file = document.getElementById('stockFile').files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(e.target.result, {type:'array'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, {header:1});
-    let added = 0;
-    rows.forEach((row, i) => {
-      if (i === 0 && isNaN(row[2])) return; // skip header
-      const sku = String(row[0] || '').trim();
-      const pos = String(row[1] || '').trim();
-      const qty = parseInt(row[2]) || 0;
-      if (!sku || !pos) return;
-      // merge if exists
-      const existing = stock.find(s => s.sku === sku && s.position === pos);
-      if (existing) { existing.qty = qty; }
-      else { stock.push({id: Date.now()+Math.random(), sku, position: pos, qty}); added++; }
-    });
-    saveStock();
-    renderStock();
-    toast(`Stock importado: ${added} entradas`, 'win');
+// ── Audit log ──
+function logAction(action, detail) {
+  if (!currentUser) return;
+  const entry = {
+    ts: new Date().toLocaleString('pt-PT'),
+    tsRaw: Date.now(),
+    user: currentUser.name,
+    action,
+    detail: detail || ''
   };
-  reader.readAsArrayBuffer(file);
-}
-
-function addStockEntry() {
-  const sku = document.getElementById('s-sku').value.trim().toUpperCase();
-  const pos = document.getElementById('s-pos').value.trim().toUpperCase();
-  const qty = parseInt(document.getElementById('s-qty').value) || 0;
-  if (!sku || !pos) { toast('SKU e posição obrigatórios', 'err'); return; }
-  const existing = stock.find(s => s.sku === sku && s.position === pos);
-  if (existing) { existing.qty = qty; toast('Entrada atualizada'); }
-  else { stock.push({id: Date.now(), sku, position: pos, qty}); toast('Entrada adicionada', 'win'); }
-  saveStock();
-  renderStock();
-  document.getElementById('s-sku').value = '';
-  document.getElementById('s-pos').value = '';
-  document.getElementById('s-qty').value = '';
-}
-
-function deleteStockEntry(id) {
-  stock = stock.filter(s => s.id !== id);
-  saveStock();
-  renderStock();
-}
-
-function renderStock() {
-  const q = document.getElementById('stockSearch').value.toLowerCase();
-  const filtered = stock.filter(s =>
-    s.sku.toLowerCase().includes(q) || s.position.toLowerCase().includes(q)
-  );
-  const body = document.getElementById('stockBody');
-  if (!filtered.length) {
-    body.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">📦</div>${stock.length ? 'Sem resultados.' : 'Sem stock carregado.'}</div></td></tr>`;
-    return;
+  auditLog.unshift(entry);
+  // Persist to Firestore (best-effort)
+  if (window._db) {
+    window._db.collection('audit').add(entry).catch(()=>{});
   }
-  // Sort by position
-  filtered.sort((a,b) => a.position.localeCompare(b.position));
-  body.innerHTML = filtered.map(s => {
-    const state = s.qty === 0
-      ? `<span class="badge badge-red">Esgotado</span>`
-      : s.qty <= 5
-      ? `<span class="badge badge-orange">Baixo</span>`
-      : `<span class="badge badge-green">OK</span>`;
-    const cls = s.qty === 0 ? 'low-stock' : '';
-    return `<tr class="${cls}">
-      <td class="mono">${s.sku}</td>
-      <td class="mono">${s.position}</td>
-      <td class="mono" style="font-weight:700;">${s.qty}</td>
-      <td>${state}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="deleteStockEntry(${JSON.stringify(s.id)})">✕</button></td>
-    </tr>`;
-  }).join('');
 }
 
-function clearStock() {
-  if (!confirm(`Apagar todo o stock (${stock.length} entradas)?`)) return;
-  stock = [];
-  saveStock();
-  renderStock();
-  toast('Stock limpo');
+// HELPERS
+function skuInfo(sku){return skuDb.find(d=>d.sku===sku||d.ean===sku)||null;}
+function resolveSku(val){const b=skuDb.find(d=>d.ean===val);return b?b.sku:val.toUpperCase();}
+function skuPill(sku){
+  const i=skuInfo(sku);
+  if(!i) return '<span class="mono" style="font-size:11px;color:var(--muted)">—</span>';
+  return `<span class="sku-pill"><span class="sku-pname">${i.name}</span><span class="sku-pbrand">${i.brand}</span>${i.ml?`<span class="badge bdg-sk" style="font-size:10px">${i.ml}</span>`:''}</span>`;
 }
 
-function downloadStockTemplate() {
-  const ws = XLSX.utils.aoa_to_sheet([
-    ['SKU','Posição','Quantidade'],
-    ['SKU-001','A-01-01',10],
-    ['SKU-001','A-01-02',5],
-    ['SKU-002','B-03-01',20],
-  ]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Stock');
-  XLSX.writeFile(wb, 'template_stock.xlsx');
+// NAV
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='skudb') renderSkuDb();
+  if(id==='stock') renderStock();
+  if(id==='orders') renderDocs('order');
+  if(id==='returns') renderDocs('return');
+  if(id==='po') renderPOList();
+  if(id==='picking') renderPickingGuides();
+  if(id==='prep') renderPrepContent();
+  if(id!=='orders') stopScan('order');
+  if(id!=='returns') stopScan('return');
+  if(id!=='stock') stopScan('inv');
+  closeAc();
 }
 
-// ══════════════════════ ORDERS ══════════════════════
-function newOrder() {
-  const id = 'ORD-' + Date.now();
-  const order = {id, name: id, lines: [], status: 'open', createdAt: new Date().toLocaleString('pt-PT')};
-  orders.unshift(order);
-  saveOrders();
-  renderOrders();
-  openEditor(id);
+// TOAST / MODAL
+function toast(msg,cls='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast t-${cls} show`;
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);
 }
-
-function renderOrders() {
-  const el = document.getElementById('ordersList');
-  if (!orders.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">🛒</div>Sem encomendas.</div>`;
-    return;
-  }
-  el.innerHTML = orders.map(o => {
-    const badge = o.status === 'picked'
-      ? `<span class="badge badge-green">Picked</span>`
-      : `<span class="badge badge-blue">Aberta</span>`;
-    return `<div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;">
-      <div>
-        <div class="mono" style="font-weight:700;font-size:14px;">${o.id}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${o.lines.length} SKUs · ${o.createdAt}</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        ${badge}
-        <button class="btn btn-ghost btn-sm" onclick="openEditor('${o.id}')">✏️ Editar</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteOrder('${o.id}')">✕</button>
-      </div>
-    </div>`;
-  }).join('');
+function showModal(title,text,acts){
+  document.getElementById('mTitle').textContent=title;
+  document.getElementById('mText').textContent=text;
+  const el=document.getElementById('mActs');el.innerHTML='';
+  acts.forEach(a=>{const b=document.createElement('button');b.className='btn '+a.cls;b.textContent=a.lbl;b.onclick=()=>{closeModal();a.fn();};el.appendChild(b);});
+  document.getElementById('modal').classList.add('visible');
 }
+function closeModal(){document.getElementById('modal').classList.remove('visible');}
 
-function deleteOrder(id) {
-  if (!confirm('Apagar encomenda?')) return;
-  orders = orders.filter(o => o.id !== id);
-  if (activeOrderId === id) { activeOrderId = null; document.getElementById('orderEditor').style.display = 'none'; }
-  saveOrders();
-  renderOrders();
+// AUTOCOMPLETE
+let acSel={};
+function acSearch(inpId,lstId){
+  const q=document.getElementById(inpId).value.trim().toLowerCase();
+  const lst=document.getElementById(lstId);
+  if(!q){lst.classList.remove('open');return;}
+  const res=skuDb.filter(d=>[d.sku,d.ean,d.name,d.brand,d.category,d.ml].some(v=>(v||'').toLowerCase().includes(q))).slice(0,12);
+  if(!res.length){lst.classList.remove('open');return;}
+  lst.innerHTML=res.map((d,i)=>`<div class="ac-item" data-sku="${d.sku}" data-i="${i}"
+    onmousedown="acPick('${inpId}','${lstId}','${d.sku}')">
+    <div class="ac-sku">${d.sku}${d.ean?` <span style="color:var(--muted);font-weight:400">· ${d.ean}</span>`:''}</div>
+    <div class="ac-name">${d.name||'—'}</div>
+    <div class="ac-meta">${[d.brand,d.category,d.ml].filter(Boolean).join(' · ')}</div>
+  </div>`).join('');
+  lst.classList.add('open');
 }
-
-function openEditor(id) {
-  activeOrderId = id;
-  const order = orders.find(o => o.id === id);
-  document.getElementById('editorTitle').textContent = order.id;
-  document.getElementById('orderEditor').style.display = 'block';
-  renderOrderLines();
-  document.getElementById('orderEditor').scrollIntoView({behavior:'smooth'});
+function acPick(inpId,lstId,sku){
+  const info=skuInfo(sku);
+  document.getElementById(lstId).classList.remove('open');
+  acSel[inpId]=sku;
+  document.getElementById(inpId).value=info?`${info.name} (${sku})`:sku;
+  const map={'o-search':'o-ac-sku','r-search':'r-ac-sku','s-search':'s-sku'};
+  if(map[inpId]) document.getElementById(map[inpId]).value=sku;
 }
-
-function closeEditor() {
-  document.getElementById('orderEditor').style.display = 'none';
-  activeOrderId = null;
-  stopOrderScanner();
+function acKey(ev,inpId,lstId,onEnter){
+  const lst=document.getElementById(lstId);
+  const items=lst.querySelectorAll('.ac-item');
+  let cur=[...items].findIndex(i=>i.classList.contains('hi'));
+  if(ev.key==='ArrowDown'){ev.preventDefault();cur=Math.min(cur+1,items.length-1);items.forEach((i,x)=>i.classList.toggle('hi',x===cur));}
+  else if(ev.key==='ArrowUp'){ev.preventDefault();cur=Math.max(cur-1,0);items.forEach((i,x)=>i.classList.toggle('hi',x===cur));}
+  else if(ev.key==='Enter'){ev.preventDefault();
+    if(cur>=0&&items[cur]){const s=items[cur].dataset.sku;acPick(inpId,lstId,s);if(onEnter)onEnter(s);}
+    else if(onEnter&&acSel[inpId])onEnter(acSel[inpId]);
+    else if(onEnter)onEnter(null);
+  } else if(ev.key==='Escape') lst.classList.remove('open');
 }
+function closeAc(){document.querySelectorAll('.ac-list').forEach(a=>a.classList.remove('open'));}
+document.addEventListener('click',e=>{if(!e.target.closest('.ac-wrap'))closeAc();});
 
-function switchOrderTab(tab) {
-  ['scanner','manual','import'].forEach(t => {
-    document.getElementById('otab-'+t).style.display = t === tab ? '' : 'none';
-  });
-  document.querySelectorAll('.inner-tab').forEach((b,i) => {
-    b.classList.toggle('active', ['scanner','manual','import'][i] === tab);
-  });
-  if (tab !== 'scanner') stopOrderScanner();
-}
-
-function addOrderLine(skuVal, qtyVal) {
-  const sku = (skuVal || document.getElementById('o-sku').value.trim()).toUpperCase();
-  const qty = parseInt(qtyVal || document.getElementById('o-qty').value) || 1;
-  if (!sku) { toast('SKU obrigatório', 'err'); return; }
-  const order = orders.find(o => o.id === activeOrderId);
-  if (!order) return;
-  const existing = order.lines.find(l => l.sku === sku);
-  if (existing) { existing.qty += qty; }
-  else { order.lines.push({sku, qty}); }
-  saveOrders();
-  renderOrderLines();
-  if (!skuVal) { document.getElementById('o-sku').value = ''; document.getElementById('o-qty').value = 1; }
-}
-
-function removeOrderLine(sku) {
-  const order = orders.find(o => o.id === activeOrderId);
-  if (!order) return;
-  order.lines = order.lines.filter(l => l.sku !== sku);
-  saveOrders();
-  renderOrderLines();
-}
-
-function updateOrderQty(sku, qty) {
-  const order = orders.find(o => o.id === activeOrderId);
-  if (!order) return;
-  const line = order.lines.find(l => l.sku === sku);
-  if (line) { line.qty = parseInt(qty) || 1; saveOrders(); }
-}
-
-function renderOrderLines() {
-  const order = orders.find(o => o.id === activeOrderId);
-  if (!order) return;
-  document.getElementById('orderLineCount').textContent = `${order.lines.length} SKUs`;
-  const body = document.getElementById('orderLinesBody');
-  if (!order.lines.length) {
-    body.innerHTML = `<tr><td colspan="4"><div class="empty" style="padding:16px;">Sem linhas.</div></td></tr>`;
-    return;
-  }
-  body.innerHTML = order.lines.map(l => {
-    const avail = stock.filter(s => s.sku === l.sku).reduce((a,s) => a+s.qty, 0);
-    const enough = avail >= l.qty;
-    const availBadge = avail === 0
-      ? `<span class="badge badge-red">0 unid.</span>`
-      : !enough
-      ? `<span class="badge badge-orange">${avail} unid.</span>`
-      : `<span class="badge badge-green">${avail} unid.</span>`;
-    return `<tr>
-      <td class="mono" style="font-weight:700;">${l.sku}</td>
-      <td><input class="input qty-input" type="number" min="1" value="${l.qty}" onchange="updateOrderQty('${l.sku}',this.value)"></td>
-      <td>${availBadge}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="removeOrderLine('${l.sku}')">✕</button></td>
-    </tr>`;
-  }).join('');
-}
-
-function importOrder() {
-  const file = document.getElementById('orderFile').files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(e.target.result, {type:'array'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, {header:1});
-    rows.forEach((row, i) => {
-      if (i === 0 && isNaN(row[1])) return;
-      const sku = String(row[0] || '').trim().toUpperCase();
-      const qty = parseInt(row[1]) || 1;
-      if (sku) addOrderLine(sku, qty);
+// SKU DB
+function importSkuDb(){
+  const file=document.getElementById('skuFile').files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+    let added=0;
+    rows.forEach((row,i)=>{
+      if(i===0&&typeof row[1]==='string'&&isNaN(row[2]))return;
+      const sku=String(row[0]||'').trim().toUpperCase();if(!sku)return;
+      const entry={sku,ean:String(row[1]||'').trim(),name:String(row[2]||'').trim(),brand:String(row[3]||'').trim(),category:String(row[4]||'').trim(),ml:String(row[5]||'').trim()};
+      const xi=skuDb.findIndex(d=>d.sku===sku);
+      if(xi>=0)skuDb[xi]=entry;else{skuDb.push(entry);added++;}
     });
-    toast('Encomenda importada', 'win');
-  };
-  reader.readAsArrayBuffer(file);
+    saveDb();renderSkuDb();toast(`${added} produtos importados`,'win');
+  };r.readAsArrayBuffer(file);
+}
+function addSkuEntry(){
+  const sku=document.getElementById('db-sku').value.trim().toUpperCase();
+  if(!sku){toast('SKU obrigatório','err');return;}
+  const entry={sku,ean:document.getElementById('db-ean').value.trim(),name:document.getElementById('db-name').value.trim(),brand:document.getElementById('db-brand').value.trim(),category:document.getElementById('db-cat').value.trim(),ml:document.getElementById('db-ml').value.trim()};
+  const xi=skuDb.findIndex(d=>d.sku===sku);
+  if(xi>=0)skuDb[xi]=entry;else skuDb.push(entry);
+  saveDb();renderSkuDb();['db-sku','db-ean','db-name','db-brand','db-cat','db-ml'].forEach(id=>document.getElementById(id).value='');toast('Produto adicionado','win');logAction('SKU adicionado', sku);
+}
+function delSku(sku){skuDb=skuDb.filter(d=>d.sku!==sku);saveDb();renderSkuDb();}
+function renderSkuDb(){
+  const q=document.getElementById('dbSearch').value.toLowerCase();
+  const f=skuDb.filter(d=>!q||[d.sku,d.ean,d.name,d.brand,d.category,d.ml].some(v=>(v||'').toLowerCase().includes(q)));
+  const body=document.getElementById('skuDbBody');
+  if(!f.length){body.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">🗃</div>${skuDb.length?'Sem resultados.':'Base vazia.'}</div></td></tr>`;return;}
+  body.innerHTML=f.map(d=>`<tr>
+    <td class="mono" style="font-weight:700">${d.sku}</td>
+    <td class="mono" style="color:var(--muted)">${d.ean||'—'}</td>
+    <td style="font-weight:600">${d.name||'—'}</td>
+    <td>${d.brand||'—'}</td>
+    <td>${d.category?`<span class="badge bdg-sk">${d.category}</span>`:'—'}</td>
+    <td class="mono">${d.ml||'—'}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="delSku('${d.sku}')">✕</button></td>
+  </tr>`).join('');
+}
+function clearSkuDb(){if(!confirm(`Apagar ${skuDb.length} produtos?`))return;skuDb=[];saveDb();renderSkuDb();toast('Base limpa');}
+function dlSkuTpl(){
+  const ws=XLSX.utils.aoa_to_sheet([['SKU','EAN','Nome','Marca','Categoria','ML'],['SKU-001','3614273123456','Teint Idole Ultra','Lancôme','Base','30ml'],['SKU-002','3605532000001','Rouge Allure','Chanel','Batom','3.5g']]);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'SKUs');XLSX.writeFile(wb,'template_skus.xlsx');
 }
 
-// ══════════════════════ ORDER SCANNER ══════════════════════
-function toggleOrderScanner() {
-  if (orderScanning) stopOrderScanner();
-  else startOrderScanner();
+// STOCK MODE
+function switchStockMode(m){
+  ['excel','inventory','manual'].forEach(x=>{document.getElementById('stab-'+x).style.display=x===m?'':'none';document.getElementById('stab-'+x+'-btn').classList.toggle('active',x===m);});
+  if(m==='inventory')popPosSel();
+  if(m!=='inventory')stopScan('inv');
 }
 
-function startOrderScanner() {
-  document.getElementById('orderScannerBox').classList.add('visible');
-  document.getElementById('orderScanDot').classList.add('on');
-  document.getElementById('orderScanStatus').textContent = 'A iniciar...';
-  document.getElementById('btnOrderScan').textContent = '⏹ Parar';
-  orderScanning = true;
+// INVENTORY
+function invStepUI(n){
+  [1,2].forEach(i=>{document.getElementById('inv-step'+i).style.display=i===n?'':'none';const el=document.getElementById('inv-s'+i);el.className='step-ind '+(i<n?'si-done':i===n?'si-active':'si-idle');});
+}
+function popPosSel(){
+  const sel=document.getElementById('inv-pos-select');
+  const pos=[...new Set(stock.map(s=>s.position))].sort();
+  sel.innerHTML='<option value="">— Escolhe —</option>'+pos.map(p=>`<option value="${p}">${p}</option>`).join('');
+  document.getElementById('inv-pos-preview').style.display='none';
+}
+function previewPos(){
+  const pos=document.getElementById('inv-pos-select').value;
+  const prev=document.getElementById('inv-pos-preview');
+  if(!pos){prev.style.display='none';return;}
+  const entries=stock.filter(s=>s.position===pos);
+  const bt=entries[0]?.boxType||'mista';
+  prev.style.display='';
+  prev.innerHTML=`<strong class="mono">${pos}</strong> · ${bt==='mista'?'📦 Mista':'🔹 Exclusiva'} · ${entries.length} SKUs · ${entries.reduce((a,s)=>a+s.qty,0)} unid.<br>
+    <span style="color:var(--muted);font-size:12px">${entries.map(s=>{const i=skuInfo(s.sku);return `${s.sku}${i?' ('+i.name+')':''}: ${s.qty}`;}).join(' | ')}</span>`;
+}
+function startInvCount(){
+  const pos=document.getElementById('inv-pos-select').value;
+  if(!pos){toast('Seleciona uma posição','err');return;}
+  const entries=stock.filter(s=>s.position===pos);
+  invPos=pos;invBox=entries[0]?.boxType||'mista';
+  invLines=entries.map(e=>({sku:e.sku,qty:0}));
+  document.getElementById('inv-pos-label').textContent=pos;
+  const bl=document.getElementById('inv-box-label');
+  if(invBox==='mista'){bl.textContent='📦 Mista';bl.className='badge bdg-mx';}
+  else{bl.textContent='🔹 Exclusiva';bl.className='badge bdg-ex';}
+  renderInvLines();invStepUI(2);
+  setTimeout(()=>document.getElementById('inv-search').focus(),100);
+}
+function invAddFromAc(sku){
+  if(!sku)return;
+  const ex=invLines.find(l=>l.sku===sku);
+  if(ex)ex.qty++;else invLines.push({sku,qty:1});
+  renderInvLines();document.getElementById('inv-search').value='';acSel['inv-search']=null;toast('✓ '+sku,'win');
+}
+function updInvQty(sku,qty){const l=invLines.find(l=>l.sku===sku);if(l)l.qty=Math.max(0,parseInt(qty)||0);renderInvLines();}
+function rmInvLine(sku){invLines=invLines.filter(l=>l.sku!==sku);renderInvLines();}
+function renderInvLines(){
+  const body=document.getElementById('invLinesBody');
+  if(!invLines.length){body.innerHTML=`<tr><td colspan="6"><div class="empty" style="padding:12px;">Sem artigos.</div></td></tr>`;return;}
+  body.innerHTML=invLines.map(l=>{
+    const prev=stock.filter(s=>s.sku===l.sku&&s.position===invPos).reduce((a,s)=>a+s.qty,0);
+    const diff=l.qty-prev;
+    const db=diff>0?`<span class="badge bdg-gn">+${diff}</span>`:diff<0?`<span class="badge bdg-rd">${diff}</span>`:`<span class="badge bdg-gy">=</span>`;
+    return `<tr><td class="mono" style="font-weight:700">${l.sku}</td><td>${skuPill(l.sku)}</td>
+      <td><input class="input qty-in" type="number" min="0" value="${l.qty}" onchange="updInvQty('${l.sku}',this.value)" style="width:68px;"></td>
+      <td class="mono" style="color:var(--muted)">${prev}</td><td>${db}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="rmInvLine('${l.sku}')">✕</button></td></tr>`;
+  }).join('');
+}
+function backInvStep1(){stopScan('inv');invLines=[];popPosSel();invStepUI(1);}
+function commitInv(andNext){
+  if(!invLines.length){toast('Sem artigos','err');return;}
+  stock=stock.filter(s=>s.position!==invPos);
+  invLines.forEach(l=>{if(l.qty>0)stock.push({id:Date.now()+Math.random(),sku:l.sku,position:invPos,qty:l.qty,boxType:invBox});});
+  saveStk();renderStock();
+  logAction('Inventário confirmado', `Posição ${invPos} · ${invCurrentLines ? invCurrentLines.length : invLines.length} SKUs`);
+  invSess.unshift({position:invPos,boxType:invBox,lines:[...invLines],total:invLines.reduce((a,l)=>a+l.qty,0)});
+  renderInvSess();toast(`✓ ${invPos} guardada`,'win');
+  if(andNext){invLines=[];popPosSel();document.getElementById('inv-pos-preview').style.display='none';invStepUI(1);setTimeout(()=>document.getElementById('inv-pos-select').focus(),100);}
+  else backInvStep1();
+}
+function renderInvSess(){
+  const el=document.getElementById('inv-session');const body=document.getElementById('invSessBody');
+  el.style.display=invSess.length?'':'none';
+  body.innerHTML=invSess.map(s=>{const bb=s.boxType==='mista'?`<span class="badge bdg-mx">Mista</span>`:`<span class="badge bdg-ex">Exclusiva</span>`;
+    return `<tr><td class="mono" style="font-weight:700">${s.position}</td><td>${bb}</td><td class="mono">${s.lines.filter(l=>l.qty>0).length}</td><td class="mono">${s.total}</td><td><span class="badge bdg-gn">✓</span></td></tr>`;}).join('');
+}
+function clearInvSess(){invSess=[];document.getElementById('inv-session').style.display='none';}
 
-  Quagga.init({
-    inputStream: { name:'Live', type:'LiveStream', target: document.querySelector('#orderInteractive'),
-      constraints: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} } },
-    decoder: { readers:['ean_reader','ean_8_reader','upc_reader','code_128_reader','code_39_reader'] },
-    locate: true
-  }, err => {
-    if (err) {
-      toast('Câmara não disponível', 'err');
-      stopOrderScanner();
-      return;
-    }
-    document.getElementById('orderScanStatus').textContent = 'Scanner ativo';
-    Quagga.start();
+// STOCK CRUD
+function importStock(){
+  const file=document.getElementById('stockFile').files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+    let added=0;
+    rows.forEach((row,i)=>{
+      if(i===0&&isNaN(row[2]))return;
+      const sku=resolveSku(String(row[0]||'').trim());
+      const pos=String(row[1]||'').trim().toUpperCase();
+      const qty=parseInt(row[2])||0;
+      const bt=String(row[3]||'').toLowerCase().includes('excl')?'exclusiva':'mista';
+      if(!sku||!pos)return;
+      const ex=stock.find(s=>s.sku===sku&&s.position===pos);
+      if(ex){ex.qty=qty;ex.boxType=bt;}else{stock.push({id:Date.now()+Math.random(),sku,position:pos,qty,boxType:bt});added++;}
+    });
+    saveStk();renderStock();toast(`${added} entradas importadas`,'win');logAction('Stock importado', `${added} entradas`);
+  };r.readAsArrayBuffer(file);
+}
+function stkSelectAc(sku){if(sku)document.getElementById('s-sku').value=sku;}
+function addStockEntry(){
+  const sku=resolveSku(document.getElementById('s-sku').value.trim());
+  const pos=document.getElementById('s-pos').value.trim().toUpperCase();
+  const qty=parseInt(document.getElementById('s-qty').value)||0;
+  const bt=document.getElementById('s-boxtype').value;
+  if(!sku||!pos){toast('SKU e posição obrigatórios','err');return;}
+  const ex=stock.find(s=>s.sku===sku&&s.position===pos);
+  if(ex){ex.qty=qty;ex.boxType=bt;toast('Atualizado');logAction('Stock atualizado',`${sku} @ ${pos} → ${qty}`);}else{stock.push({id:Date.now(),sku,position:pos,qty,boxType:bt});toast('Adicionado','win');logAction('Stock adicionado',`${sku} @ ${pos} qty:${qty}`);}
+  saveStk();renderStock();['s-search','s-sku','s-pos','s-qty'].forEach(id=>document.getElementById(id).value='');
+}
+function delStk(id){stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
+function renderStock(){
+  const q=document.getElementById('stockSearch').value.toLowerCase();
+  const ft=document.getElementById('stockFilter').value;
+  const filtered=stock.filter(s=>{
+    const i=skuInfo(s.sku);const str=[s.sku,s.position,i?.name,i?.brand,i?.category].filter(Boolean).join(' ').toLowerCase();
+    return str.includes(q)&&(!ft||s.boxType===ft);
+  }).sort((a,b)=>a.position.localeCompare(b.position));
+  const body=document.getElementById('stockBody');
+  if(!filtered.length){body.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">📦</div>${stock.length?'Sem resultados.':'Sem stock.'}</div></td></tr>`;return;}
+  body.innerHTML=filtered.map(s=>{
+    const st=s.qty===0?`<span class="badge bdg-rd">Esgotado</span>`:s.qty<=5?`<span class="badge bdg-or">Baixo</span>`:`<span class="badge bdg-gn">OK</span>`;
+    const bb=s.boxType==='mista'?`<span class="badge bdg-mx">Mista</span>`:`<span class="badge bdg-ex">Exclusiva</span>`;
+    return `<tr><td class="mono" style="font-weight:700">${s.sku}</td><td>${skuPill(s.sku)}</td><td class="mono">${s.position}</td>
+      <td class="mono" style="font-weight:700">${s.qty}</td><td>${bb}</td><td>${st}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="delStk(${JSON.stringify(s.id)})">✕</button></td></tr>`;
+  }).join('');
+}
+function clearStock(){if(!confirm(`Apagar ${stock.length} entradas?`))return;stock=[];saveStk();renderStock();toast('Stock limpo');}
+function dlStockTpl(){
+  const ws=XLSX.utils.aoa_to_sheet([['SKU','Posição','Quantidade','Tipo de Caixa'],['SKU-001','A-01-01',10,'Mista'],['SKU-002','B-03-01',20,'Exclusiva']]);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');XLSX.writeFile(wb,'template_stock.xlsx');
+}
+
+// DOCS
+function docSt(t){return t==='order'?orders:rets;}
+function docSv(t){t==='order'?saveOrd():saveRet();}
+function actId(t){return t==='order'?activeOrd:activeRet;}
+function setAct(t,id){if(t==='order')activeOrd=id;else activeRet=id;}
+
+function newDoc(t){
+  const id=(t==='order'?'ORD':'RET')+'-'+Date.now();
+  docSt(t).unshift({id,client:'',lines:[],status:'open',createdAt:new Date().toLocaleString('pt-PT'),snapshot:null});
+  docSv(t);renderDocs(t);openEd(t,id);
+}
+function renderDocs(t){
+  const el=document.getElementById(t==='order'?'ordersList':'returnsList');
+  const st=docSt(t);
+  if(!st.length){el.innerHTML=`<div class="empty"><div class="empty-icon">${t==='order'?'🛒':'↩️'}</div>Sem ${t==='order'?'encomendas':'devoluções'}.</div>`;return;}
+  el.innerHTML=st.map(d=>{
+    const sl={open:'Aberta',picked:'Concluída',cancelled:'Anulada',returned:'Concluída','guia-emitida':'📋 Guia emitida','em-preparacao':'🚶 Em preparação','parcial':'⚠️ Parcial'}[d.status]||d.status;
+    const tq=d.lines.reduce((a,l)=>a+l.qty,0);
+    const canEdit=d.status==='open';
+    return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+      <div><div class="mono" style="font-weight:700;font-size:13px">${d.id}${d.client?` <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· ${d.client}</span>`:''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${d.lines.length} SKUs · ${tq} unid. · ${d.createdAt}</div></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span class="badge s-${d.status}">${sl}</span>
+        ${canEdit?`<button class="btn btn-ghost btn-sm" onclick="openEd('${t}','${d.id}')">✏️</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="delDoc('${t}','${d.id}')">✕</button>
+      </div></div>`;
+  }).join('');
+}
+function delDoc(t,id){
+  if(!confirm('Apagar?'))return;
+  if(t==='order')orders=orders.filter(d=>d.id!==id);else rets=rets.filter(d=>d.id!==id);
+  if(actId(t)===id){setAct(t,null);document.getElementById(t==='order'?'orderEditor':'returnEditor').style.display='none';}
+  docSv(t);renderDocs(t);
+}
+function openEd(t,id){
+  setAct(t,id);const doc=docSt(t).find(d=>d.id===id);
+  document.getElementById(t==='order'?'editorTitle':'retEdTitle').textContent=doc.id;
+  document.getElementById(t==='order'?'o-client':'r-client').value=doc.client||'';
+  const edEl=t==='order'?'orderEditor':'returnEditor';
+  document.getElementById(edEl).style.display='block';
+  renderDocLines(t);document.getElementById(edEl).scrollIntoView({behavior:'smooth'});
+}
+function closeEd(t){document.getElementById(t==='order'?'orderEditor':'returnEditor').style.display='none';setAct(t,null);stopScan(t);}
+function updClient(t){const v=document.getElementById(t==='order'?'o-client':'r-client').value;const d=docSt(t).find(d=>d.id===actId(t));if(d){d.client=v;docSv(t);}}
+function switchTab(t,tab){
+  const p=t==='order'?'o':'r';const tabs=['scanner','search','manual','import'];
+  tabs.forEach(x=>document.getElementById(p+'tab-'+x).style.display=x===tab?'':'none');
+  document.querySelectorAll(`#${t==='order'?'orderEditor':'returnEditor'} .inner-tab`).forEach((b,i)=>b.classList.toggle('active',tabs[i]===tab));
+  if(tab!=='scanner')stopScan(t);
+}
+function addDocLine(t){
+  const se=t==='order'?'o-sku':'r-sku',qe=t==='order'?'o-qty':'r-qty';
+  const sku=resolveSku(document.getElementById(se).value.trim());
+  const qty=parseInt(document.getElementById(qe).value)||1;
+  if(!sku){toast('SKU obrigatório','err');return;}
+  _addLine(t,sku,qty);document.getElementById(se).value='';document.getElementById(qe).value=1;
+}
+function docAddFromAc(t,sku){
+  if(!sku)return;_addLine(t,sku,1);
+  const se=t==='order'?'o-search':'r-search',ae=t==='order'?'o-ac-sku':'r-ac-sku';
+  document.getElementById(se).value='';document.getElementById(ae).value='';acSel[se]=null;
+}
+function docAddManual(t,skuEl,qtyEl){
+  const sku=document.getElementById(skuEl).value.trim();const qty=parseInt(document.getElementById(qtyEl).value)||1;
+  if(!sku){toast('Seleciona um SKU','err');return;}
+  _addLine(t,sku,qty);document.getElementById(skuEl).value='';document.getElementById(qtyEl).value=1;
+}
+function _addLine(t,sku,qty){
+  const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
+  const ex=doc.lines.find(l=>l.sku===sku);
+  if(ex)ex.qty+=qty;else doc.lines.push({sku,qty});
+  docSv(t);renderDocLines(t);toast(`✓ ${sku} +${qty}`,'win');
+  logAction(t==='order'?'Linha encomenda':'Linha devolução', `${sku} +${qty} → ${actId(t)}`);
+}
+function rmDocLine(t,sku){const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;doc.lines=doc.lines.filter(l=>l.sku!==sku);docSv(t);renderDocLines(t);}
+function updDocQty(t,sku,qty){const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;const l=doc.lines.find(l=>l.sku===sku);if(l){l.qty=parseInt(qty)||1;docSv(t);}}
+function renderDocLines(t){
+  const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
+  const ce=t==='order'?'orderLineCount':'returnLineCount',be=t==='order'?'orderLinesBody':'returnLinesBody';
+  document.getElementById(ce).textContent=`${doc.lines.length} SKUs · ${doc.lines.reduce((a,l)=>a+l.qty,0)} unid.`;
+  const body=document.getElementById(be);
+  if(!doc.lines.length){body.innerHTML=`<tr><td colspan="5"><div class="empty" style="padding:12px;">Sem linhas.</div></td></tr>`;return;}
+  body.innerHTML=doc.lines.map(l=>{
+    const av=stock.filter(s=>s.sku===l.sku).reduce((a,s)=>a+s.qty,0);
+    const ab=t==='order'?(av===0?`<span class="badge bdg-rd">0</span>`:av<l.qty?`<span class="badge bdg-or">${av}</span>`:`<span class="badge bdg-gn">${av}</span>`):`<span class="badge bdg-bl">${av}</span>`;
+    return `<tr><td class="mono" style="font-weight:700">${l.sku}</td>
+      <td><input class="input qty-in" type="number" min="1" value="${l.qty}" onchange="updDocQty('${t}','${l.sku}',this.value)"></td>
+      <td>${ab}</td><td><button class="btn btn-ghost btn-sm" onclick="rmDocLine('${t}','${l.sku}')">✕</button></td></tr>`;
+  }).join('');
+}
+function importDocLines(t){
+  const file=document.getElementById(t==='order'?'orderFile':'returnFile').files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+    rows.forEach((row,i)=>{if(i===0&&isNaN(row[1]))return;const sku=resolveSku(String(row[0]||'').trim());const qty=parseInt(row[1])||1;if(sku)_addLine(t,sku,qty);});
+    toast('Importado','win');
+  };r.readAsArrayBuffer(file);
+}
+function dlDocTpl(t){
+  const ws=XLSX.utils.aoa_to_sheet([['SKU ou EAN','Quantidade'],['SKU-001',2],['3614273123456',1]]);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Linhas');XLSX.writeFile(wb,`template_${t==='order'?'encomenda':'devolucao'}.xlsx`);
+}
+
+// SCANNER
+function toggleScan(t){scanning[t]?stopScan(t):startScan(t);}
+function startScan(t){
+  const ids={order:['orderScannerBox','#orderInteractive','orderScanDot','orderScanStatus','btnOrderScan'],
+    return:['returnScannerBox','#returnInteractive','returnScanDot','returnScanStatus','btnReturnScan'],
+    inv:['invScannerBox','#invInteractive','invScanDot','invScanStatus','btnInvScan']};
+  const [boxEl,intEl,dotEl,stEl,btnEl]=ids[t];
+  document.getElementById(boxEl).classList.add('visible');
+  document.getElementById(dotEl).classList.add('on');
+  document.getElementById(stEl).textContent='A iniciar...';
+  document.getElementById(btnEl).textContent='⏹ Parar';
+  scanning[t]=true;
+  Quagga.init({inputStream:{name:'Live',type:'LiveStream',target:document.querySelector(intEl),constraints:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}},
+    decoder:{readers:['ean_reader','ean_8_reader','upc_reader','code_128_reader','code_39_reader']},locate:true},
+    err=>{if(err){toast('Câmara não disponível','err');stopScan(t);return;}document.getElementById(stEl).textContent='Ativo';Quagga.start();});
+  Quagga.onDetected(res=>{
+    if(scanCD[t])return;scanCD[t]=true;setTimeout(()=>scanCD[t]=false,1500);
+    const sku=resolveSku(res.codeResult.code);
+    if(t==='inv')invAddFromAc(sku);else _addLine(t,sku,1);
   });
+}
+function stopScan(t){
+  if(!scanning[t])return;try{Quagga.stop();}catch(e){}
+  const ids={order:['orderScannerBox','orderScanDot','orderScanStatus','btnOrderScan'],
+    return:['returnScannerBox','returnScanDot','returnScanStatus','btnReturnScan'],
+    inv:['invScannerBox','invScanDot','invScanStatus','btnInvScan']};
+  const [boxEl,dotEl,stEl,btnEl]=ids[t];
+  document.getElementById(boxEl).classList.remove('visible');
+  document.getElementById(dotEl).classList.remove('on');
+  document.getElementById(stEl).textContent='Inativo';
+  document.getElementById(btnEl).textContent='📷 '+(t==='inv'?'Scanner':'Iniciar');
+  scanning[t]=false;
+}
 
-  Quagga.onDetected(result => {
-    if (orderScanCooldown) return;
-    orderScanCooldown = true;
-    setTimeout(() => orderScanCooldown = false, 1500);
-    const code = result.codeResult.code;
-    addOrderLine(code, 1);
-    toast('✓ ' + code, 'win');
+// PICKING GENERATION
+
+// ══ WAREHOUSE POSITION SORT ══
+// Format: A11 = estante A, andar 1, posição 1 → sort: estante(A-K), andar(1-5), pos(1-4)
+function sortPickLines(lines) {
+  return [...lines].sort((a, b) => {
+    const pa = parsePos(a.position), pb = parsePos(b.position);
+    if (pa.shelf !== pb.shelf) return pa.shelf.localeCompare(pb.shelf);
+    if (pa.floor !== pb.floor) return pa.floor - pb.floor;
+    return pa.slot - pb.slot;
   });
 }
-
-function stopOrderScanner() {
-  if (!orderScanning) return;
-  try { Quagga.stop(); } catch(e) {}
-  document.getElementById('orderScannerBox').classList.remove('visible');
-  document.getElementById('orderScanDot').classList.remove('on');
-  document.getElementById('orderScanStatus').textContent = 'Scanner inativo';
-  document.getElementById('btnOrderScan').textContent = '📷 Iniciar Scanner';
-  orderScanning = false;
+function parsePos(pos) {
+  // e.g. A11 → shelf=A, floor=1, slot=1 | B34 → shelf=B, floor=3, slot=4
+  const m = String(pos).match(/^([A-Ka-k])([1-5])([1-4])$/);
+  if (!m) return {shelf: pos, floor: 0, slot: 0};
+  return {shelf: m[1].toUpperCase(), floor: parseInt(m[2]), slot: parseInt(m[3])};
 }
 
-// ══════════════════════ PICKING GENERATION ══════════════════════
-function generatePicking() {
-  const order = orders.find(o => o.id === activeOrderId);
-  if (!order || !order.lines.length) { toast('Encomenda sem linhas', 'err'); return; }
+// ══ EMITIR GUIA (order only — no stock deduction yet) ══
+function emitirGuia() {
+  const doc = docSt('order').find(d => d.id === actId('order'));
+  if (!doc || !doc.lines.length) { toast('Sem linhas na encomenda', 'err'); return; }
 
-  const pickLines = []; // {sku, position, qty, stockId}
-  const warnings = [];
+  const pl = [], warns = [], rupturas = [];
 
-  order.lines.forEach(line => {
-    let remaining = line.qty;
-    // Get stock positions for this SKU, sorted by position name
-    const positions = stock
-      .filter(s => s.sku === line.sku && s.qty > 0)
-      .sort((a,b) => a.position.localeCompare(b.position));
+  doc.lines.forEach(line => {
+    let rem = line.qty;
+    // Priority: caixas mistas first, then exclusivas; within each group sort by position
+    const positions = stock.filter(s => s.sku === line.sku && s.qty > 0)
+      .sort((a, b) => {
+        if (a.boxType !== b.boxType) return a.boxType === 'mista' ? -1 : 1;
+        const pa = parsePos(a.position), pb = parsePos(b.position);
+        if (pa.shelf !== pb.shelf) return pa.shelf.localeCompare(pb.shelf);
+        if (pa.floor !== pb.floor) return pa.floor - pb.floor;
+        return pa.slot - pb.slot;
+      });
 
     if (!positions.length) {
-      warnings.push(`${line.sku}: sem stock disponível`);
+      rupturas.push(`${line.sku}: sem stock`);
+      pl.push({sku: line.sku, position: '---', qty: line.qty, qtyDone: 0, stockId: null, boxType: 'mista', ruptura: true, status: 'pending'});
       return;
     }
-
     positions.forEach(pos => {
-      if (remaining <= 0) return;
-      const take = Math.min(remaining, pos.qty);
-      pickLines.push({sku: line.sku, position: pos.position, qty: take, stockId: pos.id});
-      remaining -= take;
+      if (rem <= 0) return;
+      const take = Math.min(rem, pos.qty);
+      pl.push({sku: line.sku, position: pos.position, qty: take, qtyDone: take, stockId: pos.id, boxType: pos.boxType, ruptura: false, status: 'pending'});
+      rem -= take;
     });
-
-    if (remaining > 0) {
-      warnings.push(`${line.sku}: stock insuficiente (faltam ${remaining} unid.)`);
+    if (rem > 0) {
+      rupturas.push(`${line.sku}: faltam ${rem} unid.`);
+      pl.push({sku: line.sku, position: '---', qty: rem, qtyDone: 0, stockId: null, boxType: 'mista', ruptura: true, status: 'pending'});
     }
   });
 
-  // Sort by position for optimal route
-  pickLines.sort((a,b) => a.position.localeCompare(b.position));
+  // Sort by warehouse position
+  const sorted = sortPickLines(pl.filter(l => !l.ruptura)).concat(pl.filter(l => l.ruptura));
 
-  currentPicking = {orderId: order.id, lines: pickLines, warnings};
-  renderPickingSheet();
-  showPage_picking();
-  toast('Folha de picking gerada!', 'win');
-}
+  // Show ruptura alerts in order editor
+  if (rupturas.length) {
+    const msg = `⚠️ Rutura detetada:
+${rupturas.join('
+')}
 
-function showPage_picking() {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-picking').classList.add('active');
-  document.querySelectorAll('.nav-tab')[2].classList.add('active');
-}
-
-function renderPickingSheet() {
-  if (!currentPicking) return;
-  document.getElementById('pickingEmpty').style.display = 'none';
-  document.getElementById('pickingContent').style.display = 'block';
-
-  const order = orders.find(o => o.id === currentPicking.orderId);
-  const now = new Date().toLocaleString('pt-PT');
-
-  // Group by SKU for display
-  const bySku = {};
-  currentPicking.lines.forEach(l => {
-    if (!bySku[l.sku]) bySku[l.sku] = [];
-    bySku[l.sku].push(l);
-  });
-
-  let html = `
-    <div class="pick-header">
-      <div>
-        <div class="pick-order-id">${currentPicking.orderId}</div>
-        <div class="pick-meta">Gerado em ${now} · ${currentPicking.lines.length} linhas de picking</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:24px;font-weight:800;">${Object.keys(bySku).length}</div>
-        <div style="font-size:11px;opacity:0.6;">SKUs</div>
-      </div>
-    </div>`;
-
-  if (currentPicking.warnings.length) {
-    html += `<div class="alert alert-warn">⚠️ <div><strong>Atenção:</strong><br>${currentPicking.warnings.join('<br>')}</div></div>`;
+Emitir guia mesmo assim?`;
+    if (!confirm(msg)) return;
   }
 
-  html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:10px;">Lista ordenada por posição</div>`;
+  // Save guide into the order
+  doc.guide = {
+    lines: sorted,
+    emittedAt: new Date().toLocaleString('pt-PT'),
+    emittedBy: currentUser ? currentUser.name : '—',
+    rupturas,
+    status: 'pending' // pending | in-progress | done | cancelled
+  };
+  doc.status = 'guia-emitida';
+  logAction('Guia emitida', `${doc.id} · ${sorted.length} linhas${rupturas.length ? ' · ' + rupturas.length + ' rupturas' : ''}`);
+  saveOrd();
+  renderDocs('order');
+  renderPickingGuides();
 
-  // Show sorted by position
-  currentPicking.lines.forEach(l => {
-    // find total for this sku
-    const totalQty = currentPicking.lines.filter(x => x.sku === l.sku).reduce((a,x) => a+x.qty, 0);
-    html += `
-      <div class="pick-row">
-        <div class="pick-location">
-          <div class="loc-badge">${l.position}</div>
-          <div class="loc-arrow">→</div>
-          <div style="flex:1;">
-            <div class="mono" style="font-weight:700;font-size:14px;">${l.sku}</div>
+  // Navigate to picking page
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-picking').classList.add('active');
+  document.querySelector('[data-page="picking"]').classList.add('active');
+  toast('Guia emitida!', 'win');
+}
+
+// ══ PICKING GUIDES LIST ══
+function renderPickingGuides() {
+  const el = document.getElementById('pickingGuidesList');
+  const guias = orders.filter(d => d.guide && ['guia-emitida','em-preparacao'].includes(d.status));
+  if (!guias.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Nenhuma guia emitida.</div>';
+    return;
+  }
+  el.innerHTML = guias.map(d => {
+    const g = d.guide;
+    const total = g.lines.length;
+    const done = g.lines.filter(l => l.status === 'confirmed').length;
+    const rupt = g.lines.filter(l => l.ruptura).length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const stLbl = d.status === 'em-preparacao' ? '🚶 Em preparação' : '📋 Aguarda preparação';
+    const stCls = d.status === 'em-preparacao' ? 'bdg-bl' : 'bdg-or';
+    return `<div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div>
+          <div class="mono" style="font-weight:700;font-size:14px">${d.id}${d.client?' <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· '+d.client+'</span>':''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">
+            Emitida por ${g.emittedBy} · ${g.emittedAt}
+            ${rupt ? `· <span style="color:#dc2626">⚠️ ${rupt} rutura${rupt>1?'s':''}</span>` : ''}
           </div>
-          <div class="loc-qty">${l.qty} unid.</div>
         </div>
-      </div>`;
-  });
-
-  document.getElementById('pickingSheet').innerHTML = html;
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="badge ${stCls}">${stLbl}</span>
+          <button class="btn btn-primary btn-sm" onclick="iniciarPrep('${d.id}')">🚶 Iniciar</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcelById('${d.id}')">⬇</button>
+          <button class="btn btn-danger btn-sm" onclick="cancelGuia('${d.id}')">✕</button>
+        </div>
+      </div>
+      <div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">
+        <div style="height:100%;background:var(--success);border-radius:20px;width:${pct}%;transition:width .4s;"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${done} / ${total} linhas · ${pct}%</div>
+    </div>`;
+  }).join('');
 }
 
-function confirmPicking() {
-  if (!currentPicking) return;
-  document.getElementById('confirmModalText').textContent =
-    `Vais atualizar o stock para a encomenda ${currentPicking.orderId} com base nas ${currentPicking.lines.length} linhas de picking. Esta ação não pode ser desfeita.`;
-  document.getElementById('confirmModal').classList.add('visible');
+function cancelGuia(orderId) {
+  const doc = orders.find(d => d.id === orderId);
+  if (!doc) return;
+  if (!confirm(`Cancelar guia de ${orderId}? A encomenda voltará ao estado "Aberta".`)) return;
+  doc.guide = null;
+  doc.status = 'open';
+  logAction('Guia cancelada', orderId);
+  saveOrd(); renderDocs('order'); renderPickingGuides();
+  toast('Guia cancelada', 'ok');
 }
 
-function closeModal() {
-  document.getElementById('confirmModal').classList.remove('visible');
+// ══ PREPARAÇÃO — ACTIVE PICKING ══
+let prepOrderId = null;
+let prepLines = []; // working copy with qtyDone editable
+
+function iniciarPrep(orderId) {
+  const doc = orders.find(d => d.id === orderId);
+  if (!doc || !doc.guide) return;
+  prepOrderId = orderId;
+  // Deep copy guide lines so we can edit qtyDone without touching the saved guide
+  prepLines = JSON.parse(JSON.stringify(doc.guide.lines));
+  doc.status = 'em-preparacao';
+  doc.guide.status = 'in-progress';
+  saveOrd();
+  renderPickingGuides();
+  // Navigate to prep page
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-prep').classList.add('active');
+  document.querySelector('[data-page="prep"]').classList.add('active');
+  renderPrepContent();
+  logAction('Preparação iniciada', orderId);
 }
 
-function doConfirmPicking() {
-  closeModal();
-  // Deduct stock
-  currentPicking.lines.forEach(l => {
+function renderPrepContent() {
+  if (!prepOrderId) { document.getElementById('prepEmpty').style.display=''; document.getElementById('prepContent').style.display='none'; return; }
+  const doc = orders.find(d => d.id === prepOrderId);
+  if (!doc) return;
+  document.getElementById('prepEmpty').style.display = 'none';
+  document.getElementById('prepContent').style.display = 'block';
+
+  // Header
+  const now = new Date().toLocaleString('pt-PT');
+  document.getElementById('prepHeader').innerHTML = `
+    <div>
+      <div class="pick-id">${doc.id}</div>
+      <div class="pick-meta">${doc.client ? '👤 '+doc.client+' · ' : ''}🏷 ${doc.guide.emittedBy} · ${doc.guide.emittedAt}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:20px;font-weight:800">${prepLines.length}</div>
+      <div style="font-size:11px;opacity:.6">linhas</div>
+    </div>`;
+
+  renderPrepLines();
+}
+
+function renderPrepLines() {
+  const total = prepLines.length;
+  const done = prepLines.filter(l => l.status === 'confirmed').length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('prepProgress').style.width = pct + '%';
+  document.getElementById('prepProgressLabel').textContent = `${done} / ${total} linhas confirmadas`;
+  const ruptTotal = prepLines.filter(l => l.ruptura || l.status === 'ruptura').length;
+  const ruptEl = document.getElementById('prepRupturaLabel');
+  if (ruptTotal) { ruptEl.style.display=''; ruptEl.textContent = `⚠️ ${ruptTotal} rutura${ruptTotal>1?'s':''}`; }
+  else ruptEl.style.display = 'none';
+
+  const container = document.getElementById('prepLines');
+  container.innerHTML = prepLines.map((l, idx) => {
+    const info = skuInfo(l.sku);
+    const isActive = l.status === 'pending' && prepLines.slice(0, idx).every(x => x.status !== 'pending' || idx === 0);
+    const isConfirmed = l.status === 'confirmed';
+    const isRuptura = l.ruptura || l.status === 'ruptura';
+    const posClass = isConfirmed ? 'confirmed' : isRuptura ? 'ruptura' : '';
+    const lineClass = isConfirmed ? 'confirmed' : isRuptura ? 'ruptura' : '';
+    const checkIcon = isConfirmed ? '✓' : isRuptura ? '!' : idx + 1;
+    const checkCls = isConfirmed ? 'done' : isRuptura ? 'rupt' : '';
+
+    return `<div class="prep-line ${lineClass}" id="prepline-${idx}">
+      <div class="prep-line-header" onclick="togglePrepLine(${idx})">
+        <div class="prep-check ${checkCls}">${checkIcon}</div>
+        <div class="prep-pos ${posClass}">${l.position}</div>
+        <div style="flex:1;min-width:0">
+          <div class="mono" style="font-weight:700;font-size:13px">${l.sku}</div>
+          ${info ? `<div style="font-size:11px;color:var(--muted)">${info.name}${info.brand?' · '+info.brand:''}${info.ml?' · '+info.ml:''}</div>` : ''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${isRuptura ? '<span class="ruptura-badge">RUTURA</span>' :
+            isConfirmed ? `<span class="badge bdg-gn">${l.qtyDone} recolhidos</span>` :
+            `<span style="font-weight:700;font-size:15px">${l.qty}</span><span style="font-size:11px;color:var(--muted)"> unid.</span>`}
+        </div>
+      </div>
+      ${!isConfirmed && !isRuptura ? `
+      <div class="prep-line-body" id="prepbody-${idx}" style="display:none;">
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:10px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Pedido: <strong>${l.qty} unid.</strong> &nbsp;·&nbsp; Caixa: ${l.boxType==='mista'?'📦 Mista':'🔹 Exclusiva'}</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="font-size:12px;margin:0;text-transform:none;">Recolhido:</label>
+            <input class="input qty-in" type="number" min="0" max="${l.qty}" value="${l.qtyDone}"
+              id="prepqty-${idx}" style="width:80px;" onchange="updatePrepQty(${idx},this.value)">
+            <span style="font-size:12px;color:var(--muted)">de ${l.qty}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-success" style="flex:1;" onclick="confirmPrepLine(${idx})">✓ Confirmar recolha</button>
+          <button class="btn btn-danger btn-sm" onclick="markRuptura(${idx})">⚠️ Rutura</button>
+          <button class="btn btn-ghost btn-sm" onclick="togglePrepLine(${idx})">Fechar</button>
+        </div>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Auto-expand first pending line
+  const firstPending = prepLines.findIndex(l => l.status === 'pending' && !l.ruptura);
+  if (firstPending >= 0) {
+    const body = document.getElementById(`prepbody-${firstPending}`);
+    if (body) body.style.display = 'block';
+    document.getElementById(`prepline-${firstPending}`).classList.add('active');
+  }
+}
+
+function togglePrepLine(idx) {
+  const body = document.getElementById(`prepbody-${idx}`);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  // Close all others
+  prepLines.forEach((_, i) => { const b = document.getElementById(`prepbody-${i}`); if(b) b.style.display='none'; document.getElementById(`prepline-${i}`)?.classList.remove('active'); });
+  if (!isOpen) { body.style.display = 'block'; document.getElementById(`prepline-${idx}`).classList.add('active'); }
+}
+
+function updatePrepQty(idx, val) {
+  prepLines[idx].qtyDone = Math.max(0, Math.min(parseInt(val)||0, prepLines[idx].qty));
+}
+
+function confirmPrepLine(idx) {
+  const l = prepLines[idx];
+  const inputEl = document.getElementById(`prepqty-${idx}`);
+  if (inputEl) l.qtyDone = Math.max(0, Math.min(parseInt(inputEl.value)||0, l.qty));
+  l.status = 'confirmed';
+  renderPrepLines();
+  // Auto-scroll to next pending
+  setTimeout(() => {
+    const next = prepLines.findIndex((x, i) => i > idx && x.status === 'pending' && !x.ruptura);
+    if (next >= 0) { document.getElementById(`prepline-${next}`)?.scrollIntoView({behavior:'smooth', block:'center'}); togglePrepLine(next); }
+  }, 150);
+}
+
+function markRuptura(idx) {
+  prepLines[idx].status = 'ruptura';
+  prepLines[idx].qtyDone = 0;
+  renderPrepLines();
+}
+
+function finalizePicking() {
+  const doc = orders.find(d => d.id === prepOrderId);
+  if (!doc) return;
+  const confirmed = prepLines.filter(l => l.status === 'confirmed');
+  const rupturas = prepLines.filter(l => l.status === 'ruptura' || l.ruptura);
+  if (!confirmed.length) { toast('Confirma pelo menos uma linha', 'err'); return; }
+  const msg = `Finalizar picking de ${doc.id}?
+
+✓ ${confirmed.length} linhas confirmadas
+${rupturas.length ? '⚠️ ' + rupturas.length + ' rupturas (não deduzidas)
+' : ''}
+O stock será deduzido agora.`;
+  if (!confirm(msg)) return;
+
+  // Deduct stock only for confirmed lines
+  doc.snapshot = JSON.parse(JSON.stringify(stock));
+  confirmed.forEach(l => {
     const entry = stock.find(s => s.id === l.stockId);
-    if (entry) entry.qty = Math.max(0, entry.qty - l.qty);
+    if (entry) entry.qty = Math.max(0, entry.qty - l.qtyDone);
   });
-  // Mark order as picked
-  const order = orders.find(o => o.id === currentPicking.orderId);
-  if (order) order.status = 'picked';
-  saveStock();
-  saveOrders();
-  toast('Stock atualizado com sucesso!', 'win');
-  // Reset picking
-  currentPicking = null;
-  document.getElementById('pickingEmpty').style.display = '';
-  document.getElementById('pickingContent').style.display = 'none';
+
+  doc.status = rupturas.length ? 'parcial' : 'picked';
+  doc.guide.status = 'done';
+  doc.guide.lines = prepLines; // save final state
+  doc.guide.finishedAt = new Date().toLocaleString('pt-PT');
+  doc.guide.finishedBy = currentUser ? currentUser.name : '—';
+
+  logAction('Picking finalizado', `${doc.id} · ${confirmed.length} conf. · ${rupturas.length} rupt.`);
+  saveStk(); saveOrd();
+  prepOrderId = null; prepLines = [];
+  renderPrepContent();
+  renderPickingGuides();
+  renderDocs('order');
+  toast('Stock atualizado!', 'win');
+  // Go to orders page
+  setTimeout(() => {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-orders').classList.add('active');
+    document.querySelector('[data-page="orders"]').classList.add('active');
+  }, 800);
 }
 
-function exportPickingExcel() {
-  if (!currentPicking) return;
-  const rows = [['Posição','SKU','Quantidade']];
-  currentPicking.lines.forEach(l => rows.push([l.position, l.sku, l.qty]));
+function cancelPrep() {
+  if (!prepOrderId) return;
+  if (!confirm('Cancelar preparação? A guia ficará disponível para retomar.')) return;
+  const doc = orders.find(d => d.id === prepOrderId);
+  if (doc) { doc.status = 'guia-emitida'; doc.guide.status = 'pending'; saveOrd(); }
+  logAction('Preparação suspensa', prepOrderId);
+  prepOrderId = null; prepLines = [];
+  renderPrepContent(); renderPickingGuides();
+  toast('Preparação suspensa — guia disponível para retomar', 'ok');
+}
+
+function exportGuiaExcel() { if (prepOrderId) exportGuiaExcelById(prepOrderId); }
+
+function exportGuiaExcelById(orderId) {
+  const doc = orders.find(d => d.id === orderId);
+  if (!doc || !doc.guide) { toast('Guia não encontrada', 'err'); return; }
+  const rows = [
+    [`Guia de Picking: ${doc.id}${doc.client?' — '+doc.client:''}`],
+    [`Emitida por: ${doc.guide.emittedBy} · ${doc.guide.emittedAt}`],
+    [],
+    ['Posição', 'SKU', 'Nome', 'Marca', 'ML', 'Qty pedida', 'Qty recolhida', 'Estado']
+  ];
+  doc.guide.lines.forEach(l => {
+    const i = skuInfo(l.sku);
+    rows.push([l.position, l.sku, i?.name||'', i?.brand||'', i?.ml||'', l.qty, l.qtyDone||0,
+      l.status==='confirmed'?'Confirmado':l.ruptura||l.status==='ruptura'?'Rutura':'Pendente']);
+  });
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Picking');
-  XLSX.writeFile(wb, `picking_${currentPicking.orderId}.xlsx`);
+  ws['!cols'] = [{wch:8},{wch:12},{wch:28},{wch:16},{wch:8},{wch:12},{wch:14},{wch:12}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Guia');
+  XLSX.writeFile(wb, `guia_${doc.id}.xlsx`);
   toast('Excel exportado', 'win');
 }
 
-// ══════════════════════ INIT ══════════════════════
-renderStock();
-renderOrders();
+// ── Keep putaway/return flow (unchanged) ──
+function genDoc(t) {
+  if (t === 'order') { emitirGuia(); return; }
+  // Returns / putaway
+  const doc = docSt(t).find(d => d.id === actId(t));
+  if (!doc || !doc.lines.length) { toast('Sem linhas', 'err'); return; }
+  const pl = [], warns = [];
+  doc.lines.forEach(line => {
+    let rem = line.qty;
+    const ex = [...stock.filter(s=>s.sku===line.sku&&s.boxType==='mista'),...stock.filter(s=>s.sku===line.sku&&s.boxType==='exclusiva')].sort((a,b)=>a.position.localeCompare(b.position));
+    if (ex.length) { ex.forEach(p=>{if(rem<=0)return;pl.push({sku:line.sku,position:p.position,qty:Math.min(rem,999),stockId:p.id,boxType:p.boxType,isRet:true});rem=0;}); }
+    if (rem > 0) { pl.push({sku:line.sku,position:'???',qty:rem,stockId:null,boxType:'mista',isRet:true,noPos:true}); warns.push(`${line.sku}: sem posição conhecida`); }
+  });
+  pl.sort((a,b)=>a.position.localeCompare(b.position));
+  curPick = {type:t, docId:doc.id, lines:pl, warns, client:doc.client};
+  const tp = 'putaway';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+tp).classList.add('active');
+  document.querySelector(`[data-page="${tp}"]`).classList.add('active');
+  logAction('Colocação gerada', `${doc.id} · ${pl.length} linhas`);
+  renderSheet(t); toast('Folha gerada!', 'pur');
+}
+
+function renderSheet(t) {
+  const io = t === 'order';
+  document.getElementById(io?'pickingEmpty':'putawayEmpty').style.display = 'none';
+  document.getElementById(io?'pickingContent':'putawayContent').style.display = 'block';
+  const now = new Date().toLocaleString('pt-PT');
+  const pickerName = currentUser ? currentUser.name : '—';
+  let html = `<div class="pick-hdr ${io?'ph-ord':'ph-ret'}">
+    <div><div class="pick-id">${curPick.docId}</div>
+    <div class="pick-meta">${curPick.client?'👤 '+curPick.client+' · ':''}${now} · 🏷 ${pickerName}</div></div>
+    <div style="text-align:right"><div style="font-size:22px;font-weight:800">${curPick.lines.length}</div><div style="font-size:11px;opacity:.6">linhas</div></div>
+  </div>`;
+  if (curPick.warns.length) html += `<div class="alert a-warn">⚠️ <div>${curPick.warns.join('<br>')}</div></div>`;
+  html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px;">Ordenado por posição — Colocação</div>`;
+  curPick.lines.forEach(l => {
+    const bb = l.boxType==='mista'?`<span class="badge bdg-mx" style="font-size:10px">Mista</span>`:`<span class="badge bdg-ex" style="font-size:10px">Exclusiva</span>`;
+    const npc = l.noPos?'style="background:#fef3c7"':'';
+    html += `<div class="pick-row"><div class="pick-loc" ${npc}>
+      <div class="loc-bdg lb-ret">${l.position}</div>
+      <div class="loc-arrow">←</div>
+      <div style="flex:1"><div class="mono" style="font-weight:700;font-size:13px">${l.sku}</div>
+      <div style="margin-top:3px">${bb}</div></div>
+      <div class="loc-qty">${l.qty} unid.</div>
+    </div></div>`;
+  });
+  document.getElementById(io?'pickingSheet':'putawaySheet').innerHTML = html;
+}
+
+function confirmDoc(t) {
+  if (!curPick || curPick.type !== t) return;
+  showModal('Confirmar', 'Stock será atualizado com base nas ' + curPick.lines.length + ' linhas.', [
+    {lbl:'Cancelar', cls:'btn-ghost', fn:()=>{}},
+    {lbl:'✓ Confirmar', cls:'btn-purple', fn:()=>doConfirm(t)}
+  ]);
+}
+function doConfirm(t) {
+  const doc = docSt(t).find(d => d.id === curPick.docId);
+  doc.snapshot = JSON.parse(JSON.stringify(stock));
+  curPick.lines.forEach(l => { const en = stock.find(s => s.id === l.stockId); if(!en)return; en.qty = en.qty + l.qty; });
+  doc.status = 'returned';
+  logAction('Colocação confirmada', `${curPick.docId} · ${curPick.lines.length} linhas`);
+  saveStk(); docSv(t); curPick = null;
+  document.getElementById('putawayEmpty').style.display = '';
+  document.getElementById('putawayContent').style.display = 'none';
+  toast('Stock atualizado!', 'pur'); renderDocs(t);
+}
+function cancelDoc(t) {
+  if (!curPick || curPick.type !== t) { toast('Sem folha ativa','err'); return; }
+  const doc = docSt(t).find(d => d.id === curPick.docId);
+  showModal('Anular', `${doc.id} será anulada.`, [
+    {lbl:'Cancelar', cls:'btn-ghost', fn:()=>{}},
+    {lbl:'✕ Anular', cls:'btn-danger', fn:()=>doCancel(t, doc.id)}
+  ]);
+}
+function doCancel(t, docId) {
+  const doc = docSt(t).find(d => d.id === docId); if(!doc)return;
+  if (doc.snapshot) { stock = doc.snapshot; saveStk(); toast('Stock revertido','win'); } else toast('Anulada','ok');
+  logAction(t==='order'?'Encomenda anulada':'Devolução anulada', docId);
+  doc.status = 'cancelled'; doc.snapshot = null; docSv(t); curPick = null;
+  document.getElementById('putawayEmpty').style.display = '';
+  document.getElementById('putawayContent').style.display = 'none';
+  renderDocs(t); renderStock();
+}
+function exportDocXls(t) {
+  if (!curPick || curPick.type !== t) { toast('Sem folha ativa','err'); return; }
+  const rows = [['Colocação: '+curPick.docId+(curPick.client?' — '+curPick.client:'')],[],['Posição','SKU','Nome','Marca','ML','Quantidade','Tipo']];
+  curPick.lines.forEach(l => { const i = skuInfo(l.sku); rows.push([l.position,l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,l.boxType]); });
+  const ws = XLSX.utils.aoa_to_sheet(rows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Colocação');
+  XLSX.writeFile(wb, `colocacao_${curPick.docId}.xlsx`); toast('Excel exportado','win');
+}
+
+
+// ══ PURCHASE ORDERS (PO) ══
+let activePOId = null;
+
+function newPO() {
+  const id = 'PO-' + Date.now();
+  pos_orders.unshift({id, ref:'', supplier:'', lines:[], status:'open', createdAt: new Date().toLocaleString('pt-PT')});
+  savePO(); renderPOList(); openPOEditor(id);
+}
+
+function renderPOList() {
+  const el = document.getElementById('poList');
+  if (!pos_orders.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📥</div>Sem POs.</div>'; return; }
+  el.innerHTML = pos_orders.map(po => {
+    const stCls = po.status === 'open' ? 'po-status-open' : 'po-status-closed';
+    const stLbl = po.status === 'open' ? 'Aberta' : 'Fechada';
+    const tq = po.lines.reduce((a,l) => a+l.qty, 0);
+    return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+      <div>
+        <div class="mono" style="font-weight:700;font-size:13px">${po.ref||po.id}${po.supplier?' <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· '+po.supplier+'</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${po.lines.length} SKUs · ${tq} unid. · ${po.createdAt}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span class="badge ${stCls}">${stLbl}</span>
+        ${po.status==='open'?`<button class="btn btn-ghost btn-sm" onclick="openPOEditor('${po.id}')">✏️</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="openPOEditor('${po.id}')">📊</button>
+        <button class="btn btn-ghost btn-sm" onclick="delPO('${po.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function delPO(id) {
+  if (!confirm('Apagar PO?')) return;
+  pos_orders = pos_orders.filter(p => p.id !== id);
+  if (activePOId === id) { activePOId = null; document.getElementById('poEditor').style.display = 'none'; document.getElementById('poComparison').style.display = 'none'; }
+  savePO(); renderPOList();
+}
+
+function openPOEditor(id) {
+  activePOId = id;
+  const po = pos_orders.find(p => p.id === id);
+  document.getElementById('poEdTitle').textContent = po.ref || po.id;
+  document.getElementById('poEdRef').textContent = po.supplier ? '📦 ' + po.supplier : '';
+  document.getElementById('po-ref').value = po.ref || '';
+  document.getElementById('po-supplier').value = po.supplier || '';
+  document.getElementById('poEditor').style.display = 'block';
+  document.getElementById('poComparison').style.display = 'none';
+  renderPOLines();
+  document.getElementById('poEditor').scrollIntoView({behavior:'smooth'});
+}
+
+function closePOEditor() {
+  document.getElementById('poEditor').style.display = 'none';
+  document.getElementById('poComparison').style.display = 'none';
+  activePOId = null;
+}
+
+function updPO() {
+  const po = pos_orders.find(p => p.id === activePOId);
+  if (!po) return;
+  po.ref = document.getElementById('po-ref').value.trim();
+  po.supplier = document.getElementById('po-supplier').value.trim();
+  document.getElementById('poEdTitle').textContent = po.ref || po.id;
+  document.getElementById('poEdRef').textContent = po.supplier ? '📦 ' + po.supplier : '';
+  savePO(); renderPOList();
+}
+
+function switchPOTab(tab) {
+  ['search','manual','import'].forEach(t => document.getElementById('potab-'+t).style.display = t===tab?'':'none');
+  document.querySelectorAll('#poEditor .inner-tab').forEach((b,i) => b.classList.toggle('active',['search','manual','import'][i]===tab));
+}
+
+function addPOLine() {
+  const sku = resolveSku(document.getElementById('po-sku').value.trim());
+  const qty = parseInt(document.getElementById('po-qty').value) || 1;
+  if (!sku) { toast('SKU obrigatório','err'); return; }
+  _addPOLine(sku, qty);
+  document.getElementById('po-sku').value = '';
+  document.getElementById('po-qty').value = 1;
+}
+
+function _addPOLine(sku, qty) {
+  const po = pos_orders.find(p => p.id === activePOId);
+  if (!po) return;
+  const ex = po.lines.find(l => l.sku === sku);
+  if (ex) ex.qty += qty; else po.lines.push({sku, qty});
+  savePO(); renderPOLines();
+  toast('✓ ' + sku + ' +' + qty, 'win');
+}
+
+function rmPOLine(sku) {
+  const po = pos_orders.find(p => p.id === activePOId);
+  if (!po) return;
+  po.lines = po.lines.filter(l => l.sku !== sku);
+  savePO(); renderPOLines();
+}
+
+function updPOQty(sku, qty) {
+  const po = pos_orders.find(p => p.id === activePOId);
+  if (!po) return;
+  const l = po.lines.find(l => l.sku === sku);
+  if (l) { l.qty = parseInt(qty) || 1; savePO(); }
+}
+
+function renderPOLines() {
+  const po = pos_orders.find(p => p.id === activePOId);
+  if (!po) return;
+  document.getElementById('poLineCount').textContent = `${po.lines.length} SKUs · ${po.lines.reduce((a,l)=>a+l.qty,0)} unid.`;
+  const body = document.getElementById('poLinesBody');
+  if (!po.lines.length) { body.innerHTML = '<tr><td colspan="5"><div class="empty" style="padding:12px;">Sem linhas.</div></td></tr>'; return; }
+  body.innerHTML = po.lines.map(l => {
+    const info = skuInfo(l.sku);
+    const curStock = stock.filter(s => s.sku === l.sku).reduce((a,s) => a+s.qty, 0);
+    const stBadge = curStock === 0 ? `<span class="badge bdg-rd">0</span>` : `<span class="badge bdg-gn">${curStock}</span>`;
+    return `<tr>
+      <td class="mono" style="font-weight:700">${l.sku}</td>
+      <td>${info ? `<span class="sku-pill"><span class="sku-pname">${info.name}</span><span class="sku-pbrand">${info.brand}</span>${info.ml?`<span class="badge bdg-sk" style="font-size:10px">${info.ml}</span>`:''}</span>` : '—'}</td>
+      <td><input class="input qty-in" type="number" min="1" value="${l.qty}" onchange="updPOQty('${l.sku}',this.value)"></td>
+      <td>${stBadge}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="rmPOLine('${l.sku}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function importPOLines() {
+  const file = document.getElementById('poFile').files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    const wb = XLSX.read(e.target.result, {type:'array'});
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
+    rows.forEach((row,i) => {
+      if (i===0 && isNaN(row[2])) return; // skip header
+      // cols: SKU | EAN | Quantidade
+      const skuRaw = String(row[0]||'').trim();
+      const eanRaw = String(row[1]||'').trim();
+      const qty = parseInt(row[2]) || 1;
+      // resolve: prefer SKU, fallback to EAN
+      const sku = skuRaw ? resolveSku(skuRaw) : resolveSku(eanRaw);
+      if (sku) _addPOLine(sku, qty);
+    });
+    toast('PO importada', 'win');
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function dlPOTpl() {
+  const ws = XLSX.utils.aoa_to_sheet([['SKU','EAN','Quantidade'],['SKU-001','3614273123456',24],['SKU-002','3605532000001',12],['','3346470436367',6]]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'PO');
+  XLSX.writeFile(wb, 'template_po.xlsx');
+}
+
+function closePO() {
+  const po = pos_orders.find(p => p.id === activePOId);
+  if (!po) return;
+  if (!confirm(`Fechar PO ${po.ref||po.id}? Ficará marcada como fechada.`)) return;
+  po.status = 'closed';
+  savePO(); renderPOList();
+  toast('PO fechada', 'win');
+}
+
+// ── PO vs STOCK COMPARISON ──
+function showPOComparison() {
+  const po = pos_orders.find(p => p.id === activePOId);
+  if (!po || !po.lines.length) { toast('PO sem linhas','err'); return; }
+
+  const rows = po.lines.map(l => {
+    const ordered = l.qty;
+    const inStock = stock.filter(s => s.sku === l.sku).reduce((a,s) => a+s.qty, 0);
+    const diff = inStock - ordered;
+    let status, cls;
+    if (diff === 0)      { status = '✓ Conforme';  cls = 'diff-ok'; }
+    else if (diff > 0)   { status = '▲ Excesso';   cls = 'diff-over'; }
+    else if (inStock===0){ status = '✕ Não recebido'; cls = 'diff-missing'; }
+    else                 { status = '▼ Em falta';  cls = 'diff-under'; }
+    return {sku: l.sku, ordered, inStock, diff, status, cls};
+  });
+
+  // Summary chips
+  const ok      = rows.filter(r => r.diff === 0).length;
+  const over    = rows.filter(r => r.diff > 0).length;
+  const under   = rows.filter(r => r.diff < 0 && r.inStock > 0).length;
+  const missing = rows.filter(r => r.inStock === 0).length;
+
+  document.getElementById('poCompSummary').innerHTML = [
+    ok      ? `<span class="semaphore diff-ok">✓ ${ok} conformes</span>` : '',
+    over    ? `<span class="semaphore diff-over">▲ ${over} em excesso</span>` : '',
+    under   ? `<span class="semaphore diff-under">▼ ${under} em falta</span>` : '',
+    missing ? `<span class="semaphore diff-missing">✕ ${missing} não recebidos</span>` : '',
+  ].filter(Boolean).join('');
+
+  const body = document.getElementById('poCompBody');
+  body.innerHTML = rows.map(r => {
+    const info = skuInfo(r.sku);
+    const diffStr = r.diff === 0 ? '—' : (r.diff > 0 ? '+'+r.diff : String(r.diff));
+    const diffColor = r.diff === 0 ? 'color:var(--muted)' : r.diff > 0 ? 'color:#1e40af;font-weight:700' : 'color:#991b1b;font-weight:700';
+    return `<tr>
+      <td class="mono" style="font-weight:700">${r.sku}</td>
+      <td>${info ? info.name + (info.brand ? ' · ' + info.brand : '') : '—'}</td>
+      <td class="mono">${r.ordered}</td>
+      <td class="mono" style="font-weight:700">${r.inStock}</td>
+      <td class="mono" style="${diffColor}">${diffStr}</td>
+      <td><span class="semaphore ${r.cls}">${r.status}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('poComparison').style.display = 'block';
+  document.getElementById('poComparison').scrollIntoView({behavior:'smooth'});
+
+  // Store for export
+  window._lastCompRows = rows;
+  window._lastCompPO = po;
+}
+
+function exportDiffExcel() {
+  if (!window._lastCompRows || !window._lastCompPO) { toast('Faz primeiro a comparação','err'); return; }
+  const po = window._lastCompPO;
+  const rows = [
+    [`Comparação PO vs Stock — ${po.ref||po.id}${po.supplier?' · '+po.supplier:''}`],
+    [`Gerado em: ${new Date().toLocaleString('pt-PT')}`],
+    [],
+    ['SKU','Nome','Marca','ML','Encomendado','Stock atual','Diferença','Estado']
+  ];
+  window._lastCompRows.forEach(r => {
+    const info = skuInfo(r.sku);
+    rows.push([r.sku, info?.name||'', info?.brand||'', info?.ml||'', r.ordered, r.inStock, r.diff, r.status]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  // Color coding via cell styles not natively supported in SheetJS free, but add column widths
+  ws['!cols'] = [{wch:14},{wch:30},{wch:16},{wch:8},{wch:14},{wch:12},{wch:10},{wch:16}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Comparação');
+  XLSX.writeFile(wb, `comparacao_${po.ref||po.id}.xlsx`);
+  toast('Exportado', 'win');
+}
+
+
+// ⚠️  FIRESTORE RULES — set these in Firebase Console → Firestore → Rules:
+// rules_version = '2';
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//     match /{document=**} {
+//       allow read, write: if true; // open for team use — add auth later if needed
+//     }
+//   }
+// }
+
+// ══ LOGIN ══
+function doLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  if (!name) { document.getElementById('loginError').style.display='block'; return; }
+  currentUser = {name, loginAt: new Date().toLocaleString('pt-PT')};
+  // Save recent users in localStorage (local only — no sensitive data)
+  const recent = JSON.parse(localStorage.getItem('wms_recent_users')||'[]');
+  if (!recent.includes(name)) { recent.unshift(name); recent.splice(5,99); localStorage.setItem('wms_recent_users', JSON.stringify(recent)); }
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('userBadge').style.display='flex';
+  document.getElementById('userBadgeName').textContent = '👤 ' + name;
+  logAction('Login', 'Sessão iniciada');
+  // Save session for page refresh
+  localStorage.setItem('wms_session', JSON.stringify({name, loginAt: new Date().toLocaleString('pt-PT')}));
+  initApp();
+}
+
+function doLogout() {
+  logAction('Logout', 'Sessão terminada');
+  localStorage.removeItem('wms_session');
+  currentUser = null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('userBadge').style.display='none';
+  document.getElementById('loginName').value='';
+  renderRecentUsers();
+}
+
+function renderRecentUsers() {
+  const recent = JSON.parse(localStorage.getItem('wms_recent_users')||'[]');
+  const el = document.getElementById('loginRecentList');
+  if (!recent.length) { el.innerHTML=''; return; }
+  el.innerHTML = '<div style="margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Utilizadores recentes</div>' +
+    recent.map(n => `<button onclick="document.getElementById('loginName').value='${n}';doLogin();"
+      style="display:block;width:100%;text-align:left;padding:6px 10px;margin-bottom:4px;background:#f4f3ef;border:1px solid #d8d5cc;border-radius:6px;cursor:pointer;font-size:13px;font-family:'Barlow',sans-serif;">
+      👤 ${n}</button>`).join('');
+}
+
+// ══ FIRESTORE SYNC ══
+function initApp() {
+  if (!window._db) { toast('Erro: Firebase não carregou. Recarrega a página.', 'err'); return; }
+
+  // Listen to all collections in real-time
+  fbListen('config', docs => {
+    docs.forEach(d => {
+      if (d.id === 'skuDb')   { skuDb = d.items||[]; renderSkuDb(); }
+      if (d.id === 'stock')   { stock = d.items||[]; renderStock(); if(invPos) renderInvLines(); }
+      if (d.id === 'orders')  { orders = d.items||[]; renderDocs('order'); if(activeOrd) renderDocLines('order'); }
+      if (d.id === 'returns') { rets = d.items||[]; renderDocs('return'); if(activeRet) renderDocLines('return'); }
+      if (d.id === 'pos')     { pos_orders = d.items||[]; renderPOList(); if(activePOId) renderPOLines(); }
+    });
+  });
+
+  toast('Ligado · ' + currentUser.name, 'win');
+}
+
+// ══ AUDIT LOG UI ══
+function showAuditLog() {
+  // Load from Firestore
+  if (window._db) {
+    window._db.collection('audit').orderBy('tsRaw','desc').get().then(snap => {
+      const entries = snap.docs.map(d => d.data());
+      renderAuditTable(entries);
+    }).catch(() => renderAuditTable(auditLog));
+  } else {
+    renderAuditTable(auditLog);
+  }
+  document.getElementById('auditOverlay').classList.add('visible');
+}
+
+function renderAuditTable(entries) {
+  const body = document.getElementById('auditBody');
+  if (!entries.length) { body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:#888;">Sem registos.</td></tr>'; return; }
+  body.innerHTML = entries.slice(0,200).map(e => `<tr>
+    <td class="mono" style="white-space:nowrap">${e.ts}</td>
+    <td style="font-weight:600">${e.user}</td>
+    <td>${e.action}</td>
+    <td style="color:#888">${e.detail}</td>
+  </tr>`).join('');
+}
+
+function closeAuditLog() { document.getElementById('auditOverlay').classList.remove('visible'); }
+
+function exportAuditExcel() {
+  if (window._db) {
+    window._db.collection('audit').orderBy('tsRaw','desc').get().then(snap => {
+      const entries = snap.docs.map(d => d.data());
+      _exportAudit(entries);
+    });
+  } else _exportAudit(auditLog);
+}
+
+function _exportAudit(entries) {
+  const rows = [['Data/Hora','Utilizador','Ação','Detalhe'], ...entries.map(e=>[e.ts,e.user,e.action,e.detail])];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Atividade');
+  XLSX.writeFile(wb, 'audit_log.xlsx');
+}
+
+// ══ INIT ══
+renderRecentUsers();
+// Auto-login from saved session (page refresh)
+const _savedSession = localStorage.getItem('wms_session');
+if (_savedSession) {
+  try {
+    const u = JSON.parse(_savedSession);
+    currentUser = u;
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('userBadge').style.display='flex';
+    document.getElementById('userBadgeName').textContent = '👤 ' + u.name;
+    initApp();
+  } catch(e) { localStorage.removeItem('wms_session'); }
+}
 </script>
 </body>
 </html>
