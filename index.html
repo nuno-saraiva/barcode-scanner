@@ -34,7 +34,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .nav-tab:hover{color:rgba(255,255,255,.8);}
 .nav-tab.active{color:#fff;border-bottom-color:var(--accent);}
 .nav-tab.t-ret.active{border-bottom-color:#a78bfa;}
-.nav-tab.t-po.active{border-bottom-color:#fbbf24;}
+
 .nav-tab.t-db.active{border-bottom-color:#38bdf8;}
 .page{display:none;padding:20px 16px;max-width:860px;margin:0 auto;}
 .page.active{display:block;}
@@ -201,19 +201,29 @@ select.input{appearance:auto;cursor:pointer;}
 
 <!-- LOGIN SCREEN -->
 <div id="loginScreen" style="position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:16px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.4);text-align:center;">
-    <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:22px;color:#1a1a2e;margin-bottom:4px;">Armazém<span style="color:#e8420a;">·</span>NH</div>
-    <div style="font-size:13px;color:#888;margin-bottom:28px;">Identifica-te para continuar</div>
-    <div style="text-align:left;margin-bottom:12px;">
-      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#888;display:block;margin-bottom:5px;">O teu nome</label>
-      <input id="loginName" class="input input-sans" placeholder="ex: João Silva" style="font-size:15px;padding:11px 14px;"
-        onkeydown="if(event.key==='Enter')doLogin()">
+  <div style="max-width:480px;width:100%;text-align:center;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:26px;color:#fff;margin-bottom:6px;">Armazém<span style="color:#e8420a;">·</span>NH</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:40px;">Quem és tu?</div>
+
+    <!-- Avatar grid -->
+    <div id="avatarGrid" style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;"></div>
+    <script>if(typeof renderAvatarGrid==="function")renderAvatarGrid();</script>
+
+    <!-- Outro option -->
+    <div id="outroSection" style="display:none;margin-bottom:16px;">
+      <div style="background:rgba(255,255,255,.08);border-radius:12px;padding:20px;">
+        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">Outro utilizador</div>
+        <input id="loginName" class="input input-sans" placeholder="O teu nome..."
+          style="font-size:15px;padding:11px 14px;margin-bottom:10px;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;"
+          onkeydown="if(event.key==='Enter')doLoginName()">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" style="flex:1;color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2);" onclick="hideOutro()">← Voltar</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="doLoginName()">Entrar →</button>
+        </div>
+      </div>
     </div>
-    <div id="loginError" style="color:#dc2626;font-size:12px;margin-bottom:10px;display:none;">Introduz o teu nome para entrar.</div>
-    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;" onclick="doLogin()">Entrar →</button>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee;">
-      <div id="loginRecentList" style="font-size:12px;color:#888;"></div>
-    </div>
+
+    <div id="loginError" style="color:#fca5a5;font-size:12px;margin-bottom:10px;display:none;">Introduz o teu nome.</div>
   </div>
 </div>
 
@@ -245,11 +255,9 @@ select.input{appearance:auto;cursor:pointer;}
   <button class="nav-tab t-db active" data-page="skudb"   onclick="showPage('skudb',this)">🗃 Base SKUs</button>
   <button class="nav-tab"             data-page="stock"   onclick="showPage('stock',this)">📦 Stock</button>
   <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)">🛒 Encomendas</button>
-  <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)">📋 Picking</button>
+  <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)">📦 Para Preparação</button>
   <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)">↩️ Devoluções</button>
-  <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)">📍 Colocação</button>
-  <button class="nav-tab t-po"          data-page="po"      onclick="showPage('po',this)">📥 Encomendas Fornecedor</button>
-  <button class="nav-tab"                  data-page="prep"    onclick="showPage('prep',this)" id="nav-prep">🚶 Preparação</button>
+  <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)">↩️ Para Devolução</button>
   <button class="nav-tab" onclick="showAuditLog()" style="margin-left:auto;">📋 Atividade</button>
 </nav>
 
@@ -264,22 +272,7 @@ select.input{appearance:auto;cursor:pointer;}
       <input type="file" id="skuFile" accept=".xlsx,.xls" onchange="importSkuDb()" class="input" style="padding:8px;">
     </div>
   </div>
-  <div class="card">
-    <div class="card-header"><span class="card-title">Adicionar manualmente</span></div>
-    <div class="card-body">
-      <div class="g3">
-        <div class="field" style="margin:0"><label>SKU</label><input class="input mono" id="db-sku" placeholder="SKU-001"></div>
-        <div class="field" style="margin:0"><label>EAN</label><input class="input mono" id="db-ean" placeholder="3614273..."></div>
-        <div class="field" style="margin:0"><label>Nome</label><input class="input input-sans" id="db-name" placeholder="Nome do produto"></div>
-      </div>
-      <div class="g3" style="margin-top:8px;">
-        <div class="field" style="margin:0"><label>Marca</label><input class="input input-sans" id="db-brand" placeholder="Marca"></div>
-        <div class="field" style="margin:0"><label>Categoria</label><input class="input input-sans" id="db-cat" placeholder="Categoria"></div>
-        <div class="field" style="margin:0"><label>ML / Tamanho</label><input class="input mono" id="db-ml" placeholder="50ml"></div>
-      </div>
-      <div style="margin-top:10px;"><button class="btn btn-sky" onclick="addSkuEntry()">＋ Adicionar produto</button></div>
-    </div>
-  </div>
+
   <div class="card">
     <div class="card-header"><span class="card-title">Catálogo</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -297,110 +290,34 @@ select.input{appearance:auto;cursor:pointer;}
 <!-- STOCK -->
 <div class="page" id="page-stock">
   <div class="page-title">Stock</div>
-  <div class="page-sub">Posições e quantidades</div>
-  <div class="inner-tabs">
-    <button class="inner-tab active" id="stab-excel-btn"     onclick="switchStockMode('excel')">📂 Excel</button>
-    <button class="inner-tab"        id="stab-inventory-btn" onclick="switchStockMode('inventory')">🔍 Inventário</button>
-    <button class="inner-tab"        id="stab-manual-btn"    onclick="switchStockMode('manual')">✏️ Manual</button>
-  </div>
-  <!-- EXCEL -->
-  <div id="stab-excel"><div class="card">
-    <div class="card-header"><span class="card-title">Importar Excel</span><button class="btn btn-ghost btn-sm" onclick="dlStockTpl()">⬇ Template</button></div>
-    <div class="card-body">
-      <div class="alert a-info">ℹ️ Colunas: <strong>SKU | Posição | Quantidade | Tipo de Caixa</strong></div>
-      <input type="file" id="stockFile" accept=".xlsx,.xls" onchange="importStock()" class="input" style="padding:8px;">
-    </div>
-  </div></div>
-  <!-- INVENTORY -->
-  <div id="stab-inventory" style="display:none;">
-    <div class="steps"><div class="step-ind si-active" id="inv-s1">1 · Posição</div><div class="step-ind si-idle" id="inv-s2">2 · Contagem</div></div>
-    <div id="inv-step1" class="card">
-      <div class="card-header"><span class="card-title">Seleciona a posição</span></div>
-      <div class="card-body">
-        <div class="alert a-info" style="font-size:12px;">Posições carregadas do stock existente.</div>
-        <div class="field"><label>Posição</label>
-          <select class="input mono" id="inv-pos-select" style="font-size:15px;padding:11px 12px;" onchange="previewPos()"><option value="">— Escolhe —</option></select>
-        </div>
-        <div id="inv-pos-preview" style="display:none;background:var(--surface2);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.7;"></div>
-        <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="startInvCount()">Iniciar contagem →</button>
-      </div>
-    </div>
-    <div id="inv-step2" class="card" style="display:none;">
-      <div class="card-header">
-        <div><span class="card-title">Contagem</span><div class="mono" style="font-size:16px;font-weight:700;color:var(--accent);margin-top:2px;" id="inv-pos-label"></div></div>
-        <div style="display:flex;gap:6px;align-items:center;"><span class="badge" id="inv-box-label"></span><button class="btn btn-ghost btn-sm" onclick="backInvStep1()">← Posição</button></div>
-      </div>
-      <div class="card-body">
-        <div id="invScannerBox" class="scanner-box"><div id="invInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
-          <button class="btn btn-dark btn-sm" id="btnInvScan" onclick="toggleScan('inv')">📷 Scanner</button>
-          <span class="dot" id="invScanDot"></span><span style="font-size:11px;color:var(--muted)" id="invScanStatus">Inativo</span>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <input class="input mono" id="inv-sku-manual" placeholder="SKU ou EAN direto..." onkeydown="if(event.key==='Enter')invManualAdd()">
-          <button class="btn btn-dark btn-sm" onclick="openSearchPanel('inv')">🔍</button>
-          <button class="btn btn-primary btn-sm" onclick="invManualAdd()">＋</button>
-        </div>
-        <div class="alert a-info" style="font-size:12px;">Scanner e pesquisa adicionam 1 unidade. Edita na tabela.</div>
-        <div style="overflow-x:auto;margin-top:8px;"><table class="tbl">
-          <thead><tr><th>SKU</th><th>Produto</th><th>Contado</th><th>Anterior</th><th>Dif.</th><th></th></tr></thead>
-          <tbody id="invLinesBody"></tbody>
-        </table></div>
-        <div class="divider"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-success" onclick="commitInv(false)">✓ Guardar</button>
-          <button class="btn btn-primary" style="flex:1;" onclick="commitInv(true)">✓ Guardar e próxima posição</button>
-        </div>
-      </div>
-    </div>
-    <div id="inv-session" class="card" style="display:none;margin-top:8px;">
-      <div class="card-header"><span class="card-title">Sessão</span><button class="btn btn-ghost btn-sm" onclick="clearInvSess()">Limpar</button></div>
-      <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Posição</th><th>Tipo</th><th>SKUs</th><th>Unid.</th><th></th></tr></thead><tbody id="invSessBody"></tbody></table></div>
-    </div>
-  </div>
-  <!-- MANUAL -->
-  <div id="stab-manual" style="display:none;"><div class="card">
-    <div class="card-header"><span class="card-title">Entrada manual</span></div>
-    <div class="card-body">
-      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
-        <button class="btn btn-sky" onclick="openSearchPanel('stock')">🔍 Pesquisar produto</button>
-        <span style="font-size:12px;color:var(--muted)">ou introduz o SKU abaixo</span>
-      </div>
-      <div class="g4">
-        <div class="field" style="margin:0"><label>SKU</label><input class="input mono" id="s-sku" placeholder="SKU" readonly style="background:var(--surface2);"></div>
-        <div class="field" style="margin:0"><label>Posição</label><input class="input mono" id="s-pos" placeholder="A-01-02"></div>
-        <div class="field" style="margin:0"><label>Quantidade</label><input class="input mono qty-in" id="s-qty" type="number" min="0" placeholder="0" style="width:100%;"></div>
-        <div></div>
-      </div>
-      <div class="g2" style="margin-top:8px;">
-        <div class="field" style="margin:0"><label>Tipo de caixa</label>
-          <select class="input" id="s-boxtype"><option value="mista">📦 Mista</option><option value="exclusiva">🔹 Exclusiva</option></select>
-        </div>
-        <div style="display:flex;align-items:flex-end;"><button class="btn btn-primary" style="width:100%;" onclick="addStockEntry()">＋ Adicionar</button></div>
-      </div>
-    </div>
-  </div></div>
-  <!-- TABLE -->
+  <div class="page-sub">Consulta de stock por posição</div>
+
+  <!-- STOCK TABLE -->
   <div class="card">
-    <div class="card-header"><span class="card-title">Stock atual</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input class="input input-sans" id="stockSearch" placeholder="Pesquisar..." style="width:140px;padding:5px 10px;font-size:12px;" oninput="renderStock()">
-        <select class="input input-sans" id="stockFilter" style="width:110px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
+    <div class="card-header">
+      <span class="card-title">Stock atual</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input class="input input-sans" id="stockSearch" placeholder="Pesquisar..." style="width:130px;padding:5px 10px;font-size:12px;" oninput="renderStock()">
+        <select class="input input-sans" id="stockFilter" style="width:95px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
           <option value="">Todos</option><option value="mista">Mistas</option><option value="exclusiva">Exclusivas</option>
         </select>
+        <button class="btn btn-success btn-sm" onclick="openEntrada()">＋ Dar entrada</button>
+        <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" id="btnTeorico">📊 Stock teórico</button>
         <button class="btn btn-ghost btn-sm" onclick="clearStock()">🗑</button>
       </div>
     </div>
+    
     <div style="overflow-x:auto;"><table class="tbl">
-      <thead><tr><th>SKU</th><th>Produto</th><th>Posição</th><th>Qty</th><th>Tipo</th><th>Estado</th><th></th></tr></thead>
+      <thead id="stockThead"><tr><th>SKU</th><th>Produto</th><th>Posição</th><th>Stock real</th><th>Tipo</th><th>Estado</th><th></th></tr></thead>
       <tbody id="stockBody"></tbody>
     </table></div>
   </div>
 </div>
 
+
 <!-- ORDERS -->
 <div class="page" id="page-orders">
-  <div class="page-title">Encomendas</div><div class="page-sub">Pedidos de picking</div>
+  <div class="page-title">Encomendas</div><div class="page-sub">Pedidos de preparação e saída</div>
   <div class="card">
     <div class="card-header"><span class="card-title">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')">＋ Nova</button></div>
     <div id="ordersList"><div class="empty"><div class="empty-icon">🛒</div>Sem encomendas.</div></div>
@@ -411,7 +328,7 @@ select.input{appearance:auto;cursor:pointer;}
         <span class="card-title" id="editorTitle">Encomenda</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="closeEd('order')">Fechar</button>
-          <button class="btn btn-success btn-sm" onclick="emitirGuia()">📋 Emitir Guia</button>
+          <button class="btn btn-success btn-sm" onclick="emitirGuia()">📦 Emitir Guia Preparação</button>
         </div>
       </div>
       <div class="card-body">
@@ -459,13 +376,38 @@ select.input{appearance:auto;cursor:pointer;}
 
 <!-- PICKING -->
 <div class="page" id="page-picking">
-  <div class="page-title">Guia de Picking</div>
-  <div class="page-sub">Guias emitidas — prontas para preparação</div>
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Guias emitidas</span>
+  <div class="page-title">Para Preparação</div>
+  <div class="page-sub">Guias de saída — preparação linha a linha</div>
+
+  <!-- GUIDES LIST -->
+  <div id="pickingListSection">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Guias em aberto</span></div>
+      <div id="pickingGuidesList"><div class="empty"><div class="empty-icon">📋</div>Nenhuma guia emitida. Vai a <strong>Encomendas</strong> e clica em "Emitir Guia".</div></div>
     </div>
-    <div id="pickingGuidesList"><div class="empty"><div class="empty-icon">📋</div>Nenhuma guia emitida. Vai a <strong>Encomendas</strong> e clica em "Emitir Guia".</div></div>
+  </div>
+
+  <!-- ACTIVE PICKING SESSION (inline, hidden until started) -->
+  <div id="prepContent" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="cancelPrep()">← Voltar à lista</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcel()">⬇ Excel</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelPrep()">✕ Cancelar</button>
+      </div>
+    </div>
+    <div class="pick-hdr ph-ord" id="prepHeader" style="margin-bottom:14px;"></div>
+    <div style="background:var(--surface2);border-radius:30px;height:8px;margin-bottom:6px;overflow:hidden;">
+      <div id="prepProgress" style="height:100%;background:var(--success);border-radius:30px;transition:width .4s;width:0%;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:16px;">
+      <span id="prepProgressLabel">0 / 0 linhas confirmadas</span>
+      <span id="prepRupturaLabel" style="color:#dc2626;display:none;"></span>
+    </div>
+    <div id="prepLines"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+      <button class="btn btn-success" style="flex:1;padding:12px;" onclick="finalizePicking()">✓ Finalizar e deduzir stock</button>
+    </div>
   </div>
 </div>
 
@@ -482,7 +424,7 @@ select.input{appearance:auto;cursor:pointer;}
         <span class="card-title" id="retEdTitle">Devolução</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="closeEd('return')">Fechar</button>
-          <button class="btn btn-purple btn-sm" onclick="genDoc('return')">📍 Gerar Colocação</button>
+          <button class="btn btn-purple btn-sm" onclick="genDoc('return')">↩️ Emitir Guia Devolução</button>
         </div>
       </div>
       <div class="card-body">
@@ -530,139 +472,101 @@ select.input{appearance:auto;cursor:pointer;}
 
 <!-- PUTAWAY -->
 <div class="page" id="page-putaway">
-  <div class="page-title">Folha de Colocação</div><div class="page-sub">Arrumação de devoluções</div>
-  <div id="putawayEmpty" class="card"><div class="card-body"><div class="empty"><div class="empty-icon">📍</div>Vai a <strong>Devoluções</strong> → "Gerar Colocação".</div></div></div>
-  <div id="putawayContent" style="display:none;">
-    <div id="putawaySheet"></div>
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-      <button class="btn btn-purple" onclick="confirmDoc('return')">✓ Confirmar</button>
-      <button class="btn btn-ghost btn-sm" onclick="exportDocXls('return')">⬇ Excel</button>
+  <div class="page-title">Para Devolução</div>
+  <div class="page-sub">Guias de entrada — colocação linha a linha</div>
+
+  <!-- GUIDES LIST -->
+  <div id="putawayListSection">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Guias de devolução em aberto</span></div>
+      <div id="putawayGuidesList"><div class="empty"><div class="empty-icon">↩️</div>Nenhuma guia emitida. Vai a <strong>Devoluções</strong> e clica em "Emitir Guia Devolução".</div></div>
     </div>
   </div>
-</div>
 
-
-
-<!-- PREPARAÇÃO PAGE -->
-<div class="page" id="page-prep">
-  <div class="page-title">Preparação</div>
-  <div class="page-sub">Picking em curso — linha a linha</div>
-
-  <!-- Active picking session -->
-  <div id="prepEmpty" class="card">
-    <div class="card-body"><div class="empty"><div class="empty-icon">🚶</div>Seleciona uma guia na lista de <strong>Picking</strong> para iniciar a preparação.</div></div>
-  </div>
-
-  <div id="prepContent" style="display:none;">
-    <!-- Header -->
-    <div class="pick-hdr ph-ord" id="prepHeader" style="margin-bottom:14px;"></div>
-
-    <!-- Progress bar -->
+  <!-- ACTIVE PUTAWAY SESSION -->
+  <div id="putawayPrepContent" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="cancelPutawayPrep()">← Voltar à lista</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportPutawayExcel()">⬇ Excel</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelPutawayPrep()">✕ Cancelar</button>
+      </div>
+    </div>
+    <div class="pick-hdr ph-ret" id="putawayPrepHeader" style="margin-bottom:14px;"></div>
     <div style="background:var(--surface2);border-radius:30px;height:8px;margin-bottom:6px;overflow:hidden;">
-      <div id="prepProgress" style="height:100%;background:var(--success);border-radius:30px;transition:width .4s;width:0%;"></div>
+      <div id="putawayProgress" style="height:100%;background:var(--purple);border-radius:30px;transition:width .4s;width:0%;"></div>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:16px;">
-      <span id="prepProgressLabel">0 / 0 linhas confirmadas</span>
-      <span id="prepRupturaLabel" style="color:#dc2626;display:none;"></span>
+      <span id="putawayProgressLabel">0 / 0 linhas confirmadas</span>
     </div>
-
-    <!-- Lines -->
-    <div id="prepLines"></div>
-
-    <!-- Actions -->
+    <div id="putawayPrepLines"></div>
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-      <button class="btn btn-success" style="flex:1;" onclick="finalizePicking()">✓ Finalizar e deduzir stock</button>
-      <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcel()">⬇ Excel</button>
-      <button class="btn btn-danger btn-sm" onclick="cancelPrep()">✕ Cancelar</button>
+      <button class="btn btn-purple" style="flex:1;padding:12px;" onclick="finalizePutaway()">✓ Finalizar e acrescentar ao stock</button>
     </div>
   </div>
 </div>
 
-<!-- PO PAGE -->
-<div class="page" id="page-po">
-  <div class="page-title">Encomendas ao Fornecedor</div>
-  <div class="page-sub">POs em aberto — comparação com stock recebido</div>
 
-  <!-- PO LIST + NEW -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Purchase Orders</span>
-      <button class="btn btn-warn btn-sm" onclick="newPO()">＋ Nova PO</button>
+
+
+
+<!-- STOCK TEÓRICO PANEL -->
+
+<!-- STOCK TEÓRICO PANEL -->
+<div class="search-panel-overlay" id="teoricoOverlay" onclick="teoricoClose(event)">
+  <div class="search-panel" style="max-width:480px;" onclick="event.stopPropagation()">
+    <div class="search-panel-head">
+      <div style="font-weight:800;font-size:15px;flex:1;">📊 Stock teórico</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeTeoricoPanel()">✕</button>
     </div>
-    <div id="poList"><div class="empty"><div class="empty-icon">📥</div>Sem encomendas ao fornecedor.</div></div>
-  </div>
-
-  <!-- PO EDITOR -->
-  <div id="poEditor" style="display:none;">
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <span class="card-title" id="poEdTitle">PO</span>
-          <div class="mono" style="font-size:11px;color:var(--muted);margin-top:2px;" id="poEdRef"></div>
-        </div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;">
-          <button class="btn btn-ghost btn-sm" onclick="closePOEditor()">Fechar</button>
-          <button class="btn btn-warn btn-sm" onclick="showPOComparison()">📊 Comparar com stock</button>
-          <button class="btn btn-success btn-sm" onclick="closePO()">✓ Fechar PO</button>
-        </div>
+    <div style="padding:16px;flex:1;overflow-y:auto;">
+      <div class="alert a-sky" style="margin-bottom:14px;">
+        Importa o ficheiro do fornecedor. As colunas <strong>Teórico</strong> e <strong>Diferença</strong> aparecem na tabela de stock.
       </div>
-      <div class="card-body">
-        <div class="g2">
-          <div class="field"><label>Referência PO</label><input class="input input-sans" id="po-ref" placeholder="ex: PO-2026-001" oninput="updPO()"></div>
-          <div class="field"><label>Fornecedor</label><input class="input input-sans" id="po-supplier" placeholder="Nome do fornecedor" oninput="updPO()"></div>
-        </div>
-        <div class="inner-tabs">
-          <button class="inner-tab active" onclick="switchPOTab('search')">🔍 Pesquisa</button>
-          <button class="inner-tab" onclick="switchPOTab('manual')">⌨️ Manual</button>
-          <button class="inner-tab" onclick="switchPOTab('import')">📂 Importar</button>
-        </div>
-        <div id="potab-search">
-          <div style="padding:16px 0;text-align:center;">
-            <button class="btn btn-warn" style="padding:12px 28px;font-size:14px;" onclick="openSearchPanel('po')">🔍 Pesquisar produto</button>
-            <div style="font-size:12px;color:var(--muted);margin-top:10px;">Seleciona o produto e indica a quantidade encomendada.</div>
-          </div>
-        </div>
-        <div id="potab-manual" style="display:none;">
-          <div class="g-add">
-            <div class="field" style="margin:0"><label>SKU / EAN</label><input class="input mono" id="po-sku" placeholder="Código..."></div>
-            <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="po-qty" type="number" min="1" value="1" style="width:100%;"></div>
-            <button class="btn btn-warn" onclick="addPOLine()">＋</button>
-          </div>
-        </div>
-        <div id="potab-import" style="display:none;">
-          <div class="alert a-info" style="font-size:12px;">Excel: <strong>SKU | EAN | Quantidade</strong> (SKU e EAN podem ser usados em alternativa) &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlPOTpl()">⬇ Template</button></div>
-          <input type="file" id="poFile" accept=".xlsx,.xls" onchange="importPOLines()" class="input" style="padding:8px;">
-        </div>
-        <div class="divider"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <strong style="font-size:13px;">Linhas encomendadas</strong>
-          <span id="poLineCount" style="font-size:11px;color:var(--muted)">0 SKUs</span>
-        </div>
-        <div style="overflow-x:auto;"><table class="tbl">
-          <thead><tr><th>SKU</th><th>Produto</th><th>Qty encomendada</th><th>Stock atual</th><th></th></tr></thead>
-          <tbody id="poLinesBody"></tbody>
-        </table></div>
+      <div class="alert a-info" style="font-size:12px;margin-bottom:14px;">Colunas: <strong>SKU | EAN | Quantidade</strong></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="dlTeoricoTpl()">⬇ Template</button>
+      </div>
+      <input type="file" id="teoricoFile" accept=".xlsx,.xls" onchange="importTeorico()" class="input" style="padding:8px;margin-bottom:14px;">
+      <div id="teoricoStatus" style="display:none;background:var(--surface2);border-radius:8px;padding:12px;font-size:13px;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-danger btn-sm" onclick="clearTeorico()" id="btnClearTeorico" style="display:none;">🗑 Limpar stock teórico</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportDiffExcel()">⬇ Exportar diferenças Excel</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- COMPARISON PANEL -->
-  <div id="poComparison" style="display:none;">
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">📊 Comparação PO vs Stock recebido</span>
-        <button class="btn btn-ghost btn-sm" onclick="exportDiffExcel()">⬇ Exportar Excel</button>
-      </div>
-      <div class="card-body">
-        <div class="alert a-info" style="font-size:12px;">
-          Compara as quantidades encomendadas ao fornecedor com o stock atualmente registado. Usa esta vista <strong>antes de confirmar a entrada</strong> para detetar divergências.
-        </div>
-        <div id="poCompSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
-        <div style="overflow-x:auto;"><table class="tbl">
-          <thead><tr><th>SKU</th><th>Produto</th><th>Encomendado</th><th>Stock atual</th><th>Diferença</th><th>Estado</th></tr></thead>
-          <tbody id="poCompBody"></tbody>
-        </table></div>
-      </div>
+<!-- LOJA MODAL (reparação) -->
+<div class="overlay" id="lojaModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">📦 Para Preparação</div>
+    <div class="modal-sub" id="lojaModalSub">Indica a loja de destino antes de começar.</div>
+    <div class="field">
+      <label>Loja de destino</label>
+      <input class="input input-sans" id="lojaInput" placeholder="ex: Loja Lisboa Centro..."
+        onkeydown="if(event.key==='Enter')lojaConfirm()" style="font-size:15px;padding:11px 14px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="lojaCancel()">Cancelar</button>
+      <button class="btn btn-primary" onclick="lojaConfirm()">Iniciar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORIGEM MODAL (devolução) -->
+<div class="overlay" id="origemModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title" style="color:var(--purple);">↩️ Para Devolução</div>
+    <div class="modal-sub" id="origemModalSub">Indica a origem da devolução antes de começar.</div>
+    <div class="field">
+      <label>Loja de origem</label>
+      <input class="input input-sans" id="origemInput" placeholder="ex: Loja Porto Norte..."
+        onkeydown="if(event.key==='Enter')origemConfirm()" style="font-size:15px;padding:11px 14px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="origemCancel()">Cancelar</button>
+      <button class="btn btn-purple" onclick="origemConfirm()">Iniciar →</button>
     </div>
   </div>
 </div>
@@ -705,8 +609,8 @@ let currentUser = null; // {name, loginAt}
 let auditLog = []; // local session audit trail
 
 let activeOrd=null, activeRet=null;
-let scanning={order:false,return:false,inv:false};
-let scanCD={order:false,return:false,inv:false};
+let scanning={order:false,return:false,inv:false,ent:false};
+let scanCD={order:false,return:false,inv:false,ent:false};
 let curPick=null;
 let invPos='',invBox='mista',invLines=[],invSess=[];
 
@@ -732,7 +636,7 @@ async function saveDb()  { await fbSet('config', 'skuDb',  {items: skuDb}); }
 async function saveStk() { await fbSet('config', 'stock',  {items: stock}); }
 async function saveOrd() { await fbSet('config', 'orders', {items: orders}); }
 async function saveRet() { await fbSet('config', 'returns',{items: rets}); }
-async function savePO()  { await fbSet('config', 'pos',    {items: pos_orders}); }
+async function saveTeorico() { await fbSet('config', 'teorico', {items: teorico}); }
 
 // ── Audit log ──
 function logAction(action, detail) {
@@ -770,9 +674,8 @@ function showPage(id,btn){
   if(id==='stock') renderStock();
   if(id==='orders') renderDocs('order');
   if(id==='returns') renderDocs('return');
-  if(id==='po') renderPOList();
   if(id==='picking') renderPickingGuides();
-  if(id==='prep') renderPrepContent();
+  if(id==='putaway') renderPutawayGuides();
   if(id!=='orders') stopScan('order');
   if(id!=='returns') stopScan('return');
   if(id!=='stock') stopScan('inv');
@@ -881,88 +784,212 @@ function dlSkuTpl(){
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'SKUs');XLSX.writeFile(wb,'template_skus.xlsx');
 }
 
-// STOCK MODE
-function switchStockMode(m){
-  ['excel','inventory','manual'].forEach(x=>{document.getElementById('stab-'+x).style.display=x===m?'':'none';document.getElementById('stab-'+x+'-btn').classList.toggle('active',x===m);});
-  if(m==='inventory')popPosSel();
-  if(m!=='inventory')stopScan('inv');
-}
-
-// INVENTORY
-function invStepUI(n){
-  [1,2].forEach(i=>{document.getElementById('inv-step'+i).style.display=i===n?'':'none';const el=document.getElementById('inv-s'+i);el.className='step-ind '+(i<n?'si-done':i===n?'si-active':'si-idle');});
-}
-function popPosSel(){
-  const sel=document.getElementById('inv-pos-select');
-  const pos=[...new Set(stock.map(s=>s.position))].sort();
-  sel.innerHTML='<option value="">— Escolhe —</option>'+pos.map(p=>`<option value="${p}">${p}</option>`).join('');
-  document.getElementById('inv-pos-preview').style.display='none';
-}
-function previewPos(){
-  const pos=document.getElementById('inv-pos-select').value;
-  const prev=document.getElementById('inv-pos-preview');
-  if(!pos){prev.style.display='none';return;}
-  const entries=stock.filter(s=>s.position===pos);
-  const bt=entries[0]?.boxType||'mista';
-  prev.style.display='';
-  prev.innerHTML=`<strong class="mono">${pos}</strong> · ${bt==='mista'?'📦 Mista':'🔹 Exclusiva'} · ${entries.length} SKUs · ${entries.reduce((a,s)=>a+s.qty,0)} unid.<br>
-    <span style="color:var(--muted);font-size:12px">${entries.map(s=>{const i=skuInfo(s.sku);return `${s.sku}${i?' ('+i.name+')':''}: ${s.qty}`;}).join(' | ')}</span>`;
-}
-function startInvCount(){
-  const pos=document.getElementById('inv-pos-select').value;
-  if(!pos){toast('Seleciona uma posição','err');return;}
-  const entries=stock.filter(s=>s.position===pos);
-  invPos=pos;invBox=entries[0]?.boxType||'mista';
-  invLines=entries.map(e=>({sku:e.sku,qty:0}));
-  document.getElementById('inv-pos-label').textContent=pos;
-  const bl=document.getElementById('inv-box-label');
-  if(invBox==='mista'){bl.textContent='📦 Mista';bl.className='badge bdg-mx';}
-  else{bl.textContent='🔹 Exclusiva';bl.className='badge bdg-ex';}
-  renderInvLines();invStepUI(2);
-  setTimeout(()=>document.getElementById('inv-search').focus(),100);
-}
-function invAddFromAc(sku){
-  if(!sku)return;
-  const ex=invLines.find(l=>l.sku===sku);
-  if(ex)ex.qty++;else invLines.push({sku,qty:1});
-  renderInvLines();document.getElementById('inv-search').value='';acSel['inv-search']=null;toast('✓ '+sku,'win');
-}
-function updInvQty(sku,qty){const l=invLines.find(l=>l.sku===sku);if(l)l.qty=Math.max(0,parseInt(qty)||0);renderInvLines();}
-function rmInvLine(sku){invLines=invLines.filter(l=>l.sku!==sku);renderInvLines();}
-function renderInvLines(){
-  const body=document.getElementById('invLinesBody');
-  if(!invLines.length){body.innerHTML=`<tr><td colspan="6"><div class="empty" style="padding:12px;">Sem artigos.</div></td></tr>`;return;}
-  body.innerHTML=invLines.map(l=>{
-    const prev=stock.filter(s=>s.sku===l.sku&&s.position===invPos).reduce((a,s)=>a+s.qty,0);
-    const diff=l.qty-prev;
-    const db=diff>0?`<span class="badge bdg-gn">+${diff}</span>`:diff<0?`<span class="badge bdg-rd">${diff}</span>`:`<span class="badge bdg-gy">=</span>`;
-    return `<tr><td class="mono" style="font-weight:700">${l.sku}</td><td>${skuPill(l.sku)}</td>
-      <td><input class="input qty-in" type="number" min="0" value="${l.qty}" onchange="updInvQty('${l.sku}',this.value)" style="width:68px;"></td>
-      <td class="mono" style="color:var(--muted)">${prev}</td><td>${db}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="rmInvLine('${l.sku}')">✕</button></td></tr>`;
+// ══ STOCK TABLE ══
+function renderStock(){
+  const q=document.getElementById('stockSearch').value.toLowerCase();
+  const ft=document.getElementById('stockFilter').value;
+  const hasTeorico=teorico.length>0;
+  const filtered=stock.filter(s=>{
+    const i=skuInfo(s.sku);const str=[s.sku,s.position,i?.name,i?.brand,i?.category].filter(Boolean).join(' ').toLowerCase();
+    return str.includes(q)&&(!ft||s.boxType===ft);
+  }).sort((a,b)=>{
+    const pa=parsePos(a.position),pb=parsePos(b.position);
+    if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
+    if(pa.floor!==pb.floor)return pa.floor-pb.floor;
+    return pa.slot-pb.slot;
+  });
+  const thead=document.getElementById('stockThead');
+  thead.innerHTML='<tr><th>SKU</th><th>Produto</th><th>Posição</th><th>Stock real</th>'+(hasTeorico?'<th>Teórico</th><th>Diferença</th>':'')+'<th>Tipo</th><th>Estado</th><th></th></tr>';
+  const cols=hasTeorico?9:7;
+  const body=document.getElementById('stockBody');
+  if(!filtered.length){body.innerHTML='<tr><td colspan="'+cols+'"><div class="empty"><div class="empty-icon">📦</div>'+(stock.length?'Sem resultados.':'Sem stock. Clica em "Dar entrada" para começar.')+'</div></td></tr>';return;}
+  body.innerHTML=filtered.map(s=>{
+    const st=s.qty===0?'<span class="badge bdg-rd">Esgotado</span>':s.qty<=5?'<span class="badge bdg-or">Baixo</span>':'<span class="badge bdg-gn">OK</span>';
+    const bb=s.boxType==='mista'?'<span class="badge bdg-mx">Mista</span>':'<span class="badge bdg-ex">Exclusiva</span>';
+    let tCols='';
+    if(hasTeorico){
+      const te=teorico.find(t=>t.sku===s.sku);
+      const tq=te?te.qty:null;
+      const diff=tq!==null?s.qty-tq:null;
+      tCols=(tq!==null?'<td class="mono">'+tq+'</td>':'<td style="color:var(--muted)">—</td>');
+      tCols+=diff===null?'<td style="color:var(--muted)">—</td>':diff===0?'<td><span class="badge bdg-gy">=</span></td>':diff>0?'<td><span class="badge bdg-gn">+'+diff+'</span></td>':'<td><span class="badge bdg-rd">'+diff+'</span></td>';
+    }
+    return '<tr><td class="mono" style="font-weight:700">'+s.sku+'</td><td>'+skuPill(s.sku)+'</td><td class="mono">'+s.position+'</td><td class="mono" style="font-weight:700">'+s.qty+'</td>'+tCols+'<td>'+bb+'</td><td>'+st+'</td><td><button class="btn btn-ghost btn-sm" onclick="delStk('+JSON.stringify(s.id)+')">✕</button></td></tr>';
   }).join('');
 }
-function backInvStep1(){stopScan('inv');invLines=[];popPosSel();invStepUI(1);}
-function commitInv(andNext){
-  if(!invLines.length){toast('Sem artigos','err');return;}
-  stock=stock.filter(s=>s.position!==invPos);
-  invLines.forEach(l=>{if(l.qty>0)stock.push({id:Date.now()+Math.random(),sku:l.sku,position:invPos,qty:l.qty,boxType:invBox});});
-  saveStk();renderStock();
-  logAction('Inventário confirmado', `Posição ${invPos} · ${invCurrentLines ? invCurrentLines.length : invLines.length} SKUs`);
-  invSess.unshift({position:invPos,boxType:invBox,lines:[...invLines],total:invLines.reduce((a,l)=>a+l.qty,0)});
-  renderInvSess();toast(`✓ ${invPos} guardada`,'win');
-  if(andNext){invLines=[];popPosSel();document.getElementById('inv-pos-preview').style.display='none';invStepUI(1);setTimeout(()=>document.getElementById('inv-pos-select').focus(),100);}
-  else backInvStep1();
+function delStk(id){stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
+function clearStock(){if(!confirm(`Apagar ${stock.length} entradas?`))return;stock=[];saveStk();renderStock();toast('Stock limpo');}
+function dlStockTpl(){
+  const ws=XLSX.utils.aoa_to_sheet([['SKU','Posição','Quantidade','Tipo de Caixa'],['SKU-001','A11',10,'Mista'],['SKU-002','B23',20,'Exclusiva']]);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');XLSX.writeFile(wb,'template_stock.xlsx');
 }
-function renderInvSess(){
-  const el=document.getElementById('inv-session');const body=document.getElementById('invSessBody');
-  el.style.display=invSess.length?'':'none';
-  body.innerHTML=invSess.map(s=>{const bb=s.boxType==='mista'?`<span class="badge bdg-mx">Mista</span>`:`<span class="badge bdg-ex">Exclusiva</span>`;
-    return `<tr><td class="mono" style="font-weight:700">${s.position}</td><td>${bb}</td><td class="mono">${s.lines.filter(l=>l.qty>0).length}</td><td class="mono">${s.total}</td><td><span class="badge bdg-gn">✓</span></td></tr>`;}).join('');
-}
-function clearInvSess(){invSess=[];document.getElementById('inv-session').style.display='none';}
 
-// STOCK CRUD
+
+// ══ STOCK TEÓRICO ══
+let teorico = [];
+let teoricoRaw = [];
+
+
+function exportTeoricoExcel(){
+  if(!teoricoRaw.length){toast('Sem dados','err');return;}
+  const rows=[['SKU','Nome','Marca','ML','Qty teórica','Stock real','Diferença','Estado']];
+  teoricoRaw.forEach(t=>{
+    const info=skuInfo(t.sku);
+    const real=stock.filter(s=>s.sku===t.sku).reduce((a,s)=>a+s.qty,0);
+    const diff=real-t.qty;
+    const estado=diff===0?'Conforme':diff>0?'Excesso':real===0?'Não recebido':'Em falta';
+    rows.push([t.sku,info?.name||'',info?.brand||'',info?.ml||'',t.qty,real,diff,estado]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:28},{wch:14},{wch:8},{wch:12},{wch:10},{wch:10},{wch:14}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Comparação');
+  XLSX.writeFile(wb,'stock_teorico_vs_real.xlsx');
+  toast('Excel exportado','win');
+}
+
+// ══ DAR ENTRADA — FLOATING PANEL ══
+let entSku=null, entQty=1, entRecap=[];
+
+function openEntrada(){
+  entSku=null; entQty=1;
+  ['ent-search','ent-sku-manual','ent-pos-manual'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ent-qty').value=1;
+  document.getElementById('ent-pos-select').value='';
+  document.getElementById('ent-pos-info').textContent='';
+  document.getElementById('ent-pos-warning').style.display='none';
+  entStepUI(1);
+  switchEntradaMode('pick');
+  // Populate position list sorted by warehouse route
+  const sel=document.getElementById('ent-pos-select');
+  const positions=[...new Set(stock.map(s=>s.position))].sort((a,b)=>{
+    const pa=parsePos(a),pb=parsePos(b);
+    if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
+    if(pa.floor!==pb.floor)return pa.floor-pb.floor;
+    return pa.slot-pb.slot;
+  });
+  sel.innerHTML='<option value="">— Selecionar da lista —</option>'+
+    positions.map(p=>{
+      const total=stock.filter(s=>s.position===p).reduce((a,s)=>a+s.qty,0);
+      return `<option value="${p}">${p} (${total} unid.)</option>`;
+    }).join('');
+  document.getElementById('entradaOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('ent-search').focus(),100);
+}
+
+function closeEntrada(){ stopScan('ent'); document.getElementById('entradaOverlay').classList.remove('open'); }
+function entradaClose(e){ if(e.target===document.getElementById('entradaOverlay')) closeEntrada(); }
+
+function switchEntradaMode(m){
+  ['pick','excel'].forEach(x=>{
+    document.getElementById('ent-tab-'+x).style.display=x===m?'':'none';
+    document.getElementById('ent-tab-'+x+'-btn').classList.toggle('active',x===m);
+  });
+  if(m!=='pick') stopScan('ent');
+}
+
+function entStepUI(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('ent-step'+i).style.display=i===n?'':'none';
+    const el=document.getElementById('ent-s'+i);
+    if(!el)return;
+    el.style.background=i<n?'var(--success)':i===n?'var(--accent)':'var(--surface2)';
+    el.style.color=i<=n?'#fff':'var(--muted)';
+  });
+  if(n===1) setTimeout(()=>document.getElementById('ent-search').focus(),80);
+  if(n===2) setTimeout(()=>document.getElementById('ent-qty').focus(),80);
+  if(n===3) setTimeout(()=>document.getElementById('ent-pos-manual').focus(),80);
+}
+
+function entSelectFromAc(sku){
+  if(!sku)return;
+  entSku=sku;
+  document.getElementById('ent-search').value='';
+  acSel['ent-search']=null;
+  const info=skuInfo(sku);
+  document.getElementById('ent-sku-preview').innerHTML=
+    `<div class="mono" style="font-weight:700;font-size:15px;color:var(--accent)">${sku}</div>`+
+    (info?`<div style="font-weight:600;margin-top:3px">${info.name}</div><div style="font-size:12px;color:var(--muted)">${info.brand}${info.ml?' · '+info.ml:''}</div>`:'');
+  entGoStep(2);
+}
+
+function entManualNext(){
+  const raw=document.getElementById('ent-sku-manual').value.trim();
+  if(!raw){toast('Introduz um SKU ou EAN','err');return;}
+  entSelectFromAc(resolveSku(raw));
+  document.getElementById('ent-sku-manual').value='';
+}
+
+function entAdjQty(delta){
+  const el=document.getElementById('ent-qty');
+  el.value=Math.max(1,(parseInt(el.value)||1)+delta);
+}
+
+function entGoStep(n){
+  if(n===3) entQty=parseInt(document.getElementById('ent-qty').value)||1;
+  entStepUI(n);
+  if(n===3) entUpdatePosWarning();
+}
+
+function entPosSelected(){
+  const v=document.getElementById('ent-pos-select').value;
+  if(v){ document.getElementById('ent-pos-manual').value=v; entUpdatePosWarning(); }
+}
+
+function entPosManualInput(){
+  const pos=document.getElementById('ent-pos-manual').value.trim().toUpperCase();
+  document.getElementById('ent-pos-manual').value=pos;
+  document.getElementById('ent-pos-select').value=pos;
+  entUpdatePosWarning();
+}
+
+function entUpdatePosWarning(){
+  const pos=document.getElementById('ent-pos-manual').value.trim().toUpperCase();
+  const warn=document.getElementById('ent-pos-warning');
+  const info=document.getElementById('ent-pos-info');
+  if(!pos){warn.style.display='none';info.textContent='';return;}
+  const existing=stock.filter(s=>s.sku===entSku&&s.position===pos);
+  const otherSkus=stock.filter(s=>s.sku!==entSku&&s.position===pos);
+  if(existing.length){
+    warn.style.display='flex';
+    warn.textContent='⚠️ Esta posição já tem '+existing[0].qty+' unid. de '+entSku+'. Ao confirmar o stock passa a ser '+entQty+' unid.';
+  } else warn.style.display='none';
+  if(otherSkus.length) info.innerHTML='<span style="color:var(--muted)">Outros SKUs aqui: '+otherSkus.map(s=>s.sku+' ('+s.qty+')').join(', ')+'</span>';
+  else info.textContent=existing.length?'':'✓ Posição nova';
+}
+
+function entConfirm(){
+  const pos=document.getElementById('ent-pos-manual').value.trim().toUpperCase();
+  if(!pos){toast('Indica a posição','err');return;}
+  if(!entSku){toast('Sem produto selecionado','err');return;}
+  const posEntries=stock.filter(s=>s.position===pos);
+  const boxType=posEntries[0]?.boxType||'mista';
+  stock=stock.filter(s=>!(s.sku===entSku&&s.position===pos));
+  stock.push({id:Date.now()+Math.random(),sku:entSku,position:pos,qty:entQty,boxType});
+  saveStk();renderStock();
+  logAction('Entrada de stock',entSku+' qty:'+entQty+' pos:'+pos);
+  const info=skuInfo(entSku);
+  entRecap.unshift({sku:entSku,name:info?.name||'',qty:entQty,pos});
+  renderEntRecap();
+  toast('✓ '+entSku+' · '+entQty+' unid. @ '+pos,'win');
+  entSku=null;entQty=1;
+  document.getElementById('ent-qty').value=1;
+  document.getElementById('ent-pos-manual').value='';
+  document.getElementById('ent-pos-select').value='';
+  document.getElementById('ent-pos-info').textContent='';
+  document.getElementById('ent-pos-warning').style.display='none';
+  entStepUI(1);
+}
+
+function renderEntRecap(){
+  if(!entRecap.length){document.getElementById('ent-recap').style.display='none';return;}
+  document.getElementById('ent-recap').style.display='block';
+  document.getElementById('entRecapBody').innerHTML=entRecap.map(r=>
+    `<tr><td class="mono" style="font-weight:700">${r.sku}</td><td style="font-size:12px">${r.name}</td><td class="mono">${r.qty}</td><td class="mono">${r.pos}</td></tr>`
+  ).join('');
+}
+function entClearRecap(){entRecap=[];renderEntRecap();}
+
+// Excel import
 function importStock(){
   const file=document.getElementById('stockFile').files[0];if(!file)return;
   const r=new FileReader();
@@ -977,48 +1004,120 @@ function importStock(){
       const qty=parseInt(row[2])||0;
       const bt=String(row[3]||'').toLowerCase().includes('excl')?'exclusiva':'mista';
       if(!sku||!pos)return;
-      const ex=stock.find(s=>s.sku===sku&&s.position===pos);
-      if(ex){ex.qty=qty;ex.boxType=bt;}else{stock.push({id:Date.now()+Math.random(),sku,position:pos,qty,boxType:bt});added++;}
+      stock=stock.filter(s=>!(s.sku===sku&&s.position===pos));
+      stock.push({id:Date.now()+Math.random(),sku,position:pos,qty,boxType:bt});
+      added++;
     });
-    saveStk();renderStock();toast(`${added} entradas importadas`,'win');logAction('Stock importado', `${added} entradas`);
+    saveStk();renderStock();toast(added+' entradas importadas','win');logAction('Stock importado',added+' entradas');
+    closeEntrada();
   };r.readAsArrayBuffer(file);
 }
-function stkSelectAc(sku){if(sku)document.getElementById('s-sku').value=sku;}
-function addStockEntry(){
-  const sku=resolveSku(document.getElementById('s-sku').value.trim());
-  const pos=document.getElementById('s-pos').value.trim().toUpperCase();
-  const qty=parseInt(document.getElementById('s-qty').value)||0;
-  const bt=document.getElementById('s-boxtype').value;
-  if(!sku||!pos){toast('SKU e posição obrigatórios','err');return;}
-  const ex=stock.find(s=>s.sku===sku&&s.position===pos);
-  if(ex){ex.qty=qty;ex.boxType=bt;toast('Atualizado');logAction('Stock atualizado',`${sku} @ ${pos} → ${qty}`);}else{stock.push({id:Date.now(),sku,position:pos,qty,boxType:bt});toast('Adicionado','win');logAction('Stock adicionado',`${sku} @ ${pos} qty:${qty}`);}
-  saveStk();renderStock();['s-search','s-sku','s-pos','s-qty'].forEach(id=>document.getElementById(id).value='');
-}
-function delStk(id){stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
-function renderStock(){
-  const q=document.getElementById('stockSearch').value.toLowerCase();
-  const ft=document.getElementById('stockFilter').value;
-  const filtered=stock.filter(s=>{
-    const i=skuInfo(s.sku);const str=[s.sku,s.position,i?.name,i?.brand,i?.category].filter(Boolean).join(' ').toLowerCase();
-    return str.includes(q)&&(!ft||s.boxType===ft);
-  }).sort((a,b)=>a.position.localeCompare(b.position));
-  const body=document.getElementById('stockBody');
-  if(!filtered.length){body.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">📦</div>${stock.length?'Sem resultados.':'Sem stock.'}</div></td></tr>`;return;}
-  body.innerHTML=filtered.map(s=>{
-    const st=s.qty===0?`<span class="badge bdg-rd">Esgotado</span>`:s.qty<=5?`<span class="badge bdg-or">Baixo</span>`:`<span class="badge bdg-gn">OK</span>`;
-    const bb=s.boxType==='mista'?`<span class="badge bdg-mx">Mista</span>`:`<span class="badge bdg-ex">Exclusiva</span>`;
-    return `<tr><td class="mono" style="font-weight:700">${s.sku}</td><td>${skuPill(s.sku)}</td><td class="mono">${s.position}</td>
-      <td class="mono" style="font-weight:700">${s.qty}</td><td>${bb}</td><td>${st}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="delStk(${JSON.stringify(s.id)})">✕</button></td></tr>`;
-  }).join('');
-}
-function clearStock(){if(!confirm(`Apagar ${stock.length} entradas?`))return;stock=[];saveStk();renderStock();toast('Stock limpo');}
-function dlStockTpl(){
-  const ws=XLSX.utils.aoa_to_sheet([['SKU','Posição','Quantidade','Tipo de Caixa'],['SKU-001','A-01-01',10,'Mista'],['SKU-002','B-03-01',20,'Exclusiva']]);
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');XLSX.writeFile(wb,'template_stock.xlsx');
-}
+
+// Inventory stubs (kept for scanner compatibility)
+let invPos='',invBox='mista',invLines=[],invSess=[];
+function popPosSel(){}
+function previewPos(){}
+function startInvCount(){}
+function invAddFromAc(sku){if(!sku)return;const ex=invLines.find(l=>l.sku===sku);if(ex)ex.qty++;else invLines.push({sku,qty:1});}
+function updInvQty(){}
+function rmInvLine(){}
+function renderInvLines(){}
+function backInvStep1(){}
+function commitInv(){}
+function renderInvSess(){}
+function clearInvSess(){}
+function invManualAdd(){}
+function invStepUI(){}
+
 
 // DOCS
+
+// STOCK TEORICO
+function openTeoricoPanel(){
+  document.getElementById('teoricoOverlay').classList.add('open');
+  updateTeoricoStatus();
+}
+function closeTeoricoPanel(){ document.getElementById('teoricoOverlay').classList.remove('open'); }
+function teoricoClose(e){ if(e.target===document.getElementById('teoricoOverlay')) closeTeoricoPanel(); }
+function updateTeoricoStatus(){
+  const n=Object.keys(teorico).length;
+  const el=document.getElementById('teoricoStatus');
+  const btnClear=document.getElementById('btnClearTeorico');
+  if(n){
+    el.style.display='';
+    const real={};stock.forEach(s=>{real[s.sku]=(real[s.sku]||0)+s.qty;});
+    const ok=Object.keys(teorico).filter(sku=>(real[sku]||0)===teorico[sku]).length;
+    const over=Object.keys(teorico).filter(sku=>(real[sku]||0)>teorico[sku]).length;
+    const under=Object.keys(teorico).filter(sku=>(real[sku]||0)<teorico[sku]&&(real[sku]||0)>0).length;
+    const missing=Object.keys(teorico).filter(sku=>!(real[sku]||0)).length;
+    el.innerHTML='<strong>'+n+' SKUs</strong> &nbsp;'+
+      '<span style="color:var(--success)">&#10003; '+ok+' conformes</span> &nbsp;'+
+      (over?'<span style="color:#1e40af">+'+over+' excesso</span> &nbsp;':'')+
+      (under?'<span style="color:#dc2626">-'+under+' em falta</span> &nbsp;':'')+
+      (missing?'<span style="color:#888">'+missing+' nao recebidos</span>':'');
+    btnClear.style.display='';
+  } else { el.style.display='none'; btnClear.style.display='none'; }
+}
+function importTeorico(){
+  const file=document.getElementById('teoricoFile').files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+    teorico={};let loaded=0;
+    rows.forEach((row,i)=>{
+      if(i===0&&isNaN(row[2])&&isNaN(row[1]))return;
+      let sku,qty;
+      if(row.length>=3){
+        const s=String(row[0]||'').trim();const ean=String(row[1]||'').trim();
+        qty=parseInt(row[2])||0;sku=s?resolveSku(s):(ean?resolveSku(ean):null);
+      } else {sku=resolveSku(String(row[0]||'').trim());qty=parseInt(row[1])||0;}
+      if(!sku||!qty)return;teorico[sku]=(teorico[sku]||0)+qty;loaded++;
+    });
+    renderStock();updateTeoricoStatus();
+    logAction('Stock teorico',loaded+' SKUs');toast(loaded+' SKUs teoricos','win');
+  };r.readAsArrayBuffer(file);
+}
+function clearTeorico(){teorico={};renderStock();updateTeoricoStatus();toast('Stock teorico removido','ok');}
+function dlTeoricoTpl(){
+  const ws=XLSX.utils.aoa_to_sheet([['SKU','EAN','Quantidade'],['SKU-001','3614273123456',24],['','3605532000001',12]]);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Teorico');XLSX.writeFile(wb,'template_teorico.xlsx');
+}
+function exportDiffExcel(){
+  if(!Object.keys(teorico).length){toast('Carrega primeiro o stock teorico','err');return;}
+  const real={};stock.forEach(s=>{real[s.sku]=(real[s.sku]||0)+s.qty;});
+  const rows=[['SKU','Nome','Marca','ML','Teorico','Real','Diferenca','Estado']];
+  const allSkus=new Set([...Object.keys(teorico),...Object.keys(real)]);
+  [...allSkus].sort().forEach(sku=>{
+    const t=teorico[sku]||0;const r=real[sku]||0;const diff=r-t;const info=skuInfo(sku);
+    const st=t===0?'Nao encomendado':diff===0?'Conforme':diff>0?'Excesso':r===0?'Nao recebido':'Em falta';
+    rows.push([sku,info?.name||'',info?.brand||'',info?.ml||'',t||'',r||'',diff,st]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:28},{wch:16},{wch:8},{wch:10},{wch:10},{wch:10},{wch:16}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Diferencas');
+  XLSX.writeFile(wb,'diferencas_stock.xlsx');toast('Excel exportado','win');
+}
+
+
+function cancelDocFromList(t, id) {
+  const doc = docSt(t).find(d => d.id === id);
+  if (!doc) return;
+  const verb = t === 'order' ? 'encomenda' : 'devolução';
+  if (doc.status === 'guia-emitida') {
+    if (!confirm('Cancelar '+verb+' '+id+'?\nA guia de '+(t==='order'?'preparação':'colocação')+' também será cancelada.')) return;
+    doc.guide = null; doc.putawayGuide = null;
+  } else {
+    if (!confirm('Cancelar '+verb+' '+id+'?')) return;
+  }
+  doc.status = 'cancelled';
+  logAction(t==='order'?'Encomenda cancelada':'Devolucao cancelada', id);
+  docSv(t); renderDocs(t);
+  if (t==='order') renderPickingGuides();
+  else renderPutawayGuides();
+  toast(verb.charAt(0).toUpperCase()+verb.slice(1)+' cancelada', 'ok');
+}
+
 function docSt(t){return t==='order'?orders:rets;}
 function docSv(t){t==='order'?saveOrd():saveRet();}
 function actId(t){return t==='order'?activeOrd:activeRet;}
@@ -1034,7 +1133,7 @@ function renderDocs(t){
   const st=docSt(t);
   if(!st.length){el.innerHTML=`<div class="empty"><div class="empty-icon">${t==='order'?'🛒':'↩️'}</div>Sem ${t==='order'?'encomendas':'devoluções'}.</div>`;return;}
   el.innerHTML=st.map(d=>{
-    const sl={open:'Aberta',picked:'Concluída',cancelled:'Anulada',returned:'Concluída','guia-emitida':'📋 Guia emitida','em-preparacao':'🚶 Em preparação','parcial':'⚠️ Parcial'}[d.status]||d.status;
+    const sl={open:'Aberta',picked:'Concluída',cancelled:'Anulada',returned:'Concluída','guia-emitida':'📋 Guia emitida','em-preparacao':'🚶 Em preparação','em-colocacao':'🚶 Em colocação','parcial':'⚠️ Parcial'}[d.status]||d.status;
     const tq=d.lines.reduce((a,l)=>a+l.qty,0);
     const canEdit=d.status==='open';
     return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
@@ -1043,7 +1142,8 @@ function renderDocs(t){
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <span class="badge s-${d.status}">${sl}</span>
         ${canEdit?`<button class="btn btn-ghost btn-sm" onclick="openEd('${t}','${d.id}')">✏️</button>`:''}
-        <button class="btn btn-ghost btn-sm" onclick="delDoc('${t}','${d.id}')">✕</button>
+        ${(d.status==='open'||d.status==='guia-emitida')?`<button class="btn btn-danger btn-sm" onclick="cancelDocFromList('${t}','${d.id}')">✕ Cancelar</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="delDoc('${t}','${d.id}')">🗑</button>
       </div></div>`;
   }).join('');
 }
@@ -1129,7 +1229,8 @@ function toggleScan(t){scanning[t]?stopScan(t):startScan(t);}
 function startScan(t){
   const ids={order:['orderScannerBox','#orderInteractive','orderScanDot','orderScanStatus','btnOrderScan'],
     return:['returnScannerBox','#returnInteractive','returnScanDot','returnScanStatus','btnReturnScan'],
-    inv:['invScannerBox','#invInteractive','invScanDot','invScanStatus','btnInvScan']};
+    inv:['invScannerBox','#invInteractive','invScanDot','invScanStatus','btnInvScan'],
+    ent:['entScannerBox','#entInteractive','entScanDot','entScanStatus','btnEntScan']};
   const [boxEl,intEl,dotEl,stEl,btnEl]=ids[t];
   document.getElementById(boxEl).classList.add('visible');
   document.getElementById(dotEl).classList.add('on');
@@ -1241,7 +1342,8 @@ function emitirGuia() {
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('page-picking').classList.add('active');
   document.querySelector('[data-page="picking"]').classList.add('active');
-  toast('Guia emitida!', 'win');
+  renderPickingGuides();
+  toast('Guia emitida! Clica em "Iniciar picking" para começar.', 'win');
 }
 
 // ══ PICKING GUIDES LIST ══
@@ -1271,7 +1373,7 @@ function renderPickingGuides() {
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <span class="badge ${stCls}">${stLbl}</span>
-          <button class="btn btn-primary btn-sm" onclick="iniciarPrep('${d.id}')">🚶 Iniciar</button>
+          <button class="btn btn-primary btn-sm" onclick="iniciarPrep('${d.id}')">▶ Iniciar picking</button>
           <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcelById('${d.id}')">⬇</button>
           <button class="btn btn-danger btn-sm" onclick="cancelGuia('${d.id}')">✕</button>
         </div>
@@ -1297,46 +1399,81 @@ function cancelGuia(orderId) {
 
 // ══ PREPARAÇÃO — ACTIVE PICKING ══
 let prepOrderId = null;
-let prepLines = []; // working copy with qtyDone editable
+let prepLines = [];
+let prepPendingOrderId = null; // waiting for loja confirmation
 
 function iniciarPrep(orderId) {
   const doc = orders.find(d => d.id === orderId);
   if (!doc || !doc.guide) return;
+  prepPendingOrderId = orderId;
+  // Show loja modal
+  document.getElementById('lojaModalSub').textContent = 'Encomenda ' + orderId + (doc.client ? ' · ' + doc.client : '') + '. Indica a loja de destino.';
+  document.getElementById('lojaInput').value = doc.guide.loja || '';
+  document.getElementById('lojaModal').classList.add('visible');
+  setTimeout(() => document.getElementById('lojaInput').focus(), 80);
+}
+
+function lojaCancel() {
+  document.getElementById('lojaModal').classList.remove('visible');
+  prepPendingOrderId = null;
+}
+
+function lojaConfirm() {
+  const loja = document.getElementById('lojaInput').value.trim();
+  if (!loja) { document.getElementById('lojaInput').style.borderColor='#dc2626'; return; }
+  document.getElementById('lojaInput').style.borderColor='';
+  document.getElementById('lojaModal').classList.remove('visible');
+
+  const orderId = prepPendingOrderId;
+  prepPendingOrderId = null;
+  const doc = orders.find(d => d.id === orderId);
+  if (!doc) return;
+
+  doc.guide.loja = loja;
   prepOrderId = orderId;
-  // Deep copy guide lines so we can edit qtyDone without touching the saved guide
   prepLines = JSON.parse(JSON.stringify(doc.guide.lines));
   doc.status = 'em-preparacao';
   doc.guide.status = 'in-progress';
   saveOrd();
-  renderPickingGuides();
-  // Navigate to prep page
+
+  // Show picking inline on picking page
+  document.getElementById('pickingListSection').style.display = 'none';
+  document.getElementById('prepContent').style.display = 'block';
+  renderPrepContent();
+
+  // Make sure we are on picking page
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-prep').classList.add('active');
-  document.querySelector('[data-page="prep"]').classList.add('active');
-  renderPrepContent();
-  logAction('Preparação iniciada', orderId);
+  document.getElementById('page-picking').classList.add('active');
+  document.querySelector('[data-page="picking"]').classList.add('active');
+
+  logAction('Preparacao iniciada', orderId + ' → ' + loja);
 }
 
 function renderPrepContent() {
-  if (!prepOrderId) { document.getElementById('prepEmpty').style.display=''; document.getElementById('prepContent').style.display='none'; return; }
+  if (!prepOrderId) {
+    document.getElementById('pickingListSection').style.display = '';
+    document.getElementById('prepContent').style.display = 'none';
+    return;
+  }
   const doc = orders.find(d => d.id === prepOrderId);
   if (!doc) return;
-  document.getElementById('prepEmpty').style.display = 'none';
+  document.getElementById('pickingListSection').style.display = 'none';
   document.getElementById('prepContent').style.display = 'block';
-
-  // Header
-  const now = new Date().toLocaleString('pt-PT');
-  document.getElementById('prepHeader').innerHTML = `
-    <div>
-      <div class="pick-id">${doc.id}</div>
-      <div class="pick-meta">${doc.client ? '👤 '+doc.client+' · ' : ''}🏷 ${doc.guide.emittedBy} · ${doc.guide.emittedAt}</div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-size:20px;font-weight:800">${prepLines.length}</div>
-      <div style="font-size:11px;opacity:.6">linhas</div>
-    </div>`;
-
+  const loja = doc.guide?.loja || '';
+  document.getElementById('prepHeader').innerHTML =
+    '<div>' +
+    '<div class="pick-id">' + doc.id + '</div>' +
+    '<div class="pick-meta">' +
+      (doc.client ? '👤 ' + doc.client + ' · ' : '') +
+      (loja ? '🏪 ' + loja + ' · ' : '') +
+      '🏷 ' + (doc.guide.emittedBy || '—') +
+    '</div>' +
+    '</div>' +
+    '<div style="text-align:right">' +
+    '<div style="font-size:20px;font-weight:800">' + prepLines.length + '</div>' +
+    '<div style="font-size:11px;opacity:.6">linhas</div>' +
+    '</div>';
   renderPrepLines();
 }
 
@@ -1459,20 +1596,14 @@ function finalizePicking() {
   doc.guide.finishedAt = new Date().toLocaleString('pt-PT');
   doc.guide.finishedBy = currentUser ? currentUser.name : '—';
 
-  logAction('Picking finalizado', `${doc.id} · ${confirmed.length} conf. · ${rupturas.length} rupt.`);
+  logAction('Preparacao finalizada', `${doc.id} · ${confirmed.length} conf. · ${rupturas.length} rupt.`);
   saveStk(); saveOrd();
   prepOrderId = null; prepLines = [];
-  renderPrepContent();
+  document.getElementById('pickingListSection').style.display = '';
+  document.getElementById('prepContent').style.display = 'none';
   renderPickingGuides();
   renderDocs('order');
-  toast('Stock atualizado!', 'win');
-  // Go to orders page
-  setTimeout(() => {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-    document.getElementById('page-orders').classList.add('active');
-    document.querySelector('[data-page="orders"]').classList.add('active');
-  }, 800);
+  toast('Stock atualizado! ✓', 'win');
 }
 
 function cancelPrep() {
@@ -1480,9 +1611,11 @@ function cancelPrep() {
   if (!confirm('Cancelar preparação? A guia ficará disponível para retomar.')) return;
   const doc = orders.find(d => d.id === prepOrderId);
   if (doc) { doc.status = 'guia-emitida'; doc.guide.status = 'pending'; saveOrd(); }
-  logAction('Preparação suspensa', prepOrderId);
+  logAction('Preparacao suspensa', prepOrderId);
   prepOrderId = null; prepLines = [];
-  renderPrepContent(); renderPickingGuides();
+  document.getElementById('pickingListSection').style.display = '';
+  document.getElementById('prepContent').style.display = 'none';
+  renderPickingGuides();
   toast('Preparação suspensa — guia disponível para retomar', 'ok');
 }
 
@@ -1492,8 +1625,8 @@ function exportGuiaExcelById(orderId) {
   const doc = orders.find(d => d.id === orderId);
   if (!doc || !doc.guide) { toast('Guia não encontrada', 'err'); return; }
   const rows = [
-    [`Guia de Picking: ${doc.id}${doc.client?' — '+doc.client:''}`],
-    [`Emitida por: ${doc.guide.emittedBy} · ${doc.guide.emittedAt}`],
+    ['Guia de Picking: '+doc.id+(doc.client?' — '+doc.client:'')+(doc.guide?.loja?' → '+doc.guide.loja:'')],
+    ['Emitida por: '+(doc.guide.emittedBy||'—')+' · '+doc.guide.emittedAt],
     [],
     ['Posição', 'SKU', 'Nome', 'Marca', 'ML', 'Qty pedida', 'Qty recolhida', 'Estado']
   ];
@@ -1510,334 +1643,272 @@ function exportGuiaExcelById(orderId) {
 }
 
 // ── Keep putaway/return flow (unchanged) ──
+// ══ DEVOLUÇÃO — EMITIR GUIA (mirrors emitirGuia for orders) ══
 function genDoc(t) {
   if (t === 'order') { emitirGuia(); return; }
-  // Returns / putaway
+  // Returns — emit putaway guide
   const doc = docSt(t).find(d => d.id === actId(t));
   if (!doc || !doc.lines.length) { toast('Sem linhas', 'err'); return; }
   const pl = [], warns = [];
   doc.lines.forEach(line => {
     let rem = line.qty;
-    const ex = [...stock.filter(s=>s.sku===line.sku&&s.boxType==='mista'),...stock.filter(s=>s.sku===line.sku&&s.boxType==='exclusiva')].sort((a,b)=>a.position.localeCompare(b.position));
-    if (ex.length) { ex.forEach(p=>{if(rem<=0)return;pl.push({sku:line.sku,position:p.position,qty:Math.min(rem,999),stockId:p.id,boxType:p.boxType,isRet:true});rem=0;}); }
-    if (rem > 0) { pl.push({sku:line.sku,position:'???',qty:rem,stockId:null,boxType:'mista',isRet:true,noPos:true}); warns.push(`${line.sku}: sem posição conhecida`); }
+    // Priority: mista first, then exclusiva, sorted by warehouse route
+    const positions = [...stock.filter(s=>s.sku===line.sku&&s.boxType==='mista'),
+                       ...stock.filter(s=>s.sku===line.sku&&s.boxType==='exclusiva')]
+      .sort((a,b)=>{ const pa=parsePos(a.position),pb=parsePos(b.position);
+        if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
+        if(pa.floor!==pb.floor)return pa.floor-pb.floor; return pa.slot-pb.slot; });
+    if (positions.length) {
+      positions.forEach(p=>{ if(rem<=0)return;
+        pl.push({sku:line.sku,position:p.position,qty:Math.min(rem,999),stockId:p.id,boxType:p.boxType,status:'pending',qtyDone:Math.min(rem,999)});rem=0;});
+    }
+    if (rem > 0) {
+      pl.push({sku:line.sku,position:'???',qty:rem,stockId:null,boxType:'mista',status:'pending',qtyDone:rem,noPos:true});
+      warns.push(line.sku+': sem posição conhecida no stock');
+    }
   });
-  pl.sort((a,b)=>a.position.localeCompare(b.position));
-  curPick = {type:t, docId:doc.id, lines:pl, warns, client:doc.client};
-  const tp = 'putaway';
+  pl.sort((a,b)=>{ const pa=parsePos(a.position),pb=parsePos(b.position);
+    if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
+    if(pa.floor!==pb.floor)return pa.floor-pb.floor; return pa.slot-pb.slot; });
+
+  if (warns.length && !confirm('Aviso:
+'+warns.join('
+')+'
+
+Emitir guia mesmo assim?')) return;
+
+  doc.putawayGuide = { lines:pl, warns, emittedAt:new Date().toLocaleString('pt-PT'),
+    emittedBy:currentUser?currentUser.name:'—', status:'pending', loja:'' };
+  doc.status = 'guia-emitida';
+  logAction('Guia devolucao emitida', doc.id+' · '+pl.length+' linhas');
+  docSv(t); renderDocs(t); renderPutawayGuides();
+
+  // Navigate to putaway page
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+tp).classList.add('active');
-  document.querySelector(`[data-page="${tp}"]`).classList.add('active');
-  logAction('Colocação gerada', `${doc.id} · ${pl.length} linhas`);
-  renderSheet(t); toast('Folha gerada!', 'pur');
+  document.getElementById('page-putaway').classList.add('active');
+  document.querySelector('[data-page="putaway"]').classList.add('active');
+  toast('Guia emitida! Clica em "Iniciar" para começar a colocar.', 'pur');
 }
 
-function renderSheet(t) {
-  const io = t === 'order';
-  document.getElementById(io?'pickingEmpty':'putawayEmpty').style.display = 'none';
-  document.getElementById(io?'pickingContent':'putawayContent').style.display = 'block';
-  const now = new Date().toLocaleString('pt-PT');
-  const pickerName = currentUser ? currentUser.name : '—';
-  let html = `<div class="pick-hdr ${io?'ph-ord':'ph-ret'}">
-    <div><div class="pick-id">${curPick.docId}</div>
-    <div class="pick-meta">${curPick.client?'👤 '+curPick.client+' · ':''}${now} · 🏷 ${pickerName}</div></div>
-    <div style="text-align:right"><div style="font-size:22px;font-weight:800">${curPick.lines.length}</div><div style="font-size:11px;opacity:.6">linhas</div></div>
-  </div>`;
-  if (curPick.warns.length) html += `<div class="alert a-warn">⚠️ <div>${curPick.warns.join('<br>')}</div></div>`;
-  html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px;">Ordenado por posição — Colocação</div>`;
-  curPick.lines.forEach(l => {
-    const bb = l.boxType==='mista'?`<span class="badge bdg-mx" style="font-size:10px">Mista</span>`:`<span class="badge bdg-ex" style="font-size:10px">Exclusiva</span>`;
-    const npc = l.noPos?'style="background:#fef3c7"':'';
-    html += `<div class="pick-row"><div class="pick-loc" ${npc}>
-      <div class="loc-bdg lb-ret">${l.position}</div>
-      <div class="loc-arrow">←</div>
-      <div style="flex:1"><div class="mono" style="font-weight:700;font-size:13px">${l.sku}</div>
-      <div style="margin-top:3px">${bb}</div></div>
-      <div class="loc-qty">${l.qty} unid.</div>
-    </div></div>`;
-  });
-  document.getElementById(io?'pickingSheet':'putawaySheet').innerHTML = html;
-}
-
-function confirmDoc(t) {
-  if (!curPick || curPick.type !== t) return;
-  showModal('Confirmar', 'Stock será atualizado com base nas ' + curPick.lines.length + ' linhas.', [
-    {lbl:'Cancelar', cls:'btn-ghost', fn:()=>{}},
-    {lbl:'✓ Confirmar', cls:'btn-purple', fn:()=>doConfirm(t)}
-  ]);
-}
-function doConfirm(t) {
-  const doc = docSt(t).find(d => d.id === curPick.docId);
-  doc.snapshot = JSON.parse(JSON.stringify(stock));
-  curPick.lines.forEach(l => { const en = stock.find(s => s.id === l.stockId); if(!en)return; en.qty = en.qty + l.qty; });
-  doc.status = 'returned';
-  logAction('Colocação confirmada', `${curPick.docId} · ${curPick.lines.length} linhas`);
-  saveStk(); docSv(t); curPick = null;
-  document.getElementById('putawayEmpty').style.display = '';
-  document.getElementById('putawayContent').style.display = 'none';
-  toast('Stock atualizado!', 'pur'); renderDocs(t);
-}
-function cancelDoc(t) {
-  if (!curPick || curPick.type !== t) { toast('Sem folha ativa','err'); return; }
-  const doc = docSt(t).find(d => d.id === curPick.docId);
-  showModal('Anular', `${doc.id} será anulada.`, [
-    {lbl:'Cancelar', cls:'btn-ghost', fn:()=>{}},
-    {lbl:'✕ Anular', cls:'btn-danger', fn:()=>doCancel(t, doc.id)}
-  ]);
-}
-function doCancel(t, docId) {
-  const doc = docSt(t).find(d => d.id === docId); if(!doc)return;
-  if (doc.snapshot) { stock = doc.snapshot; saveStk(); toast('Stock revertido','win'); } else toast('Anulada','ok');
-  logAction(t==='order'?'Encomenda anulada':'Devolução anulada', docId);
-  doc.status = 'cancelled'; doc.snapshot = null; docSv(t); curPick = null;
-  document.getElementById('putawayEmpty').style.display = '';
-  document.getElementById('putawayContent').style.display = 'none';
-  renderDocs(t); renderStock();
-}
-function exportDocXls(t) {
-  if (!curPick || curPick.type !== t) { toast('Sem folha ativa','err'); return; }
-  const rows = [['Colocação: '+curPick.docId+(curPick.client?' — '+curPick.client:'')],[],['Posição','SKU','Nome','Marca','ML','Quantidade','Tipo']];
-  curPick.lines.forEach(l => { const i = skuInfo(l.sku); rows.push([l.position,l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,l.boxType]); });
-  const ws = XLSX.utils.aoa_to_sheet(rows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Colocação');
-  XLSX.writeFile(wb, `colocacao_${curPick.docId}.xlsx`); toast('Excel exportado','win');
-}
-
-
-// ══ PURCHASE ORDERS (PO) ══
-let activePOId = null;
-
-function newPO() {
-  const id = 'PO-' + Date.now();
-  pos_orders.unshift({id, ref:'', supplier:'', lines:[], status:'open', createdAt: new Date().toLocaleString('pt-PT')});
-  savePO(); renderPOList(); openPOEditor(id);
-}
-
-function renderPOList() {
-  const el = document.getElementById('poList');
-  if (!pos_orders.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📥</div>Sem POs.</div>'; return; }
-  el.innerHTML = pos_orders.map(po => {
-    const stCls = po.status === 'open' ? 'po-status-open' : 'po-status-closed';
-    const stLbl = po.status === 'open' ? 'Aberta' : 'Fechada';
-    const tq = po.lines.reduce((a,l) => a+l.qty, 0);
-    return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-      <div>
-        <div class="mono" style="font-weight:700;font-size:13px">${po.ref||po.id}${po.supplier?' <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· '+po.supplier+'</span>':''}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${po.lines.length} SKUs · ${tq} unid. · ${po.createdAt}</div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <span class="badge ${stCls}">${stLbl}</span>
-        ${po.status==='open'?`<button class="btn btn-ghost btn-sm" onclick="openPOEditor('${po.id}')">✏️</button>`:''}
-        <button class="btn btn-ghost btn-sm" onclick="openPOEditor('${po.id}')">📊</button>
-        <button class="btn btn-ghost btn-sm" onclick="delPO('${po.id}')">✕</button>
-      </div>
-    </div>`;
+// ══ PUTAWAY GUIDES LIST ══
+function renderPutawayGuides() {
+  const el = document.getElementById('putawayGuidesList');
+  const guias = rets.filter(d => d.putawayGuide && ['guia-emitida','em-colocacao'].includes(d.status));
+  if (!guias.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">↩️</div>Nenhuma guia emitida.</div>';
+    return;
+  }
+  el.innerHTML = guias.map(d => {
+    const g = d.putawayGuide;
+    const total = g.lines.length;
+    const done = g.lines.filter(l=>l.status==='confirmed').length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const stLbl = d.status==='em-colocacao' ? '🚶 Em colocação' : '↩️ Aguarda colocação';
+    const stCls = d.status==='em-colocacao' ? 'bdg-pu' : 'bdg-or';
+    return '<div style="padding:14px 16px;border-bottom:1px solid var(--border);">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">'+
+      '<div><div class="mono" style="font-weight:700;font-size:14px">'+d.id+(d.client?' <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· '+d.client+'</span>':'')+'</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-top:3px">Emitida por '+g.emittedBy+' · '+g.emittedAt+(g.warns?.length?' · <span style="color:#dc2626">⚠️ '+g.warns.length+' sem posição</span>':'')+'</div></div>'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+      '<span class="badge '+stCls+'">'+stLbl+'</span>'+
+      '<button class="btn btn-purple btn-sm" onclick="iniciarPutaway(''+d.id+'')">▶ Iniciar</button>'+
+      '<button class="btn btn-danger btn-sm" onclick="cancelPutawayGuia(''+d.id+'')">✕</button>'+
+      '</div></div>'+
+      '<div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">'+
+      '<div style="height:100%;background:var(--purple);border-radius:20px;width:'+pct+'%;transition:width .4s;"></div></div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+done+' / '+total+' linhas</div>'+
+      '</div>';
   }).join('');
 }
 
-function delPO(id) {
-  if (!confirm('Apagar PO?')) return;
-  pos_orders = pos_orders.filter(p => p.id !== id);
-  if (activePOId === id) { activePOId = null; document.getElementById('poEditor').style.display = 'none'; document.getElementById('poComparison').style.display = 'none'; }
-  savePO(); renderPOList();
+function cancelPutawayGuia(retId) {
+  const doc = rets.find(d=>d.id===retId);
+  if (!doc) return;
+  if (!confirm('Cancelar guia de '+retId+'? A devolução volta ao estado "Aberta".')) return;
+  doc.putawayGuide = null; doc.status = 'open';
+  logAction('Guia devolucao cancelada', retId);
+  saveRet(); renderDocs('return'); renderPutawayGuides();
+  toast('Guia cancelada','ok');
 }
 
-function openPOEditor(id) {
-  activePOId = id;
-  const po = pos_orders.find(p => p.id === id);
-  document.getElementById('poEdTitle').textContent = po.ref || po.id;
-  document.getElementById('poEdRef').textContent = po.supplier ? '📦 ' + po.supplier : '';
-  document.getElementById('po-ref').value = po.ref || '';
-  document.getElementById('po-supplier').value = po.supplier || '';
-  document.getElementById('poEditor').style.display = 'block';
-  document.getElementById('poComparison').style.display = 'none';
-  renderPOLines();
-  document.getElementById('poEditor').scrollIntoView({behavior:'smooth'});
+// ══ PUTAWAY ACTIVE SESSION ══
+let putawayOrderId = null, putawayLines = [], putawayPendingId = null;
+
+function iniciarPutaway(retId) {
+  const doc = rets.find(d=>d.id===retId);
+  if (!doc || !doc.putawayGuide) return;
+  putawayPendingId = retId;
+  document.getElementById('origemModalSub').textContent = 'Devolução '+retId+(doc.client?' · '+doc.client:'')+'. Indica a loja de origem.';
+  document.getElementById('origemInput').value = doc.putawayGuide.loja || '';
+  document.getElementById('origemModal').classList.add('visible');
+  setTimeout(()=>document.getElementById('origemInput').focus(), 80);
 }
 
-function closePOEditor() {
-  document.getElementById('poEditor').style.display = 'none';
-  document.getElementById('poComparison').style.display = 'none';
-  activePOId = null;
+function origemCancel() { document.getElementById('origemModal').classList.remove('visible'); putawayPendingId=null; }
+
+function origemConfirm() {
+  const loja = document.getElementById('origemInput').value.trim();
+  if (!loja) { document.getElementById('origemInput').style.borderColor='#dc2626'; return; }
+  document.getElementById('origemInput').style.borderColor='';
+  document.getElementById('origemModal').classList.remove('visible');
+  const retId = putawayPendingId; putawayPendingId = null;
+  const doc = rets.find(d=>d.id===retId);
+  if (!doc) return;
+  doc.putawayGuide.loja = loja;
+  putawayOrderId = retId;
+  putawayLines = JSON.parse(JSON.stringify(doc.putawayGuide.lines));
+  doc.status = 'em-colocacao'; doc.putawayGuide.status = 'in-progress';
+  saveRet();
+  document.getElementById('putawayListSection').style.display = 'none';
+  document.getElementById('putawayPrepContent').style.display = 'block';
+  renderPutawayContent();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-putaway').classList.add('active');
+  document.querySelector('[data-page="putaway"]').classList.add('active');
+  logAction('Colocacao iniciada', retId+' <- '+loja);
 }
 
-function updPO() {
-  const po = pos_orders.find(p => p.id === activePOId);
-  if (!po) return;
-  po.ref = document.getElementById('po-ref').value.trim();
-  po.supplier = document.getElementById('po-supplier').value.trim();
-  document.getElementById('poEdTitle').textContent = po.ref || po.id;
-  document.getElementById('poEdRef').textContent = po.supplier ? '📦 ' + po.supplier : '';
-  savePO(); renderPOList();
+function renderPutawayContent() {
+  if (!putawayOrderId) {
+    document.getElementById('putawayListSection').style.display='';
+    document.getElementById('putawayPrepContent').style.display='none';
+    return;
+  }
+  const doc = rets.find(d=>d.id===putawayOrderId);
+  if (!doc) return;
+  const loja = doc.putawayGuide?.loja||'';
+  document.getElementById('putawayPrepHeader').innerHTML =
+    '<div><div class="pick-id">'+doc.id+'</div>'+
+    '<div class="pick-meta">'+(doc.client?'👤 '+doc.client+' · ':'')+
+    (loja?'🏪 '+loja+' · ':'')+'🏷 '+(doc.putawayGuide.emittedBy||'—')+'</div></div>'+
+    '<div style="text-align:right"><div style="font-size:20px;font-weight:800">'+putawayLines.length+'</div>'+
+    '<div style="font-size:11px;opacity:.6">linhas</div></div>';
+  renderPutawayLines();
 }
 
-function switchPOTab(tab) {
-  ['search','manual','import'].forEach(t => document.getElementById('potab-'+t).style.display = t===tab?'':'none');
-  document.querySelectorAll('#poEditor .inner-tab').forEach((b,i) => b.classList.toggle('active',['search','manual','import'][i]===tab));
-}
-
-function addPOLine() {
-  const sku = resolveSku(document.getElementById('po-sku').value.trim());
-  const qty = parseInt(document.getElementById('po-qty').value) || 1;
-  if (!sku) { toast('SKU obrigatório','err'); return; }
-  _addPOLine(sku, qty);
-  document.getElementById('po-sku').value = '';
-  document.getElementById('po-qty').value = 1;
-}
-
-function _addPOLine(sku, qty) {
-  const po = pos_orders.find(p => p.id === activePOId);
-  if (!po) return;
-  const ex = po.lines.find(l => l.sku === sku);
-  if (ex) ex.qty += qty; else po.lines.push({sku, qty});
-  savePO(); renderPOLines();
-  toast('✓ ' + sku + ' +' + qty, 'win');
-}
-
-function rmPOLine(sku) {
-  const po = pos_orders.find(p => p.id === activePOId);
-  if (!po) return;
-  po.lines = po.lines.filter(l => l.sku !== sku);
-  savePO(); renderPOLines();
-}
-
-function updPOQty(sku, qty) {
-  const po = pos_orders.find(p => p.id === activePOId);
-  if (!po) return;
-  const l = po.lines.find(l => l.sku === sku);
-  if (l) { l.qty = parseInt(qty) || 1; savePO(); }
-}
-
-function renderPOLines() {
-  const po = pos_orders.find(p => p.id === activePOId);
-  if (!po) return;
-  document.getElementById('poLineCount').textContent = `${po.lines.length} SKUs · ${po.lines.reduce((a,l)=>a+l.qty,0)} unid.`;
-  const body = document.getElementById('poLinesBody');
-  if (!po.lines.length) { body.innerHTML = '<tr><td colspan="5"><div class="empty" style="padding:12px;">Sem linhas.</div></td></tr>'; return; }
-  body.innerHTML = po.lines.map(l => {
+function renderPutawayLines() {
+  const total = putawayLines.length;
+  const done = putawayLines.filter(l=>l.status==='confirmed').length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('putawayProgress').style.width = pct+'%';
+  document.getElementById('putawayProgressLabel').textContent = done+' / '+total+' linhas confirmadas';
+  const container = document.getElementById('putawayPrepLines');
+  container.innerHTML = putawayLines.map((l,idx) => {
     const info = skuInfo(l.sku);
-    const curStock = stock.filter(s => s.sku === l.sku).reduce((a,s) => a+s.qty, 0);
-    const stBadge = curStock === 0 ? `<span class="badge bdg-rd">0</span>` : `<span class="badge bdg-gn">${curStock}</span>`;
-    return `<tr>
-      <td class="mono" style="font-weight:700">${l.sku}</td>
-      <td>${info ? `<span class="sku-pill"><span class="sku-pname">${info.name}</span><span class="sku-pbrand">${info.brand}</span>${info.ml?`<span class="badge bdg-sk" style="font-size:10px">${info.ml}</span>`:''}</span>` : '—'}</td>
-      <td><input class="input qty-in" type="number" min="1" value="${l.qty}" onchange="updPOQty('${l.sku}',this.value)"></td>
-      <td>${stBadge}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="rmPOLine('${l.sku}')">✕</button></td>
-    </tr>`;
+    const isConfirmed = l.status==='confirmed';
+    const isNoPos = l.noPos;
+    const posClass = isConfirmed?'confirmed':isNoPos?'ruptura':'';
+    const checkIcon = isConfirmed?'✓':isNoPos?'?':idx+1;
+    const checkCls = isConfirmed?'done':isNoPos?'rupt':'';
+    return '<div class="prep-line '+posClass+'" id="pway-'+idx+'">'+
+      '<div class="prep-line-header" onclick="togglePutawayLine('+idx+')">'+
+      '<div class="prep-check '+checkCls+'">'+checkIcon+'</div>'+
+      '<div class="prep-pos '+posClass+'" style="'+(isConfirmed?'background:var(--purple)':isNoPos?'background:#dc2626':'background:var(--purple)')+'">'+(l.position==='???'?'S/POS':l.position)+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+      '<div class="mono" style="font-weight:700;font-size:13px">'+l.sku+'</div>'+
+      (info?'<div style="font-size:11px;color:var(--muted)">'+info.name+(info.brand?' · '+info.brand:'')+(info.ml?' · '+info.ml:'')+'</div>':'')+'</div>'+
+      '<div style="text-align:right;flex-shrink:0">'+
+      (isConfirmed?'<span class="badge bdg-gn">'+l.qtyDone+' colocados</span>':
+       '<span style="font-weight:700;font-size:15px">'+l.qty+'</span><span style="font-size:11px;color:var(--muted)"> unid.</span>')+
+      '</div></div>'+
+      (!isConfirmed?'<div class="prep-line-body" id="pwaybody-'+idx+'" style="display:none;">'+
+        '<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:10px;">'+
+        (isNoPos?'<div class="alert a-warn" style="font-size:12px;margin-bottom:8px;">Sem posição no stock — define uma posição antes de confirmar.</div>':'')+
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">A colocar: <strong>'+l.qty+' unid.</strong></div>'+
+        '<div style="display:flex;align-items:center;gap:10px;">'+
+        '<label style="font-size:12px;margin:0;text-transform:none;">Colocado:</label>'+
+        '<input class="input qty-in" type="number" min="0" max="'+l.qty+'" value="'+l.qtyDone+'" id="pwayqty-'+idx+'" style="width:80px;" onchange="putawayLines['+idx+'].qtyDone=Math.max(0,Math.min(parseInt(this.value)||0,'+l.qty+'))">'+
+        '<span style="font-size:12px;color:var(--muted)">de '+l.qty+'</span></div></div>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+        '<button class="btn btn-purple" style="flex:1;" onclick="confirmPutawayLine('+idx+')">✓ Confirmar colocação</button>'+
+        '<button class="btn btn-ghost btn-sm" onclick="togglePutawayLine('+idx+')">Fechar</button>'+
+        '</div></div>':'')+'</div>';
   }).join('');
+  // Auto-expand first pending
+  const first = putawayLines.findIndex(l=>l.status==='pending');
+  if (first>=0) { const b=document.getElementById('pwaybody-'+first); if(b)b.style.display='block'; }
 }
 
-function importPOLines() {
-  const file = document.getElementById('poFile').files[0];
-  if (!file) return;
-  const r = new FileReader();
-  r.onload = e => {
-    const wb = XLSX.read(e.target.result, {type:'array'});
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
-    rows.forEach((row,i) => {
-      if (i===0 && isNaN(row[2])) return; // skip header
-      // cols: SKU | EAN | Quantidade
-      const skuRaw = String(row[0]||'').trim();
-      const eanRaw = String(row[1]||'').trim();
-      const qty = parseInt(row[2]) || 1;
-      // resolve: prefer SKU, fallback to EAN
-      const sku = skuRaw ? resolveSku(skuRaw) : resolveSku(eanRaw);
-      if (sku) _addPOLine(sku, qty);
-    });
-    toast('PO importada', 'win');
-  };
-  r.readAsArrayBuffer(file);
+function togglePutawayLine(idx) {
+  const body = document.getElementById('pwaybody-'+idx);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  putawayLines.forEach((_,i)=>{ const b=document.getElementById('pwaybody-'+i); if(b)b.style.display='none'; });
+  if (!isOpen) body.style.display='block';
 }
 
-function dlPOTpl() {
-  const ws = XLSX.utils.aoa_to_sheet([['SKU','EAN','Quantidade'],['SKU-001','3614273123456',24],['SKU-002','3605532000001',12],['','3346470436367',6]]);
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'PO');
-  XLSX.writeFile(wb, 'template_po.xlsx');
+function confirmPutawayLine(idx) {
+  const inp = document.getElementById('pwayqty-'+idx);
+  if (inp) putawayLines[idx].qtyDone = Math.max(0,Math.min(parseInt(inp.value)||0,putawayLines[idx].qty));
+  putawayLines[idx].status='confirmed';
+  renderPutawayLines();
+  setTimeout(()=>{ const next=putawayLines.findIndex((x,i)=>i>idx&&x.status==='pending');
+    if(next>=0){document.getElementById('pway-'+next)?.scrollIntoView({behavior:'smooth',block:'center'});togglePutawayLine(next);}},150);
 }
 
-function closePO() {
-  const po = pos_orders.find(p => p.id === activePOId);
-  if (!po) return;
-  if (!confirm(`Fechar PO ${po.ref||po.id}? Ficará marcada como fechada.`)) return;
-  po.status = 'closed';
-  savePO(); renderPOList();
-  toast('PO fechada', 'win');
-}
+function finalizePutaway() {
+  const doc = rets.find(d=>d.id===putawayOrderId);
+  if (!doc) return;
+  const confirmed = putawayLines.filter(l=>l.status==='confirmed');
+  if (!confirmed.length) { toast('Confirma pelo menos uma linha','err'); return; }
+  if (!confirm('Finalizar colocação de '+doc.id+'?
 
-// ── PO vs STOCK COMPARISON ──
-function showPOComparison() {
-  const po = pos_orders.find(p => p.id === activePOId);
-  if (!po || !po.lines.length) { toast('PO sem linhas','err'); return; }
+✓ '+confirmed.length+' linhas
 
-  const rows = po.lines.map(l => {
-    const ordered = l.qty;
-    const inStock = stock.filter(s => s.sku === l.sku).reduce((a,s) => a+s.qty, 0);
-    const diff = inStock - ordered;
-    let status, cls;
-    if (diff === 0)      { status = '✓ Conforme';  cls = 'diff-ok'; }
-    else if (diff > 0)   { status = '▲ Excesso';   cls = 'diff-over'; }
-    else if (inStock===0){ status = '✕ Não recebido'; cls = 'diff-missing'; }
-    else                 { status = '▼ Em falta';  cls = 'diff-under'; }
-    return {sku: l.sku, ordered, inStock, diff, status, cls};
+O stock será acrescido agora.')) return;
+  doc.snapshot = JSON.parse(JSON.stringify(stock));
+  confirmed.forEach(l=>{
+    if (!l.stockId) return; // no position — skip
+    const entry = stock.find(s=>s.id===l.stockId);
+    if (entry) entry.qty = entry.qty + l.qtyDone;
+    else stock.push({id:Date.now()+Math.random(),sku:l.sku,position:l.position,qty:l.qtyDone,boxType:l.boxType||'mista'});
   });
-
-  // Summary chips
-  const ok      = rows.filter(r => r.diff === 0).length;
-  const over    = rows.filter(r => r.diff > 0).length;
-  const under   = rows.filter(r => r.diff < 0 && r.inStock > 0).length;
-  const missing = rows.filter(r => r.inStock === 0).length;
-
-  document.getElementById('poCompSummary').innerHTML = [
-    ok      ? `<span class="semaphore diff-ok">✓ ${ok} conformes</span>` : '',
-    over    ? `<span class="semaphore diff-over">▲ ${over} em excesso</span>` : '',
-    under   ? `<span class="semaphore diff-under">▼ ${under} em falta</span>` : '',
-    missing ? `<span class="semaphore diff-missing">✕ ${missing} não recebidos</span>` : '',
-  ].filter(Boolean).join('');
-
-  const body = document.getElementById('poCompBody');
-  body.innerHTML = rows.map(r => {
-    const info = skuInfo(r.sku);
-    const diffStr = r.diff === 0 ? '—' : (r.diff > 0 ? '+'+r.diff : String(r.diff));
-    const diffColor = r.diff === 0 ? 'color:var(--muted)' : r.diff > 0 ? 'color:#1e40af;font-weight:700' : 'color:#991b1b;font-weight:700';
-    return `<tr>
-      <td class="mono" style="font-weight:700">${r.sku}</td>
-      <td>${info ? info.name + (info.brand ? ' · ' + info.brand : '') : '—'}</td>
-      <td class="mono">${r.ordered}</td>
-      <td class="mono" style="font-weight:700">${r.inStock}</td>
-      <td class="mono" style="${diffColor}">${diffStr}</td>
-      <td><span class="semaphore ${r.cls}">${r.status}</span></td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('poComparison').style.display = 'block';
-  document.getElementById('poComparison').scrollIntoView({behavior:'smooth'});
-
-  // Store for export
-  window._lastCompRows = rows;
-  window._lastCompPO = po;
+  doc.status='returned'; doc.putawayGuide.status='done';
+  doc.putawayGuide.lines=putawayLines;
+  doc.putawayGuide.finishedAt=new Date().toLocaleString('pt-PT');
+  doc.putawayGuide.finishedBy=currentUser?currentUser.name:'—';
+  logAction('Colocacao finalizada', doc.id+' · '+confirmed.length+' linhas');
+  saveStk(); saveRet();
+  putawayOrderId=null; putawayLines=[];
+  document.getElementById('putawayListSection').style.display='';
+  document.getElementById('putawayPrepContent').style.display='none';
+  renderPutawayGuides(); renderDocs('return'); renderStock();
+  toast('Stock atualizado! ✓','pur');
 }
 
-function exportDiffExcel() {
-  if (!window._lastCompRows || !window._lastCompPO) { toast('Faz primeiro a comparação','err'); return; }
-  const po = window._lastCompPO;
-  const rows = [
-    [`Comparação PO vs Stock — ${po.ref||po.id}${po.supplier?' · '+po.supplier:''}`],
-    [`Gerado em: ${new Date().toLocaleString('pt-PT')}`],
-    [],
-    ['SKU','Nome','Marca','ML','Encomendado','Stock atual','Diferença','Estado']
-  ];
-  window._lastCompRows.forEach(r => {
-    const info = skuInfo(r.sku);
-    rows.push([r.sku, info?.name||'', info?.brand||'', info?.ml||'', r.ordered, r.inStock, r.diff, r.status]);
-  });
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  // Color coding via cell styles not natively supported in SheetJS free, but add column widths
-  ws['!cols'] = [{wch:14},{wch:30},{wch:16},{wch:8},{wch:14},{wch:12},{wch:10},{wch:16}];
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Comparação');
-  XLSX.writeFile(wb, `comparacao_${po.ref||po.id}.xlsx`);
-  toast('Exportado', 'win');
+function cancelPutawayPrep() {
+  if (!putawayOrderId) return;
+  if (!confirm('Cancelar? A guia ficará disponível para retomar.')) return;
+  const doc = rets.find(d=>d.id===putawayOrderId);
+  if (doc) { doc.status='guia-emitida'; doc.putawayGuide.status='pending'; saveRet(); }
+  logAction('Colocacao suspensa', putawayOrderId);
+  putawayOrderId=null; putawayLines=[];
+  document.getElementById('putawayListSection').style.display='';
+  document.getElementById('putawayPrepContent').style.display='none';
+  renderPutawayGuides(); toast('Suspenso — guia disponível para retomar','ok');
 }
+
+function exportPutawayExcel() {
+  if (!putawayOrderId) return;
+  const doc = rets.find(d=>d.id===putawayOrderId);
+  if (!doc||!doc.putawayGuide) return;
+  const rows=[['Guia Devolucao: '+doc.id+(doc.client?' — '+doc.client:'')+(doc.putawayGuide?.loja?' <- '+doc.putawayGuide.loja:'')],
+    ['Emitida por: '+(doc.putawayGuide.emittedBy||'—')+' · '+doc.putawayGuide.emittedAt],[],
+    ['Posicao','SKU','Nome','Marca','ML','Qty pedida','Qty colocada','Estado']];
+  putawayLines.forEach(l=>{ const i=skuInfo(l.sku); rows.push([l.position,l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,l.qtyDone||0,l.status==='confirmed'?'Confirmado':'Pendente']); });
+  const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Devolucao');
+  XLSX.writeFile(wb,'devolucao_'+doc.id+'.xlsx');toast('Excel exportado','win');
+}
+
+// Legacy stubs (no longer used but kept to avoid reference errors)
+function confirmDoc(t){}
+function doConfirm(t){}
+function cancelDoc(t){}
+function doCancel(t,docId){}
+function exportDocXls(t){}
+
 
 
 // ⚠️  FIRESTORE RULES — set these in Firebase Console → Firestore → Rules:
@@ -1851,18 +1922,104 @@ function exportDiffExcel() {
 // }
 
 // ══ LOGIN ══
-function doLogin() {
+// ── PREDEFINED USERS ──
+const PRESET_USERS = [
+  {name:'Constança', initials:'Co', color:'#7c3aed'},
+  {name:'Nuno F.',   initials:'NF', color:'#e8420a'},
+  {name:'Ricardo',   initials:'Ri', color:'#0ea5e9'},
+];
+
+function getExtraUsers() {
+  try { return JSON.parse(localStorage.getItem('wms_extra_users') || '[]'); } catch(e) { return []; }
+}
+
+function saveExtraUser(name) {
+  const extras = getExtraUsers();
+  if (!extras.includes(name) && !PRESET_USERS.find(u => u.name === name)) {
+    extras.unshift(name);
+    extras.splice(8, 99); // max 8 extra users
+    localStorage.setItem('wms_extra_users', JSON.stringify(extras));
+  }
+}
+
+function removeExtraUser(name) {
+  const extras = getExtraUsers().filter(u => u !== name);
+  localStorage.setItem('wms_extra_users', JSON.stringify(extras));
+  renderAvatarGrid();
+}
+
+function getInitials(name) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  return name.slice(0,2).toUpperCase();
+}
+
+function getExtraColor(name) {
+  // Deterministic color from name
+  const colors = ['#059669','#d97706','#db2777','#0284c7','#7c3aed','#dc2626','#16a34a','#ea580c'];
+  let hash = 0;
+  for (let i=0; i<name.length; i++) hash = name.charCodeAt(i) + ((hash<<5)-hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function renderAvatarGrid() {
+  const grid = document.getElementById('avatarGrid');
+  if (!grid) return;
+  const extras = getExtraUsers();
+  const extraAvatars = extras.map(name => ({
+    name, initials: getInitials(name), color: getExtraColor(name), isExtra: true
+  }));
+  const all = [...PRESET_USERS, ...extraAvatars, {name:'__outro__', initials:'+', color:'rgba(255,255,255,.15)', label:'Outro'}];
+
+  grid.innerHTML = all.map(u => {
+    const isOutro = u.name === '__outro__';
+    const label = u.label || u.name;
+    const clickFn = isOutro ? 'showOutro()' : 'doLoginPreset(' + JSON.stringify(u.name) + ')';
+    const removeBtn = u.isExtra
+      ? '<button onclick="event.stopPropagation();removeExtraUser(' + JSON.stringify(u.name) + ')" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>'
+      : '';
+    return '<div onclick="' + clickFn + '" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .15s;position:relative;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">' +
+      '<div style="position:relative;width:72px;height:72px;">' +
+      '<div style="width:72px;height:72px;border-radius:50%;background:' + u.color + ';display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:' + (u.initials.length>2?'16':'20') + 'px;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);border:2px solid rgba(255,255,255,' + (isOutro?'.2':'.15') + ');">' +
+      u.initials + '</div>' + removeBtn + '</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,' + (isOutro?'.5':'.9') + ');font-family:'Barlow',sans-serif;font-weight:600;max-width:80px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + label + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function showOutro() {
+  document.getElementById('avatarGrid').style.display = 'none';
+  document.getElementById('outroSection').style.display = 'block';
+  setTimeout(() => document.getElementById('loginName').focus(), 80);
+}
+
+function hideOutro() {
+  document.getElementById('avatarGrid').style.display = 'flex';
+  document.getElementById('outroSection').style.display = 'none';
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+function doLoginPreset(name) { _doLogin(name); }
+
+function doLoginName() {
   const name = document.getElementById('loginName').value.trim();
   if (!name) { document.getElementById('loginError').style.display='block'; return; }
+  saveExtraUser(name);
+  _doLogin(name);
+}
+
+// Legacy alias (called from session restore)
+function doLogin() { doLoginName(); }
+
+function _doLogin(name) {
   currentUser = {name, loginAt: new Date().toLocaleString('pt-PT')};
-  // Save recent users in localStorage (local only — no sensitive data)
-  const recent = JSON.parse(localStorage.getItem('wms_recent_users')||'[]');
-  if (!recent.includes(name)) { recent.unshift(name); recent.splice(5,99); localStorage.setItem('wms_recent_users', JSON.stringify(recent)); }
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('userBadge').style.display='flex';
   document.getElementById('userBadgeName').textContent = '👤 ' + name;
+  document.getElementById('assistBtn').style.display='block';
+  showAssistBtn();
   logAction('Login', 'Sessão iniciada');
-  // Save session for page refresh
   localStorage.setItem('wms_session', JSON.stringify({name, loginAt: new Date().toLocaleString('pt-PT')}));
   initApp();
 }
@@ -1873,19 +2030,14 @@ function doLogout() {
   currentUser = null;
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('userBadge').style.display='none';
-  document.getElementById('loginName').value='';
-  renderRecentUsers();
+  document.getElementById('assistBtn').style.display='none';
+  // Reset to avatar grid
+  hideOutro();
+  document.getElementById('loginError').style.display='none';
+  renderAvatarGrid();
 }
 
-function renderRecentUsers() {
-  const recent = JSON.parse(localStorage.getItem('wms_recent_users')||'[]');
-  const el = document.getElementById('loginRecentList');
-  if (!recent.length) { el.innerHTML=''; return; }
-  el.innerHTML = '<div style="margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Utilizadores recentes</div>' +
-    recent.map(n => `<button onclick="document.getElementById('loginName').value='${n}';doLogin();"
-      style="display:block;width:100%;text-align:left;padding:6px 10px;margin-bottom:4px;background:#f4f3ef;border:1px solid #d8d5cc;border-radius:6px;cursor:pointer;font-size:13px;font-family:'Barlow',sans-serif;">
-      👤 ${n}</button>`).join('');
-}
+function renderRecentUsers() { /* replaced by avatar grid */ }
 
 // ══ FIRESTORE SYNC ══
 function initApp() {
@@ -1898,7 +2050,7 @@ function initApp() {
       if (d.id === 'stock')   { stock = d.items||[]; renderStock(); if(invPos) renderInvLines(); }
       if (d.id === 'orders')  { orders = d.items||[]; renderDocs('order'); if(activeOrd) renderDocLines('order'); }
       if (d.id === 'returns') { rets = d.items||[]; renderDocs('return'); if(activeRet) renderDocLines('return'); }
-      if (d.id === 'pos')     { pos_orders = d.items||[]; renderPOList(); if(activePOId) renderPOLines(); }
+      if (d.id === 'teorico') { teorico = d.items||[]; renderStock(); }
     });
   });
 
@@ -1948,20 +2100,139 @@ function _exportAudit(entries) {
   XLSX.writeFile(wb, 'audit_log.xlsx');
 }
 
-// ══ INIT ══
-renderRecentUsers();
-// Auto-login from saved session (page refresh)
-const _savedSession = localStorage.getItem('wms_session');
-if (_savedSession) {
+
+// ══ ASSISTENTE AI ══
+let assistOpen = false;
+let assistHistory = [];
+
+const ASSIST_SYSTEM = `És o assistente de suporte da app Armazém NH, um sistema de gestão de armazém (WMS).
+A tua função é apenas explicar como funciona a app. Não executes ações, não acedes a dados reais do utilizador.
+Responde sempre em português europeu, de forma concisa e clara.
+
+A app tem os seguintes módulos:
+- Base SKUs: catálogo de produtos (SKU, EAN, nome, marca, categoria, ml). Importação só por Excel.
+- Stock: tabela de consulta de stock por posição. Botão "Dar entrada" para adicionar stock (peça a peça com scanner ou por Excel). Botão "Stock teórico" para comparar com ficheiro do fornecedor.
+- Encomendas: criação de pedidos de saída de stock. Adiciona SKUs por scanner, pesquisa inteligente, manual ou Excel. Ao clicar "Emitir Guia Preparação" gera o percurso de picking otimizado por posição de armazém (estantes A-K, andares 1-5, posições 1-4). Pode cancelar enquanto "Aberta" ou "Guia emitida".
+- Para Preparação (Picking): lista de guias emitidas. Ao iniciar pede loja de destino. Picking linha a linha — confirma cada posição, ajusta quantidade se necessário, marca rutura se não houver stock. Stock só é deduzido ao finalizar.
+- Devoluções: criação de pedidos de entrada de stock devolvido. Mesmo fluxo das encomendas mas em sentido inverso.
+- Para Devolução (Colocação): lista de guias de devolução. Ao iniciar pede loja de origem. Colocação linha a linha. Stock acrescido ao finalizar.
+- Encomendas ao Fornecedor (PO): removido — substituído pelo Stock Teórico.
+- Login: cada utilizador identifica-se com o nome. Todas as ações ficam registadas no log de atividade (botão "📋 Atividade" na nav). Os dados são partilhados em tempo real via Firebase entre todos os utilizadores.
+- Estados de encomenda/devolução: Aberta → Guia emitida → Em preparação/colocação → Confirmada/Parcial. Cancelamento só possível em "Aberta" ou "Guia emitida".`;
+
+function toggleAssist() {
+  assistOpen = !assistOpen;
+  document.getElementById('assistPanel').style.display = assistOpen ? 'flex' : 'none';
+  if (assistOpen) setTimeout(() => document.getElementById('assistInput').focus(), 100);
+}
+
+function showAssistBtn() {
+  document.getElementById('assistBtn').style.display = 'block';
+}
+
+async function sendAssist() {
+  const input = document.getElementById('assistInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  // Add user message
+  appendAssistMsg(msg, 'user');
+  assistHistory.push({role:'user', content: msg});
+
+  // Loading indicator
+  const loadId = 'assist-load-' + Date.now();
+  appendAssistMsg('...', 'bot', loadId);
+
   try {
-    const u = JSON.parse(_savedSession);
-    currentUser = u;
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('userBadge').style.display='flex';
-    document.getElementById('userBadgeName').textContent = '👤 ' + u.name;
-    initApp();
-  } catch(e) { localStorage.removeItem('wms_session'); }
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        system: ASSIST_SYSTEM,
+        messages: assistHistory
+      })
+    });
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || 'Não consegui responder. Tenta novamente.';
+
+    // Replace loading with reply
+    const loadEl = document.getElementById(loadId);
+    if (loadEl) { loadEl.textContent = reply; loadEl.classList.remove('assist-loading'); }
+
+    assistHistory.push({role:'assistant', content: reply});
+    // Keep history manageable
+    if (assistHistory.length > 20) assistHistory = assistHistory.slice(-20);
+
+  } catch(e) {
+    const loadEl = document.getElementById(loadId);
+    if (loadEl) { loadEl.textContent = 'Erro de ligação. Verifica a tua conexão e tenta novamente.'; loadEl.classList.remove('assist-loading'); }
+  }
+
+  // Scroll to bottom
+  const msgs = document.getElementById('assistMessages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendAssistMsg(text, type, id) {
+  const msgs = document.getElementById('assistMessages');
+  const div = document.createElement('div');
+  div.className = 'assist-msg assist-' + (type==='user'?'user':'bot') + (id?' assist-loading':'');
+  div.textContent = text;
+  if (id) div.id = id;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ══ INIT ══
+function _initApp() {
+  renderAvatarGrid();
+  const _savedSession = localStorage.getItem('wms_session');
+  if (_savedSession) {
+    try {
+      const u = JSON.parse(_savedSession);
+      _doLogin(u.name);
+    } catch(e) { localStorage.removeItem('wms_session'); }
+  }
+}
+// Run immediately if DOM ready, otherwise wait
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initApp);
+} else {
+  _initApp();
 }
 </script>
+
+<!-- ASSISTENTE AI -->
+<button id="assistBtn" onclick="toggleAssist()"
+  style="position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--accent2);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:500;display:none;transition:transform .2s;"
+  onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</button>
+
+<div id="assistPanel" style="position:fixed;bottom:88px;right:24px;width:340px;max-height:520px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.2);z-index:500;display:none;flex-direction:column;overflow:hidden;">
+  <div style="background:var(--accent2);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-weight:700;font-size:14px;color:#fff;">Assistente Armazém NH</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:1px;">Tira dúvidas sobre o funcionamento</div>
+    </div>
+    <button onclick="toggleAssist()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;padding:4px;">✕</button>
+  </div>
+  <div id="assistMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;max-height:360px;">
+    <div class="assist-msg assist-bot">Olá! Sou o assistente do Armazém NH. Podes perguntar-me como funciona qualquer parte da app — stock, encomendas, picking, devoluções, base de SKUs, etc.</div>
+  </div>
+  <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+    <input id="assistInput" class="input input-sans" placeholder="Escreve a tua dúvida..." style="flex:1;font-size:13px;padding:8px 12px;"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAssist();}">
+    <button onclick="sendAssist()" class="btn btn-dark btn-sm" style="flex-shrink:0;">→</button>
+  </div>
+</div>
+
+<style>
+.assist-msg{padding:9px 12px;border-radius:10px;font-size:13px;line-height:1.5;max-width:90%;}
+.assist-bot{background:var(--surface2);color:var(--text);align-self:flex-start;border-bottom-left-radius:3px;}
+.assist-user{background:var(--accent2);color:#fff;align-self:flex-end;border-bottom-right-radius:3px;}
+.assist-loading{opacity:.6;font-style:italic;}
+</style>
 </body>
 </html>
