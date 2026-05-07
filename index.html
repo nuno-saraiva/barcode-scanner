@@ -1532,6 +1532,8 @@ function closeClientModal(){
 }
 
 function selectClient(client){
+  // Save type BEFORE closeClientModal() clears it
+  const t = _pendingDocType;
   closeClientModal();
   // If we have pending import lines, use that flow
   if (_pendingImportLines) {
@@ -1539,7 +1541,6 @@ function selectClient(client){
     _pendingImportLines = null;
     return;
   }
-  const t = _pendingDocType;
   const isOrder = t==='order';
   const prefix = isOrder ? 'Pedido' : 'Devolução';
   const count = docSt(t).filter(d=>d.client===client).length + 1;
@@ -1548,7 +1549,16 @@ function selectClient(client){
   const id = prefix+' '+client+' '+count;
   docSt(t).unshift({id, client, lines:[], status:'open',
     createdAt: dateStr, createdBy: currentUser?currentUser.name:'—', snapshot:null});
-  docSv(t); renderDocs(t); openEd(t, id);
+  docSv(t);
+  // Navigate to the correct page first
+  const pageId = t==='order' ? 'page-orders' : 'page-returns';
+  const navBtn = document.querySelector('[data-page="'+(t==='order'?'orders':'returns')+'"]');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab,.mob-nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  if(navBtn) navBtn.classList.add('active');
+  renderDocs(t);
+  openEd(t, id);
 }
 function renderDocs(t){
   const el=document.getElementById(t==='order'?'ordersList':'returnsList');
