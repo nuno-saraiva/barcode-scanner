@@ -1218,11 +1218,7 @@ function emitirGuia() {
 
   // Show ruptura alerts in order editor
   if (rupturas.length) {
-    const msg = `⚠️ Rutura detetada:
-${rupturas.join('
-')}
-
-Emitir guia mesmo assim?`;
+    const msg = '\u26a0\ufe0f Rutura detetada:\n' + rupturas.join('\n') + '\n\nEmitir guia mesmo assim?';
     if (!confirm(msg)) return;
   }
 
@@ -1447,12 +1443,7 @@ function finalizePicking() {
   const confirmed = prepLines.filter(l => l.status === 'confirmed');
   const rupturas = prepLines.filter(l => l.status === 'ruptura' || l.ruptura);
   if (!confirmed.length) { toast('Confirma pelo menos uma linha', 'err'); return; }
-  const msg = `Finalizar picking de ${doc.id}?
-
-✓ ${confirmed.length} linhas confirmadas
-${rupturas.length ? '⚠️ ' + rupturas.length + ' rupturas (não deduzidas)
-' : ''}
-O stock será deduzido agora.`;
+  const msg = 'Finalizar picking de ' + doc.id + '?\n\n\u2713 ' + confirmed.length + ' linhas confirmadas\n' + (rupturas.length ? '\u26a0\ufe0f ' + rupturas.length + ' rupturas (n\u00e3o deduzidas)\n' : '') + '\nO stock ser\u00e1 deduzido agora.';
   if (!confirm(msg)) return;
 
   // Deduct stock only for confirmed lines
