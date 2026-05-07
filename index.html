@@ -234,6 +234,7 @@ select.input{appearance:auto;cursor:pointer;}
 .import-order-row{border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:background .15s;}
 .import-order-row:hover{background:var(--surface2);}
 </style>
+<link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAIAEBAAAAAAIABiAgAAJgAAACAgAAAAACAArwEAAIgCAACJUE5HDQoaCgAAAA1JSERSAAAAEAAAABAIBgAAAB/z/2EAAAIpSURBVHicpZM9aJNRFIafc++X5kt/rEkTYtMasRSlxVoR7CSCQ8GprYOKmy4KBRfp4GopLnV0cnAVdFKkk9BdwQ6FioKKSyVt0zSmzZ/fd49DEmyr+IN3PPe+z33fc88VgExmZALsU3AWsPx+hWBCCC+tri4/l97ekUkR8xjwQQHkDwBtHqmquqvS1zeqqgCqfyHeDRER8FrqfxA3XaqqIuZHATzPQ0QQETzPIoABbBNtRXffIjT3G55UyeXWqdfrBEFAfmOTUGHbGYqhQYBC4FFT2WPVADjniMVizM3dYXBwgEPpFLduTxOJGMY7S1yJFwmAm8k8Q35tD8SICM45fD/KzMw0169dpqc/y93J07zIvOfR0VUudJX45oQbycLPgJYVay2FwhYnho+Rzh6m9HqRIS0T8ww7zpD0AoqhobovgtfKH422kcuts/LuIxPnx/iQjvOs/oQz+QLjB3Y4GavSGwkI3C960OqDMYaFhZecOzuGae/k3pckr8ox3lR8Ln46wud6BM9oY9z2A0SEbLafpaVl1tbyDB0foF1rpL0AX5TNwNJtHb7sBXiqijFGS6VtmZ9/QKVSZXb2PqdGh2kTx+J2Jyu1EN84Hm7EeVuNEm1AFBDJZEZVBMIw1GLxqyQSBymXq1SrNXri3ew4Qwh0GcdWaIkZR1ScauMBMapuSpWKtZZUqkdVoaOjnVQqgQM6jKPbOhRIeAFRUdVG8opzbkrg/77zd4vp7infpEK3AAAAAElFTkSuQmCCiVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABdklEQVR4nGNkQANSUnr/0cWoCZ49u8SIzGeip+XY7GDCJUEvRzDR23J0RzAOhOXIgImwklEHjDpg1AEj0QF8fLwMT59eZHj69CJDR0cNXNzf34Ph6dOLDPPmTUBRv1/1PsM5jTsMfvyf4GIzZJ8ynNO4w1Ai/oZ0ByADf38PBjY2Ngzxcxp34JgSQNABfHy8DO7uDihiBl0+KHx+5r+0ccCfP38YPnz4yBAW5ke2BRQ54N+/fwwbNmxnsLe3ZhATE6G/AxgYGBhWrdrEwMzMxBAU5A0Xu1C2BUXNx7/MDAwMDAwNkq/g6cKM+zt1HHDx4lWGGzfuMISGokaD0Q0VOKYEEFUOrF69iUFDQ4VBT08Lr7qG52JwR536ykk9B6xbt5Xhz5+/KNFALUCUA169esNw8OAxmiREoovilSs3Ut1ykhywa9cBhg8fPlLdAaON0oF3AHpfjZ7g2bNLjEwwxkBYzsCAFAX0dASyXUy4JOhhOQMDAwMA4oOCNPLpNW8AAAAASUVORK5CYII=">
 </head>
 <body>
 
@@ -411,9 +412,9 @@ select.input{appearance:auto;cursor:pointer;}
     <input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">
     <button class="nav-tab nav-desktop-only" onclick="showAuditLog()" data-tip="Registo de atividade" style="font-size:13px;padding:0 10px;">📋</button>
     <div class="lang-sel nav-desktop-only" data-tip="Idioma">
-      <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')">PT</button>
-      <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
-      <button class="lang-btn" id="lang-es" onclick="setLang('es')">ES</button>
+      <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')" data-tip="Português">🇵🇹</button>
+      <button class="lang-btn" id="lang-en" onclick="setLang('en')" data-tip="English">🇬🇧</button>
+      <button class="lang-btn" id="lang-es" onclick="setLang('es')" data-tip="Español">🇪🇸</button>
     </div>
     <div id="userBadge" style="display:none;align-items:center;gap:6px;padding:0 8px;">
       <span id="userBadgeName" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;"></span>
@@ -440,14 +441,14 @@ select.input{appearance:auto;cursor:pointer;}
     <div style="height:1px;background:rgba(255,255,255,.1);margin:8px 0;"></div>
     <button class="mob-nav-btn" onclick="showAuditLog();closeMobileMenu()">📋 Atividade</button>
     <button class="mob-nav-btn" onclick="exportBackup();closeMobileMenu()">💾 Exportar Backup</button>
-    <label class="mob-nav-btn" style="cursor:pointer;"><input type="file" id="restoreFileMob" accept=".json" onchange="importBackupMob()" style="display:none;">↩ Restaurar Backup</label>
+    <label class="mob-nav-btn" style="cursor:pointer;"><input type="file" id="restoreFileMob" accept=".json" onchange="importBackupMob()" style="display:none;">↩ Restaurar backup</label>
   </div>
   <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);">
     <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">🌐 Idioma</div>
     <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button class="lang-btn active" id="lang-pt-mob" onclick="setLang('pt')">PT</button>
-      <button class="lang-btn" id="lang-en-mob" onclick="setLang('en')">EN</button>
-      <button class="lang-btn" id="lang-es-mob" onclick="setLang('es')">ES</button>
+      <button class="lang-btn active" id="lang-pt-mob" onclick="setLang('pt')">🇵🇹</button>
+      <button class="lang-btn" id="lang-en-mob" onclick="setLang('en')">🇬🇧</button>
+      <button class="lang-btn" id="lang-es-mob" onclick="setLang('es')">🇪🇸</button>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <span id="mobileMenuUser" style="font-size:13px;color:rgba(255,255,255,.7);font-weight:600;"></span>
@@ -618,7 +619,7 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-sub">Artigos devolvidos</div>
   <div class="page-desc">Regista artigos devolvidos pelas lojas. Escolhe o cliente, adiciona os SKUs devolvidos e emite a guia de colocação. O stock só entra no sistema após o operador confirmar a colocação linha a linha. Devolução por scanner, pesquisa inteligente ou Excel.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Devoluções</span><div style="display:flex;gap:6px;"><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução manualmente">＋ Nova</button><button class="btn btn-ghost btn-sm" onclick="openImportFromOrder()" data-tip="Criar devolução a partir de um pedido concluído">📋 De pedido</button></div></div>
+    <div class="card-header"><span class="card-title">Devoluções</span><div style="display:flex;gap:6px;"><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução manualmente">＋ Nova</button><button class="btn btn-ghost btn-sm" onclick="openImportFromOrder()" data-tip="Criar devolução a partir de um pedido concluído">📋 Criar devolução a partir de pedido</button></div></div>
     <div id="returnsList"><div class="empty"><div class="empty-icon">↩️</div><span data-i="misc_no_rets">Sem devoluções.</span></div></div>
   </div>
   <div id="returnEditor" style="display:none;">
@@ -2708,9 +2709,9 @@ function setLang(lang) {
   // Update nav buttons (desktop + mobile)
   ['pt','en','es'].forEach(l => {
     const b = document.getElementById('lang-'+l);
-    if (b) b.classList.toggle('active', l===lang);
+    if (b) { b.classList.toggle('active', l===lang); b.style.opacity = l===lang?'1':'0.5'; }
     const bm = document.getElementById('lang-'+l+'-mob');
-    if (bm) bm.classList.toggle('active', l===lang);
+    if (bm) { bm.classList.toggle('active', l===lang); bm.style.opacity = l===lang?'1':'0.5'; }
   });
   // Update all data-i elements
   document.querySelectorAll('[data-i]').forEach(el => {
