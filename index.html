@@ -216,15 +216,21 @@ select.input{appearance:auto;cursor:pointer;}
 .mob-nav-btn.t-ret.active{background:rgba(167,139,250,.2);}
 .mob-nav-btn.t-db.active{background:rgba(56,189,248,.15);}
 @media(max-width:768px){
-  .nav-tabs-desktop{display:none;}
-  .nav-hamburger{display:block;}
-  .nav-right .lang-sel{display:none;}
+  .nav-tabs-desktop{display:none!important;}
+  .nav-hamburger{display:block!important;}
+  .nav-desktop-only{display:none!important;}
   [data-tip]:hover::after,[data-tip]:hover::before{display:none;}
 }
 @media(min-width:769px){
   #mobileMenuOverlay,#mobileMenu{display:none!important;}
-  #navHamburger{display:none!important;}
+  .nav-hamburger{display:none!important;}
 }
+
+/* PRESENCE INDICATORS */
+.presence-badge{display:inline-flex;align-items:center;gap:4px;background:#fef3c7;border:1px solid #fcd34d;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:#92400e;}
+.presence-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;animation:pulse-dot 1.5s infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.4;}}
+.presence-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;min-height:0;}
 </style>
 </head>
 <body>
@@ -368,10 +374,7 @@ select.input{appearance:auto;cursor:pointer;}
 </script>
 
 <!-- USER BADGE (top right of nav) -->
-<div id="userBadge" style="display:none;position:fixed;top:0;right:0;z-index:101;padding:8px 14px;background:rgba(26,26,46,.95);border-bottom-left-radius:10px;display:flex;align-items:center;gap:8px;">
-  <span id="userBadgeName" style="font-size:12px;color:#fff;font-family:'Barlow',sans-serif;font-weight:600;"></span>
-  <button onclick="doLogout()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;">Sair</button>
-</div>
+<!-- old userBadge removed -->
 
 <!-- AUDIT LOG PANEL -->
 <div class="overlay" id="auditOverlay">
@@ -394,28 +397,26 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="nav-logo">Armazém<span>·</span>NH</div>
   <!-- Desktop nav tabs -->
   <div class="nav-tabs-desktop">
-    <button class="nav-tab t-db active" data-page="skudb"   onclick="showPage('skudb',this)" data-tip-i="tip_skudb"><span data-i="nav_skudb">🗃 Base SKUs</span></button>
     <button class="nav-tab"             data-page="stock"   onclick="showPage('stock',this)" data-tip-i="tip_stock"><span data-i="nav_stock">📦 Stock</span></button>
     <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)"><span data-i="nav_orders">🛒 Encomendas</span></button>
     <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)" data-tip-i="tip_pick_list"><span data-i="nav_pick">📦 Para Preparação</span></button>
     <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)"><span data-i="nav_ret">↩️ Devoluções</span></button>
-    <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)"><span data-i="nav_putaway">📍 Para Devolução</span></button>
+    <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)"><span data-i="nav_putaway">📥 Dar Entrada</span></button>
+    <button class="nav-tab t-db"        data-page="skudb" id="nav-skudb-btn"   onclick="showPage('skudb',this)" data-tip-i="tip_skudb"><span data-i="nav_skudb">🗂 Base de Dados Geral</span></button>
   </div>
   <!-- Right side: always visible -->
   <div class="nav-right">
-    <button class="nav-tab" onclick="showAuditLog()" data-tip="Registo de atividade" style="display:none;" id="nav-activity-btn">📋</button>
-    <button class="nav-tab" onclick="exportBackup()" data-tip="Exportar backup" style="font-size:16px;">💾</button>
-    <label class="nav-tab" data-tip="Restaurar backup" style="cursor:pointer;font-size:11px;color:rgba(255,255,255,.5);"><input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">↩</label>
-    <div class="lang-sel" data-tip="Idioma">
+    <input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">
+    <button class="nav-tab nav-desktop-only" onclick="showAuditLog()" data-tip="Registo de atividade" style="font-size:13px;padding:0 10px;">📋</button>
+    <div class="lang-sel nav-desktop-only" data-tip="Idioma">
       <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')">PT</button>
       <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
       <button class="lang-btn" id="lang-es" onclick="setLang('es')">ES</button>
     </div>
     <div id="userBadge" style="display:none;align-items:center;gap:6px;padding:0 8px;">
       <span id="userBadgeName" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;"></span>
-      <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="color:rgba(255,255,255,.6);font-size:11px;padding:3px 8px;">Sair</button>
+      <button class="btn btn-ghost btn-sm nav-desktop-only" onclick="doLogout()" style="color:rgba(255,255,255,.6);font-size:11px;padding:3px 8px;">Sair</button>
     </div>
-    <!-- Hamburger -->
     <button class="nav-hamburger" onclick="toggleMobileMenu()" id="navHamburger" aria-label="Menu">☰</button>
   </div>
 </nav>
@@ -428,30 +429,34 @@ select.input{appearance:auto;cursor:pointer;}
     <button onclick="closeMobileMenu()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:22px;cursor:pointer;">✕</button>
   </div>
   <div style="padding:12px 8px;flex:1;">
-    <button class="mob-nav-btn t-db active" data-page="skudb"   onclick="showPage('skudb',this);closeMobileMenu()"><span data-i="nav_skudb">🗃 Base SKUs</span></button>
     <button class="mob-nav-btn"             data-page="stock"   onclick="showPage('stock',this);closeMobileMenu()"><span data-i="nav_stock">📦 Stock</span></button>
     <button class="mob-nav-btn"             data-page="orders"  onclick="showPage('orders',this);closeMobileMenu()"><span data-i="nav_orders">🛒 Encomendas</span></button>
     <button class="mob-nav-btn"             data-page="picking" onclick="showPage('picking',this);closeMobileMenu()"><span data-i="nav_pick">📦 Para Preparação</span></button>
     <button class="mob-nav-btn t-ret"       data-page="returns" onclick="showPage('returns',this);closeMobileMenu()"><span data-i="nav_ret">↩️ Devoluções</span></button>
-    <button class="mob-nav-btn t-ret"       data-page="putaway" onclick="showPage('putaway',this);closeMobileMenu()"><span data-i="nav_putaway">📍 Para Devolução</span></button>
+    <button class="mob-nav-btn t-ret"       data-page="putaway" onclick="showPage('putaway',this);closeMobileMenu()"><span data-i="nav_putaway">📥 Dar Entrada</span></button>
+    <button class="mob-nav-btn t-db"        data-page="skudb"   onclick="showPage('skudb',this);closeMobileMenu()"><span data-i="nav_skudb">🗂 Base de Dados Geral</span></button>
     <div style="height:1px;background:rgba(255,255,255,.1);margin:8px 0;"></div>
     <button class="mob-nav-btn" onclick="showAuditLog();closeMobileMenu()">📋 Atividade</button>
-    <button class="mob-nav-btn" onclick="exportBackup();closeMobileMenu()">💾 Exportar backup</button>
-    <label class="mob-nav-btn" style="cursor:pointer;"><input type="file" id="restoreFileMob" accept=".json" onchange="importBackupMob()" style="display:none;">↩ Restaurar backup</label>
+    <button class="mob-nav-btn" onclick="exportBackup();closeMobileMenu()">💾 Exportar Backup</button>
+    <label class="mob-nav-btn" style="cursor:pointer;"><input type="file" id="restoreFileMob" accept=".json" onchange="importBackupMob()" style="display:none;">↩ Restaurar Backup</label>
   </div>
   <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);">
     <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">🌐 Idioma</div>
-    <div style="display:flex;gap:6px;">
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
       <button class="lang-btn active" id="lang-pt-mob" onclick="setLang('pt')">PT</button>
       <button class="lang-btn" id="lang-en-mob" onclick="setLang('en')">EN</button>
       <button class="lang-btn" id="lang-es-mob" onclick="setLang('es')">ES</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <span id="mobileMenuUser" style="font-size:13px;color:rgba(255,255,255,.7);font-weight:600;"></span>
+      <button onclick="doLogout();closeMobileMenu()" style="background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;font-family:'Barlow',sans-serif;">Sair</button>
     </div>
   </div>
 </div>
 
 <!-- SKU DB -->
-<div class="page active" id="page-skudb">
-  <div class="page-title">Base de Dados de SKUs</div>
+<div class="page" id="page-skudb">
+  <div class="page-title">Base de Dados Geral</div>
   <div class="page-sub">Catálogo central — EAN, nome, marca, categoria, ml</div>
   <div class="page-desc">Catálogo central de todos os produtos. Importa um ficheiro Excel com SKU, EAN, nome, marca, categoria e ml. Esta base é usada em toda a app para <strong>pesquisa inteligente</strong>, preenchimento automático e identificação de produtos no picking. Sem esta base, os SKUs aparecem sem nome — começa sempre por aqui.</div>
   <div class="card">
@@ -477,10 +482,10 @@ select.input{appearance:auto;cursor:pointer;}
 </div>
 
 <!-- STOCK -->
-<div class="page" id="page-stock">
+<div class="page active" id="page-stock">
   <div class="page-title">Stock</div>
   <div class="page-sub">Consulta de stock por posição</div>
-  <div class="page-desc">Mapa de stock real por posição de armazém (estantes A→K, andares 1→5, posições 1→4). Usa <strong>＋ Dar entrada</strong> para registar mercadoria recebida peça a peça ou por Excel. Usa <strong>📊 Stock teórico</strong> para carregar o ficheiro do fornecedor com as quantidades que devias ter recebido — a tabela mostra imediatamente as diferenças entre o stock real e o esperado. <strong>Nota:</strong> só existe um stock teórico de cada vez; cada nova importação substitui o anterior. As colunas de <em>Em carteira</em>, <em>Em preparação</em> e <em>Disponível</em> atualizam automaticamente com os pedidos em curso.</div>
+  <div class="page-desc">Mapa de stock real por posição de armazém (estantes A→K, andares 1→5, posições 1→4). Usa <strong>Dar Entrada</strong> para registar mercadoria recebida peça a peça ou por Excel. Usa <strong>📊 Inserir Stock Teórico</strong> para carregar o ficheiro do fornecedor com as quantidades que devias ter recebido — a tabela mostra imediatamente as diferenças entre o stock real e o esperado. <strong>Nota:</strong> só existe um stock teórico de cada vez; cada nova importação substitui o anterior. As colunas de <em>Em carteira</em>, <em>Em preparação</em> e <em>Disponível</em> atualizam automaticamente com os pedidos em curso.</div>
 
   <!-- STOCK TABLE -->
   <div class="card">
@@ -491,8 +496,8 @@ select.input{appearance:auto;cursor:pointer;}
         <select class="input input-sans" id="stockFilter" style="width:95px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
           <option value="">Todos</option><option value="mista">Mistas</option><option value="exclusiva">Exclusivas</option>
         </select>
-        <button class="btn btn-success btn-sm" onclick="openEntrada()" data-tip="Dar entrada de mercadoria recebida — peça a peça com scanner ou por Excel" data-tip-i="tip_dar_entrada" data-i="btn_dar_entrada">＋ Dar entrada</button>
-        <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" data-tip="Comparar stock real com quantidades encomendadas ao fornecedor" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">📊 Stock teórico</button>
+        <button class="btn btn-success btn-sm" onclick="openEntrada()" data-tip="Dar entrada de mercadoria recebida — peça a peça com scanner ou por Excel" data-tip-i="tip_dar_entrada" data-i="btn_dar_entrada">Dar Entrada</button>
+        <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" data-tip="Comparar stock real com quantidades encomendadas ao fornecedor" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">📊 Inserir Stock Teórico</button>
         <button class="btn btn-ghost btn-sm" onclick="clearStock()" data-tip="Apagar todo o stock do armazém">🗑</button>
       </div>
     </div>
@@ -524,6 +529,7 @@ select.input{appearance:auto;cursor:pointer;}
         </div>
       </div>
       <div class="card-body">
+        <div class="presence-bar" id="presence-order"></div>
         <div class="field"><label>Cliente</label><div class="input input-sans" id="o-client" style="background:var(--surface2);color:var(--text);font-weight:600;cursor:default;"></div></div>
         <div class="inner-tabs">
           <button class="inner-tab active" onclick="switchTab('order','scanner')">📷 Scanner</button>
@@ -610,7 +616,7 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-sub">Artigos devolvidos</div>
   <div class="page-desc">Regista artigos devolvidos pelas lojas. Escolhe o cliente, adiciona os SKUs devolvidos e emite a guia de colocação. O stock só entra no sistema após o operador confirmar a colocação linha a linha. Devolução por scanner, pesquisa inteligente ou Excel.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Devoluções</span><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução de artigos">＋ Nova</button></div>
+    <div class="card-header"><span class="card-title">Devoluções</span><div style="display:flex;gap:6px;"><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução manualmente">＋ Nova</button><button class="btn btn-ghost btn-sm" onclick="openImportFromOrder()" data-tip="Criar devolução a partir de um pedido concluído">📋 De pedido</button></div></div>
     <div id="returnsList"><div class="empty"><div class="empty-icon">↩️</div><span data-i="misc_no_rets">Sem devoluções.</span></div></div>
   </div>
   <div id="returnEditor" style="display:none;">
@@ -623,6 +629,7 @@ select.input{appearance:auto;cursor:pointer;}
         </div>
       </div>
       <div class="card-body">
+        <div class="presence-bar" id="presence-return"></div>
         <div class="field"><label>Cliente</label><div class="input input-sans" id="r-client" style="background:var(--surface2);color:var(--text);font-weight:600;cursor:default;"></div></div>
         <div class="inner-tabs">
           <button class="inner-tab active" onclick="switchTab('return','scanner')">📷 Scanner</button>
@@ -667,9 +674,9 @@ select.input{appearance:auto;cursor:pointer;}
 
 <!-- PUTAWAY -->
 <div class="page" id="page-putaway">
-  <div class="page-title">Para Devolução</div>
+  <div class="page-title">Dar Entrada</div>
   <div class="page-sub">Guias de entrada — colocação linha a linha</div>
-  <div class="page-desc">Lista de guias de colocação de devoluções, com nome <em>Guia_</em> seguido do nome da devolução. Clica em <strong>▶ Iniciar</strong> — o operador é indicado posição a posição onde colocar cada artigo, com percurso otimizado. O stock só é acrescido quando a colocação é finalizada e confirmada.</div>
+  <div class="page-desc">Lista de guias de entrada de stock por devolução, com nome <em>Guia_</em> seguido do nome da devolução. Clica em <strong>▶ Iniciar</strong> — o operador é indicado posição a posição onde colocar cada artigo, com percurso otimizado. O stock só é acrescido quando a colocação é finalizada e confirmada.</div>
 
   <!-- GUIDES LIST -->
   <div id="putawayListSection">
@@ -712,7 +719,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="search-panel-overlay" id="teoricoOverlay" onclick="teoricoClose(event)">
   <div class="search-panel" style="max-width:480px;" onclick="event.stopPropagation()">
     <div class="search-panel-head">
-      <div style="font-weight:800;font-size:15px;flex:1;">📊 Stock teórico</div>
+      <div style="font-weight:800;font-size:15px;flex:1;">📊 Inserir Stock Teórico</div>
       <button class="btn btn-ghost btn-sm" onclick="closeTeoricoPanel()">✕</button>
     </div>
     <div style="padding:16px;flex:1;overflow-y:auto;">
@@ -733,6 +740,44 @@ select.input{appearance:auto;cursor:pointer;}
   </div>
 </div>
 
+
+
+<!-- BACKUP PASSWORD MODAL -->
+<div class="overlay" id="backupPwModal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">🔐 Restaurar Backup</div>
+    <div class="modal-sub" id="backupPwSub">Introduz a password para continuar.</div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" class="input input-sans" id="backupPwInput"
+        placeholder="Password..."
+        onkeydown="if(event.key==='Enter')confirmBackupPw()"
+        style="font-size:15px;padding:11px 14px;letter-spacing:2px;">
+    </div>
+    <div id="backupPwError" style="color:#dc2626;font-size:12px;margin-bottom:8px;display:none;">Password incorreta. Tenta novamente.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBackupPwModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmBackupPw()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- IMPORT FROM ORDER MODAL -->
+<div class="overlay" id="importFromOrderModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-title">📋 Devolução de pedido</div>
+    <div class="modal-sub">Seleciona um pedido concluído para criar a devolução com as mesmas linhas e quantidades.</div>
+    <div style="margin-bottom:12px;">
+      <input class="input input-sans" id="importOrderSearch" placeholder="Pesquisar pedido..." 
+        oninput="filterImportOrders()" style="width:100%;">
+    </div>
+    <div id="importOrderList" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeImportFromOrder()">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- CLIENT MODAL -->
 <div class="overlay" id="clientModal">
@@ -1080,13 +1125,13 @@ function renderStock(){
     th('position','Posição')+
     th('qty','Real','Stock físico contado no armazém');
   if(hasMov){
-    thCols += th('carteira','Em carteira','Pedidos abertos ainda sem guia emitida');
-    thCols += th('emPrep','Em preparação','Pedidos com guia emitida mas ainda não em preparação ativa');
-    thCols += th('faturado','Faturado','Pedidos já em curso ou concluídos');
-    thCols += th('devPedidas','Dev. pedidas','Devoluções pedidas sem guia emitida');
-    thCols += th('devPrep','Dev. em colocação','Devoluções com guia emitida, a aguardar colocação');
-    thCols += th('devFeitas','Dev. realizadas','Devoluções já processadas e em stock');
-    thCols += th('disponivel','Disponível','Stock real − Em carteira − Em preparação + Devoluções realizadas','background:#e8f4f0;color:#065f46;font-weight:800;');
+    thCols += th('carteira',tr('misc_in_cart'),'Pedidos abertos ainda sem guia emitida');
+    thCols += th('emPrep',tr('st_prep'),'Pedidos com guia emitida mas ainda não em preparação ativa');
+    thCols += th('faturado',tr('misc_invoiced'),'Pedidos já em curso ou concluídos');
+    thCols += th('devPedidas',tr('misc_ret_req'),'Devoluções pedidas sem guia emitida');
+    thCols += th('devPrep',tr('misc_ret_put'),'Devoluções com guia emitida, a aguardar colocação');
+    thCols += th('devFeitas',tr('misc_ret_done'),'Devoluções já processadas e em stock');
+    thCols += th('disponivel',tr('misc_available'),'Stock real − Em carteira − Em preparação + Devoluções realizadas','background:#e8f4f0;color:#065f46;font-weight:800;');
   }
   if(hasTeorico){
     thCols += th('teorico','Teórico');
@@ -1427,6 +1472,13 @@ function cancelDocFromList(t, id) {
   }
   doc.status = 'cancelled';
   doc.cancelledBy = currentUser?currentUser.name:'—';
+  // Clean up line docs
+  if(window._db){
+    const col = t==='order'?'order_lines':'return_lines';
+    window._db.collection(col).where('docId','==',id).get().then(snap=>{
+      snap.docs.forEach(d=>d.ref.delete());
+    }).catch(()=>{});
+  }
   logAction(t==='order'?'Encomenda cancelada':'Devolucao cancelada', id);
   docSv(t); renderDocs(t);
   if (t==='order') renderPickingGuides();
@@ -1467,6 +1519,12 @@ function closeClientModal(){
 
 function selectClient(client){
   closeClientModal();
+  // If we have pending import lines, use that flow
+  if (_pendingImportLines) {
+    createReturnFromOrder(client, _pendingImportLines);
+    _pendingImportLines = null;
+    return;
+  }
   const t = _pendingDocType;
   const isOrder = t==='order';
   const prefix = isOrder ? 'Pedido' : 'Devolução';
@@ -1507,6 +1565,8 @@ function delDoc(t,id){
 }
 function openEd(t,id){
   setAct(t,id);const doc=docSt(t).find(d=>d.id===id);
+  startPresence(t,id);
+  startLinesListener(t,id);
   document.getElementById(t==='order'?'editorTitle':'retEdTitle').textContent=doc.id;
   const _clientEl=document.getElementById(t==='order'?'o-client':'r-client');
   if(_clientEl) _clientEl.textContent=doc.client||'';
@@ -1514,7 +1574,7 @@ function openEd(t,id){
   document.getElementById(edEl).style.display='block';
   renderDocLines(t);document.getElementById(edEl).scrollIntoView({behavior:'smooth'});
 }
-function closeEd(t){document.getElementById(t==='order'?'orderEditor':'returnEditor').style.display='none';setAct(t,null);stopScan(t);}
+function closeEd(t){document.getElementById(t==='order'?'orderEditor':'returnEditor').style.display='none';setAct(t,null);stopScan(t);stopPresence();stopLinesListener();}
 function updClient(t){} // client set at creation
 function switchTab(t,tab){
   const p=t==='order'?'o':'r';const tabs=['scanner','search','manual','import'];
@@ -1542,12 +1602,27 @@ function docAddManual(t,skuEl,qtyEl){
 function _addLine(t,sku,qty){
   const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
   const ex=doc.lines.find(l=>l.sku===sku);
-  if(ex)ex.qty+=qty;else doc.lines.push({sku,qty});
-  docSv(t);renderDocLines(t);toast(`✓ ${sku} +${qty}`,'win');
-  logAction(t==='order'?'Linha encomenda':'Linha devolução', `${sku} +${qty} → ${actId(t)}`);
+  const newQty = ex ? ex.qty+qty : qty;
+  // Write individual line doc — safe for concurrent edits
+  saveDocLine(t, doc.id, sku, newQty);
+  // Optimistic local update
+  if(ex) ex.qty=newQty; else doc.lines.push({sku,qty:newQty});
+  renderDocLines(t);
+  toast('✓ '+sku+' +'+qty,'win');
+  logAction(t==='order'?'Linha encomenda':'Linha devolução', sku+' +'+qty+' → '+actId(t));
 }
-function rmDocLine(t,sku){const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;doc.lines=doc.lines.filter(l=>l.sku!==sku);docSv(t);renderDocLines(t);}
-function updDocQty(t,sku,qty){const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;const l=doc.lines.find(l=>l.sku===sku);if(l){l.qty=parseInt(qty)||1;docSv(t);}}
+function rmDocLine(t,sku){
+  const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
+  deleteDocLine(t, doc.id, sku);
+  doc.lines=doc.lines.filter(l=>l.sku!==sku);
+  renderDocLines(t);
+}
+function updDocQty(t,sku,qty){
+  const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
+  const q=parseInt(qty)||1;
+  const l=doc.lines.find(l=>l.sku===sku);
+  if(l){l.qty=q; saveDocLine(t, doc.id, sku, q);}
+}
 function renderDocLines(t){
   const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
   const ce=t==='order'?'orderLineCount':'returnLineCount',be=t==='order'?'orderLinesBody':'returnLinesBody';
@@ -1704,7 +1779,7 @@ function renderPickingGuides() {
   const el = document.getElementById('pickingGuidesList');
   const guias = orders.filter(d => d.guide && ['guia-emitida','em-preparacao'].includes(d.status));
   if (!guias.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Nenhuma guia emitida.</div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>'+tr('misc_no_guides_pick')+'</div>';
     return;
   }
   el.innerHTML = guias.map(d => {
@@ -1713,14 +1788,14 @@ function renderPickingGuides() {
     const done = g.lines.filter(l => l.status === 'confirmed').length;
     const rupt = g.lines.filter(l => l.ruptura).length;
     const pct = total ? Math.round(done/total*100) : 0;
-    const stLbl = d.status === 'em-preparacao' ? '🚶 Em preparação' : '📋 Aguarda preparação';
+    const stLbl = d.status === 'em-preparacao' ? tr('st_prep') : '📋 '+tr('misc_awaiting_prep');
     const stCls = d.status === 'em-preparacao' ? 'bdg-bl' : 'bdg-or';
     return `<div style="padding:14px 16px;border-bottom:1px solid var(--border);">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
         <div>
           <div class="mono" style="font-weight:700;font-size:14px">${d.id}${d.client?' <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· '+d.client+'</span>':''}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:3px">
-            Emitida por ${g.emittedBy} · ${g.emittedAt}
+            ${tr('misc_issued_by')} ${g.emittedBy} · ${g.emittedAt}
             ${rupt ? `· <span style="color:#dc2626">⚠️ ${rupt} rutura${rupt>1?'s':''}</span>` : ''}
           </div>
         </div>
@@ -1734,7 +1809,7 @@ function renderPickingGuides() {
       <div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">
         <div style="height:100%;background:var(--success);border-radius:20px;width:${pct}%;transition:width .4s;"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">${done} / ${total} linhas · ${pct}%</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${done} / ${total} ${tr('lbl_lines')} · ${pct}%</div>
     </div>`;
   }).join('');
 }
@@ -1798,7 +1873,7 @@ function renderPrepContent() {
     '</div>' +
     '<div style="text-align:right">' +
     '<div style="font-size:20px;font-weight:800">' + prepLines.length + '</div>' +
-    '<div style="font-size:11px;opacity:.6">linhas</div>' +
+    '<div style="font-size:11px;opacity:.6">'+tr('lbl_lines')+'</div>' +
     '</div>';
   renderPrepLines();
 }
@@ -2018,7 +2093,7 @@ function renderPutawayGuides() {
   const el = document.getElementById('putawayGuidesList');
   const guias = rets.filter(d => d.putawayGuide && ['guia-emitida','em-colocacao'].includes(d.status));
   if (!guias.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">↩️</div>Nenhuma guia emitida.</div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">↩️</div>'+tr('misc_no_guides_put')+'</div>';
     return;
   }
   el.innerHTML = guias.map(d => {
@@ -2026,7 +2101,7 @@ function renderPutawayGuides() {
     const total = g.lines.length;
     const done = g.lines.filter(l=>l.status==='confirmed').length;
     const pct = total ? Math.round(done/total*100) : 0;
-    const stLbl = d.status==='em-colocacao' ? '🚶 Em colocação' : '↩️ Aguarda colocação';
+    const stLbl = d.status==='em-colocacao' ? tr('st_coloc') : '↩️ '+tr('misc_awaiting_put');
     const stCls = d.status==='em-colocacao' ? 'bdg-pu' : 'bdg-or';
     return '<div style="padding:14px 16px;border-bottom:1px solid var(--border);">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">'+
@@ -2039,7 +2114,7 @@ function renderPutawayGuides() {
       '</div></div>'+
       '<div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">'+
       '<div style="height:100%;background:var(--purple);border-radius:20px;width:'+pct+'%;transition:width .4s;"></div></div>'+
-      '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+done+' / '+total+' linhas</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+done+' / '+total+' '+tr('lbl_lines')+'</div>'+
       '</div>';
   }).join('');
 }
@@ -2115,7 +2190,7 @@ function renderPutawayLines() {
   const done = putawayLines.filter(l=>l.status==='confirmed').length;
   const pct = total ? Math.round(done/total*100) : 0;
   document.getElementById('putawayProgress').style.width = pct+'%';
-  document.getElementById('putawayProgressLabel').textContent = done+' / '+total+' linhas confirmadas';
+  document.getElementById('putawayProgressLabel').textContent = done+' / '+total+' '+tr('misc_lines_confirmed');
   const container = document.getElementById('putawayPrepLines');
   container.innerHTML = putawayLines.map((l,idx) => {
     const info = skuInfo(l.sku);
@@ -2344,6 +2419,9 @@ function _doLogin(name) {
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('userBadge').style.display='flex';
   document.getElementById('userBadgeName').textContent = '👤 ' + name;
+  // Update mobile menu user section
+  const _mobUser = document.getElementById('mobileMenuUser');
+  if (_mobUser) _mobUser.textContent = '👤 ' + name;
   logAction('Login', 'Sessão iniciada');
   localStorage.setItem('wms_session', JSON.stringify({name, loginAt: new Date().toLocaleString('pt-PT')}));
   initApp();
@@ -2429,23 +2507,23 @@ function _exportAudit(entries) {
 // ══ i18n ══
 const LANGS = {
   pt: {
-    nav_skudb:'🗃 Base SKUs', nav_stock:'📦 Stock', nav_orders:'🛒 Encomendas',
-    nav_pick:'📦 Para Preparação', nav_ret:'↩️ Devoluções', nav_putaway:'📍 Para Devolução',
+    nav_skudb:'🗂 Base de Dados Geral', nav_stock:'📦 Stock', nav_orders:'🛒 Encomendas',
+    nav_pick:'📦 Para Preparação', nav_ret:'↩️ Devoluções', nav_putaway:'📥 Dar Entrada',
     nav_activity_lbl:'Atividade',
     // Page titles & subs
-    skudb_title:'Base de Dados de SKUs', skudb_sub:'Catálogo central de produtos — EAN, nome, marca, categoria, ml',
+    skudb_title:'Base de Dados Geral', skudb_sub:'Catálogo central de produtos — EAN, nome, marca, categoria, ml',
     stock_title:'Stock', stock_sub:'Consulta de stock por posição no armazém',
     orders_title:'Encomendas', orders_sub:'Pedidos de preparação e saída de stock',
     pick_title:'Para Preparação', pick_sub:'Guias de saída — preparação linha a linha',
     ret_title:'Devoluções', ret_sub:'Registo de artigos devolvidos',
-    putaway_title:'Para Devolução', putaway_sub:'Guias de entrada — colocação linha a linha',
+    putaway_title:'Dar Entrada', putaway_sub:'Guias de entrada de stock — colocação linha a linha',
     // Buttons
     btn_new_order:'＋ Nova encomenda', btn_new_ret:'＋ Nova devolução',
-    btn_emit_pick:'📦 Emitir Guia Preparação', btn_emit_put:'↩️ Emitir Guia Devolução',
+    btn_emit_pick:'📦 Emitir Guia Preparação', btn_emit_put:'📥 Emitir Guia Entrada',
     btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
     btn_finalize_pick:'✓ Finalizar e deduzir stock', btn_finalize_put:'✓ Finalizar e acrescentar ao stock',
     btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Fechar',
-    btn_dar_entrada:'＋ Dar entrada', btn_teorico:'📊 Stock teórico',
+    btn_dar_entrada:'Dar Entrada', btn_teorico:'📊 Inserir Stock Teórico',
     btn_export:'⬇ Excel', btn_template:'⬇ Template',
     btn_login:'Entrar →', btn_outro:'Outro', btn_back:'← Voltar',
     // Status
@@ -2482,24 +2560,35 @@ const LANGS = {
     misc_no_guides_put:'Nenhuma guia emitida. Vai a Devoluções e clica em "Emitir Guia Devolução".',
     misc_no_stock:'Sem stock. Clica em "Dar entrada" para começar.',
     misc_no_skus:'Base de dados vazia.',
+    misc_awaiting_prep:'Aguarda preparação',
+    misc_awaiting_put:'Aguarda colocação',
+    misc_issued_by:'Emitida por',
+    misc_lines_confirmed:'linhas confirmadas',
+    misc_in_cart:'Em carteira',
+    misc_available:'Disponível',
+    misc_invoiced:'Faturado',
+    misc_ret_req:'Dev. pedidas',
+    misc_ret_put:'Dev. em colocação',
+    misc_ret_done:'Dev. realizadas',
+    misc_start_pick:'Iniciar',
     diff_ok:'✓ Conforme', diff_over:'▲ Excesso', diff_under:'▼ Em falta', diff_missing:'✕ Não recebido',
   },
   en: {
-    nav_skudb:'🗃 SKU Database', nav_stock:'📦 Stock', nav_orders:'🛒 Orders',
-    nav_pick:'📦 For Preparation', nav_ret:'↩️ Returns', nav_putaway:'📍 For Return',
+    nav_skudb:'🗂 General Database', nav_stock:'📦 Stock', nav_orders:'🛒 Orders',
+    nav_pick:'📦 For Preparation', nav_ret:'↩️ Returns', nav_putaway:'📥 Stock In',
     nav_activity_lbl:'Activity',
-    skudb_title:'SKU Database', skudb_sub:'Product catalogue — EAN, name, brand, category, ml',
+    skudb_title:'General Database', skudb_sub:'Product catalogue — EAN, name, brand, category, ml',
     stock_title:'Stock', stock_sub:'Stock by warehouse position',
     orders_title:'Orders', orders_sub:'Outbound stock orders',
     pick_title:'For Preparation', pick_sub:'Outbound guides — line by line picking',
     ret_title:'Returns', ret_sub:'Register returned items',
-    putaway_title:'For Return', putaway_sub:'Inbound guides — line by line putaway',
+    putaway_title:'Stock In', putaway_sub:'Inbound stock guides — line by line putaway',
     btn_new_order:'＋ New order', btn_new_ret:'＋ New return',
-    btn_emit_pick:'📦 Issue Picking Guide', btn_emit_put:'↩️ Issue Return Guide',
+    btn_emit_pick:'📦 Issue Picking Guide', btn_emit_put:'📥 Issue Entry Guide',
     btn_start_pick:'▶ Start picking', btn_start_put:'▶ Start',
     btn_finalize_pick:'✓ Finalize & deduct stock', btn_finalize_put:'✓ Finalize & add to stock',
     btn_confirm:'✓ Confirm', btn_cancel:'✕ Cancel', btn_close:'Close',
-    btn_dar_entrada:'＋ Stock in', btn_teorico:'📊 Theoretical stock',
+    btn_dar_entrada:'Stock In', btn_teorico:'📊 Insert Theoretical Stock',
     btn_export:'⬇ Excel', btn_template:'⬇ Template',
     btn_login:'Enter →', btn_outro:'Other', btn_back:'← Back',
     st_open:'Open', st_picked:'Done', st_cancelled:'Cancelled',
@@ -2530,24 +2619,35 @@ const LANGS = {
     misc_no_guides_put:'No guide issued. Go to Returns and click "Issue Return Guide".',
     misc_no_stock:'No stock. Click "Stock in" to begin.',
     misc_no_skus:'Empty database.',
+    misc_awaiting_prep:'Awaiting preparation',
+    misc_awaiting_put:'Awaiting putaway',
+    misc_issued_by:'Issued by',
+    misc_lines_confirmed:'lines confirmed',
+    misc_in_cart:'In cart',
+    misc_available:'Available',
+    misc_invoiced:'Invoiced',
+    misc_ret_req:'Ret. requested',
+    misc_ret_put:'Ret. in putaway',
+    misc_ret_done:'Ret. completed',
+    misc_start_pick:'Start',
     diff_ok:'✓ Correct', diff_over:'▲ Excess', diff_under:'▼ Short', diff_missing:'✕ Not received',
   },
   es: {
-    nav_skudb:'🗃 Base SKUs', nav_stock:'📦 Stock', nav_orders:'🛒 Pedidos',
-    nav_pick:'📦 Para Preparación', nav_ret:'↩️ Devoluciones', nav_putaway:'📍 Para Devolución',
+    nav_skudb:'🗂 Base de Dados Geral', nav_stock:'📦 Stock', nav_orders:'🛒 Pedidos',
+    nav_pick:'📦 Para Preparación', nav_ret:'↩️ Devoluciones', nav_putaway:'📥 Entrada Stock',
     nav_activity_lbl:'Actividad',
-    skudb_title:'Base de Datos SKU', skudb_sub:'Catálogo de productos — EAN, nombre, marca, categoría, ml',
+    skudb_title:'Base de Datos General', skudb_sub:'Catálogo de productos — EAN, nombre, marca, categoría, ml',
     stock_title:'Stock', stock_sub:'Stock por posición en almacén',
     orders_title:'Pedidos', orders_sub:'Pedidos de salida de stock',
     pick_title:'Para Preparación', pick_sub:'Guías de salida — preparación línea a línea',
     ret_title:'Devoluciones', ret_sub:'Registro de artículos devueltos',
-    putaway_title:'Para Devolución', putaway_sub:'Guías de entrada — colocación línea a línea',
+    putaway_title:'Entrada Stock', putaway_sub:'Guías de entrada de stock — colocación línea a línea',
     btn_new_order:'＋ Nuevo pedido', btn_new_ret:'＋ Nueva devolución',
-    btn_emit_pick:'📦 Emitir Guía Preparación', btn_emit_put:'↩️ Emitir Guía Devolución',
+    btn_emit_pick:'📦 Emitir Guía Preparación', btn_emit_put:'📥 Emitir Guía Entrada',
     btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
     btn_finalize_pick:'✓ Finalizar y deducir stock', btn_finalize_put:'✓ Finalizar y añadir al stock',
     btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Cerrar',
-    btn_dar_entrada:'＋ Entrada de stock', btn_teorico:'📊 Stock teórico',
+    btn_dar_entrada:'Entrada Stock', btn_teorico:'📊 Inserir Stock Teórico',
     btn_export:'⬇ Excel', btn_template:'⬇ Plantilla',
     btn_login:'Entrar →', btn_outro:'Otro', btn_back:'← Volver',
     st_open:'Abierto', st_picked:'Completado', st_cancelled:'Anulado',
@@ -2578,6 +2678,17 @@ const LANGS = {
     misc_no_guides_put:'Ninguna guía emitida. Ve a Devoluciones y haz clic en "Emitir Guía Devolución".',
     misc_no_stock:'Sin stock. Haz clic en "Entrada de stock" para comenzar.',
     misc_no_skus:'Base de datos vacía.',
+    misc_awaiting_prep:'Esperando preparación',
+    misc_awaiting_put:'Esperando colocación',
+    misc_issued_by:'Emitida por',
+    misc_lines_confirmed:'líneas confirmadas',
+    misc_in_cart:'En cartera',
+    misc_available:'Disponible',
+    misc_invoiced:'Facturado',
+    misc_ret_req:'Dev. pedidas',
+    misc_ret_put:'Dev. en colocación',
+    misc_ret_done:'Dev. realizadas',
+    misc_start_pick:'Iniciar',
     diff_ok:'✓ Correcto', diff_over:'▲ Exceso', diff_under:'▼ Falta', diff_missing:'✕ No recibido',
   }
 };
@@ -2675,13 +2786,39 @@ function exportBackup() {
   logAction('Backup exportado', stamp);
 }
 
+const BACKUP_PASSWORD = 'loreal10';
+let _pendingRestoreFile = null;
+
 function importBackup() {
   const file = document.getElementById('restoreFile').files[0];
   if (!file) return;
-  if (!confirm('Restaurar backup de "' + file.name + '"?\n\nTodos os dados atuais serão substituídos. Esta ação não pode ser desfeita.')) {
-    document.getElementById('restoreFile').value = '';
+  _pendingRestoreFile = file;
+  document.getElementById('backupPwInput').value = '';
+  document.getElementById('backupPwError').style.display = 'none';
+  document.getElementById('backupPwSub').textContent = 'Introduz a password para restaurar "' + file.name + '".';
+  document.getElementById('backupPwModal').classList.add('visible');
+  setTimeout(() => document.getElementById('backupPwInput').focus(), 80);
+  document.getElementById('restoreFile').value = '';
+}
+
+function closeBackupPwModal() {
+  document.getElementById('backupPwModal').classList.remove('visible');
+  _pendingRestoreFile = null;
+}
+
+function confirmBackupPw() {
+  const pw = document.getElementById('backupPwInput').value;
+  if (pw !== BACKUP_PASSWORD) {
+    document.getElementById('backupPwError').style.display = 'block';
+    document.getElementById('backupPwInput').value = '';
+    document.getElementById('backupPwInput').focus();
     return;
   }
+  closeBackupPwModal();
+  const file = _pendingRestoreFile;
+  _pendingRestoreFile = null;
+  if (!file) return;
+  if (!confirm('Restaurar backup de "' + file.name + '"?\n\nTodos os dados atuais serão substituídos.')) return;
   const reader = new FileReader();
   reader.onload = async e => {
     try {
@@ -2727,12 +2864,14 @@ function closeMobileMenu() {
 function importBackupMob() {
   const file = document.getElementById('restoreFileMob').files[0];
   if (!file) return;
-  document.getElementById('restoreFile').files; // reuse main handler logic
-  // Create a fake event on the main file input
-  const dt = new DataTransfer();
-  dt.items.add(file);
-  document.getElementById('restoreFile').files = dt.files;
-  importBackup();
+  _pendingRestoreFile = file;
+  document.getElementById('backupPwInput').value = '';
+  document.getElementById('backupPwError').style.display = 'none';
+  document.getElementById('backupPwSub').textContent = 'Introduz a password para restaurar "' + file.name + '".';
+  document.getElementById('backupPwModal').classList.add('visible');
+  setTimeout(() => document.getElementById('backupPwInput').focus(), 80);
+  document.getElementById('restoreFileMob').value = '';
+  closeMobileMenu();
 }
 
 function syncMobileLang() {
@@ -2741,6 +2880,248 @@ function syncMobileLang() {
     if (b) b.classList.toggle('active', l === currentLang);
   });
 }
+
+// ══ PRESENCE (who is editing this doc) ══
+let _presenceRef = null;
+let _presenceInterval = null;
+
+function presenceKey(t, id) {
+  return 'presence_' + t + '_' + id;
+}
+
+function startPresence(t, id) {
+  stopPresence();
+  if (!window._db || !currentUser) return;
+  const key = presenceKey(t, id);
+  const ref = window._db.collection('presence').doc(key);
+  _presenceRef = ref;
+
+  // Write my presence
+  const writePresence = () => {
+    ref.set({
+      docId: id,
+      docType: t,
+      users: firebase.firestore.FieldValue.arrayUnion({
+        name: currentUser.name,
+        at: Date.now()
+      })
+    }, {merge: true}).catch(() => {});
+  };
+  writePresence();
+  _presenceInterval = setInterval(writePresence, 8000); // heartbeat every 8s
+
+  // Listen for others
+  ref.onSnapshot(snap => {
+    if (!snap.exists) return;
+    const data = snap.data();
+    const now = Date.now();
+    // Filter: only users active in last 20s, not myself
+    const active = (data.users || []).filter(u =>
+      u.name !== currentUser.name && (now - u.at) < 20000
+    );
+    renderPresenceBar(t, active);
+  });
+}
+
+function stopPresence() {
+  if (_presenceInterval) { clearInterval(_presenceInterval); _presenceInterval = null; }
+  if (_presenceRef && currentUser) {
+    // Remove my entry
+    _presenceRef.get().then(snap => {
+      if (!snap.exists) return;
+      const users = (snap.data().users || []).filter(u => u.name !== currentUser.name);
+      _presenceRef.set({users}, {merge: false}).catch(() => {});
+    }).catch(() => {});
+    _presenceRef = null;
+  }
+}
+
+function renderPresenceBar(t, activeUsers) {
+  const barId = t === 'order' ? 'presence-order' : 'presence-return';
+  const bar = document.getElementById(barId);
+  if (!bar) return;
+  if (!activeUsers.length) { bar.innerHTML = ''; return; }
+  bar.innerHTML = '<span style="font-size:11px;color:var(--muted);align-self:center;">Também a editar:</span>' +
+    activeUsers.map(u =>
+      '<span class="presence-badge"><span class="presence-dot"></span>' + u.name + '</span>'
+    ).join('');
+}
+
+
+// ══ MERGE-SAFE LINE OPERATIONS ══
+// Each line is stored as its own Firestore doc: orders_lines/{docId}_{sku}
+// This prevents concurrent edits overwriting each other.
+
+function lineDocId(docId, sku) {
+  // Sanitize: replace special chars for Firestore doc ID
+  return (docId + '_' + sku).replace(/[^a-zA-Z0-9_\-]/g, '_');
+}
+
+async function saveDocLine(t, docId, sku, qty) {
+  if (!window._db) return;
+  const col = t === 'order' ? 'order_lines' : 'return_lines';
+  const ldid = lineDocId(docId, sku);
+  await window._db.collection(col).doc(ldid).set({
+    docId, sku, qty,
+    updatedAt: Date.now(),
+    updatedBy: currentUser ? currentUser.name : '—'
+  });
+}
+
+async function deleteDocLine(t, docId, sku) {
+  if (!window._db) return;
+  const col = t === 'order' ? 'order_lines' : 'return_lines';
+  const ldid = lineDocId(docId, sku);
+  await window._db.collection(col).doc(ldid).delete();
+}
+
+function listenDocLines(t, docId, cb) {
+  if (!window._db) return null;
+  const col = t === 'order' ? 'order_lines' : 'return_lines';
+  return window._db.collection(col)
+    .where('docId', '==', docId)
+    .onSnapshot(snap => {
+      const lines = snap.docs.map(d => d.data()).filter(l => l.qty > 0);
+      cb(lines);
+    });
+}
+
+let _linesListener = null;
+
+function startLinesListener(t, docId) {
+  if (_linesListener) { _linesListener(); _linesListener = null; }
+  _linesListener = listenDocLines(t, docId, lines => {
+    // Merge into local doc
+    const doc = docSt(t).find(d => d.id === docId);
+    if (!doc) return;
+    doc.lines = lines.map(l => ({sku: l.sku, qty: l.qty}));
+    renderDocLines(t);
+    renderStock(); // refresh disponivel
+  });
+}
+
+function stopLinesListener() {
+  if (_linesListener) { _linesListener(); _linesListener = null; }
+}
+
+
+// ══ DEVOLUÇÃO DE PEDIDO ══
+function openImportFromOrder() {
+  document.getElementById('importOrderSearch').value = '';
+  renderImportOrderList('');
+  document.getElementById('importFromOrderModal').classList.add('visible');
+  setTimeout(() => document.getElementById('importOrderSearch').focus(), 80);
+}
+
+function closeImportFromOrder() {
+  document.getElementById('importFromOrderModal').classList.remove('visible');
+}
+
+function filterImportOrders() {
+  const q = document.getElementById('importOrderSearch').value.toLowerCase();
+  renderImportOrderList(q);
+}
+
+function renderImportOrderList(q) {
+  const el = document.getElementById('importOrderList');
+  const picked = orders.filter(o => o.status === 'picked' && o.lines && o.lines.length > 0);
+  const filtered = q ? picked.filter(o =>
+    o.id.toLowerCase().includes(q) || (o.client||'').toLowerCase().includes(q)
+  ) : picked;
+
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty" style="padding:20px;">Nenhum pedido concluído encontrado.</div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(o => {
+    const total = o.lines.reduce((a,l) => a+l.qty, 0);
+    const skus = o.lines.length;
+    return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:background .15s;" ' +
+      'onmouseover="this.style.background='var(--surface2)'" ' +
+      'onmouseout="this.style.background=''" ' +
+      'onclick="importOrderAsReturn(' + JSON.stringify(o.id) + ')">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+      '<div>' +
+      '<div style="font-weight:700;font-size:13px;">' + o.id + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' +
+        (o.client ? '👤 ' + o.client + ' · ' : '') +
+        skus + ' SKUs · ' + total + ' unid. · ' + (o.createdAt||'') +
+      '</div>' +
+      '</div>' +
+      '<span class="badge bdg-gn">✓ Concluído</span>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function importOrderAsReturn(orderId) {
+  closeImportFromOrder();
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+
+  // Show client modal pre-filled with same client
+  _pendingDocType = 'return';
+  _pendingImportLines = order.lines.map(l => ({sku: l.sku, qty: l.qty}));
+
+  document.getElementById('clientModalTitle').textContent = '↩️ Devolução de pedido';
+  document.getElementById('clientBtnList').innerHTML = '';
+
+  // Pre-select same client if exists in CLIENTS list
+  const list = document.getElementById('clientBtnList');
+  const clientsToShow = CLIENTS.includes(order.client)
+    ? [order.client]  // suggest same client first
+    : CLIENTS;
+
+  if (CLIENTS.includes(order.client)) {
+    // Auto-select same client
+    closeClientModal();
+    createReturnFromOrder(order.client, order.lines);
+    return;
+  }
+
+  list.innerHTML = CLIENTS.map(c => {
+    const count = docSt('return').filter(d => d.client===c).length + 1;
+    const preview = 'Devolução ' + c + ' ' + count;
+    return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" onclick="selectClientForImport(' + JSON.stringify(c) + ')">' +
+      '<span style="font-weight:600">' + c + '</span>' +
+      '<span style="font-size:11px;color:var(--muted)">→ ' + preview + '</span>' +
+      '</button>';
+  }).join('');
+
+  document.getElementById('clientModal').classList.add('visible');
+}
+
+let _pendingImportLines = null;
+
+function selectClientForImport(client) {
+  closeClientModal();
+  createReturnFromOrder(client, _pendingImportLines);
+  _pendingImportLines = null;
+}
+
+function createReturnFromOrder(client, lines) {
+  const count = docSt('return').filter(d => d.client===client).length + 1;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('pt-PT', {day:'2-digit',month:'2-digit',year:'numeric'});
+  const id = 'Devolução ' + client + ' ' + count;
+
+  rets.unshift({
+    id, client, lines: lines.map(l => ({sku:l.sku, qty:l.qty})),
+    status:'open', createdAt:dateStr,
+    createdBy: currentUser ? currentUser.name : '—',
+    snapshot: null
+  });
+
+  // Save each line individually (merge-safe)
+  lines.forEach(l => saveDocLine('return', id, l.sku, l.qty));
+  saveRet();
+  renderDocs('return');
+  openEd('return', id);
+  toast('✓ Devolução criada com ' + lines.length + ' SKUs do pedido', 'win');
+  logAction('Devolução de pedido', id + ' ← ' + lines.length + ' linhas');
+}
+
 // ══ INIT ══
 function _initApp() {
   renderAvatarGrid();
