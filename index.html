@@ -211,7 +211,7 @@ select.input{appearance:auto;cursor:pointer;}
 .nav-tabs-desktop{display:flex;align-items:stretch;flex:1;}
 .nav-right{display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;}
 .nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:8px 10px;line-height:1;}
-.mob-nav-btn{display:flex;width:100%;background:none;border:none;color:rgba(255,255,255,.75);font-family:'Barlow',sans-serif;font-weight:600;font-size:14px;padding:12px 14px;cursor:pointer;border-radius:8px;text-align:left;transition:all .15s;}
+.mob-nav-btn{display:flex;width:100%;background:none;border:none;color:rgba(255,255,255,.75);font-family:'Barlow',sans-serif;font-weight:600;font-size:14px;padding:12px 14px;cursor:pointer;border-radius:8px;text-align:left;transition:all .15s;text-transform:none;letter-spacing:normal;}
 .mob-nav-btn:hover,.mob-nav-btn.active{background:rgba(255,255,255,.1);color:#fff;}
 .mob-nav-btn.t-ret.active{background:rgba(167,139,250,.2);}
 .mob-nav-btn.t-db.active{background:rgba(56,189,248,.15);}
@@ -411,6 +411,8 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="nav-right">
     <input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">
     <button class="nav-tab nav-desktop-only" onclick="showAuditLog()" data-tip="Registo de atividade" style="font-size:13px;padding:0 10px;">📋</button>
+    <button class="nav-tab nav-desktop-only" onclick="exportBackup()" data-tip="Exportar backup completo" style="font-size:12px;padding:0 8px;opacity:.7;">💾</button>
+    <label class="nav-tab nav-desktop-only" data-tip="Restaurar backup" style="font-size:12px;padding:0 8px;opacity:.7;cursor:pointer;"><input type="file" id="restoreFileDesktop" accept=".json" onchange="importBackupDesktop()" style="display:none;">↩</label>
     <div class="lang-sel nav-desktop-only" data-tip="Idioma">
       <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')" data-tip="Português">🇵🇹</button>
       <button class="lang-btn" id="lang-en" onclick="setLang('en')" data-tip="English">🇬🇧</button>
@@ -440,7 +442,7 @@ select.input{appearance:auto;cursor:pointer;}
     <button class="mob-nav-btn t-db"        data-page="skudb"   onclick="showPage('skudb',this);closeMobileMenu()"><span data-i="nav_skudb">🗂 Base de Dados Geral</span></button>
     <div style="height:1px;background:rgba(255,255,255,.1);margin:8px 0;"></div>
     <button class="mob-nav-btn" onclick="showAuditLog();closeMobileMenu()">📋 Atividade</button>
-    <button class="mob-nav-btn" onclick="exportBackup();closeMobileMenu()">💾 Exportar Backup</button>
+    <button class="mob-nav-btn" onclick="exportBackup();closeMobileMenu()">💾 Exportar backup</button>
     <label class="mob-nav-btn" style="cursor:pointer;"><input type="file" id="restoreFileMob" accept=".json" onchange="importBackupMob()" style="display:none;">↩ Restaurar backup</label>
   </div>
   <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);">
@@ -851,6 +853,7 @@ let currentUser = null; // {name, loginAt}
 let auditLog = []; // local session audit trail
 
 let activeOrd=null, activeRet=null;
+let stockSort={col:'position',dir:1};
 let scanning={order:false,return:false,inv:false,ent:false};
 let scanCD={order:false,return:false,inv:false,ent:false};
 let curPick=null;
@@ -1067,6 +1070,7 @@ function calcDisponivel(sku, realQty, metrics) {
 }
 
 function renderStock(){
+  if(!document.getElementById('stockSearch')) return;
   const q=document.getElementById('stockSearch').value.toLowerCase();
   const ft=document.getElementById('stockFilter').value;
   const hasTeorico=Object.keys(teorico).length>0;
@@ -2725,13 +2729,15 @@ function setLang(lang) {
     const val = tr(key);
     if (val) el.setAttribute('data-tip', val);
   });
-  // Re-render dynamic content
-  renderStock();
-  renderDocs('order');
-  renderDocs('return');
-  renderPickingGuides();
-  renderPutawayGuides();
-  renderSkuDb();
+  // Re-render dynamic content (only if logged in)
+  if(currentUser){
+    renderStock();
+    renderDocs('order');
+    renderDocs('return');
+    renderPickingGuides();
+    renderPutawayGuides();
+    renderSkuDb();
+  }
   // Update login subtitle
   const sub = document.querySelector('#loginScreen [style*="margin-bottom:40px"]');
   if (sub) sub.textContent = tr('login_who');
@@ -2864,6 +2870,18 @@ function closeMobileMenu() {
   document.getElementById('mobileMenu').style.display = 'none';
   document.getElementById('mobileMenuOverlay').style.display = 'none';
 }
+function importBackupDesktop() {
+  const file = document.getElementById('restoreFileDesktop').files[0];
+  if (!file) return;
+  _pendingRestoreFile = file;
+  document.getElementById('backupPwInput').value = '';
+  document.getElementById('backupPwError').style.display = 'none';
+  document.getElementById('backupPwSub').textContent = 'Introduz a password para restaurar "' + file.name + '".';
+  document.getElementById('backupPwModal').classList.add('visible');
+  setTimeout(() => document.getElementById('backupPwInput').focus(), 80);
+  document.getElementById('restoreFileDesktop').value = '';
+}
+
 function importBackupMob() {
   const file = document.getElementById('restoreFileMob').files[0];
   if (!file) return;
