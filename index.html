@@ -263,12 +263,30 @@ select.input{appearance:auto;cursor:pointer;}
       var removeBtn = u.isExtra
         ? '<button onclick="event.stopPropagation();window._removeExtra('+JSON.stringify(u.name)+')" style="position:absolute;top:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;line-height:18px;text-align:center;padding:0;">✕</button>'
         : '';
-      return '<div onclick="'+click+'" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;" onmouseover="this.children[0].style.transform='scale(1.1)'" onmouseout="this.children[0].style.transform='scale(1)'">'
-        +'<div style="position:relative;transition:transform .15s;">'
-        +'<div style="width:72px;height:72px;border-radius:50%;background:'+u.color+';display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:'+(u.initials&&u.initials.length>2?'15':'20')+'px;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);">'+u.initials+'</div>'
-        +removeBtn+'</div>'
-        +'<div style="font-size:13px;color:rgba(255,255,255,'+(isOutro?'.4':'.9')+');font-family:'Barlow',sans-serif;font-weight:600;max-width:80px;text-align:center;">'+label+'</div>'
-        +'</div>';
+      var div = document.createElement('div');
+      div.setAttribute('onclick', click);
+      div.style.cssText = 'cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;';
+      div.addEventListener('mouseover', function(){ var c=this.querySelector('.av-circle'); if(c) c.style.transform='scale(1.1)'; });
+      div.addEventListener('mouseout',  function(){ var c=this.querySelector('.av-circle'); if(c) c.style.transform='scale(1)'; });
+
+      var inner = document.createElement('div');
+      inner.style.cssText = 'position:relative;';
+
+      var circle = document.createElement('div');
+      circle.className = 'av-circle';
+      circle.style.cssText = 'width:72px;height:72px;border-radius:50%;background:'+u.color+';display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-weight:700;font-size:'+(u.initials&&u.initials.length>2?'15':'20')+'px;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:transform .15s;';
+      circle.textContent = u.initials;
+
+      inner.appendChild(circle);
+      if (removeBtn) inner.innerHTML += removeBtn;
+      div.appendChild(inner);
+
+      var lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:13px;color:rgba(255,255,255,'+(isOutro?'.4':'.9')+');font-family:\'Barlow\',sans-serif;font-weight:600;max-width:80px;text-align:center;';
+      lbl.textContent = label;
+      div.appendChild(lbl);
+
+      return div.outerHTML;
     }).join('');
   };
 
@@ -1094,7 +1112,6 @@ function importStock(){
 }
 
 // Inventory stubs (kept for scanner compatibility)
-let invPos='',invBox='mista',invLines=[],invSess=[];
 function popPosSel(){}
 function previewPos(){}
 function startInvCount(){}
@@ -2060,11 +2077,12 @@ function renderAvatarGrid() {
     const removeBtn = u.isExtra
       ? '<button onclick="event.stopPropagation();removeExtraUser(' + JSON.stringify(u.name) + ')" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>'
       : '';
-    return '<div onclick="' + clickFn + '" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .15s;position:relative;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">' +
-      '<div style="position:relative;width:72px;height:72px;">' +
-      '<div style="width:72px;height:72px;border-radius:50%;background:' + u.color + ';display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:' + (u.initials.length>2?'16':'20') + 'px;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);border:2px solid rgba(255,255,255,' + (isOutro?'.2':'.15') + ');">' +
-      u.initials + '</div>' + removeBtn + '</div>' +
-      '<div style="font-size:13px;color:rgba(255,255,255,' + (isOutro?'.5':'.9') + ');font-family:'Barlow',sans-serif;font-weight:600;max-width:80px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + label + '</div>' +
+    var fs = u.initials.length>2?'16':'20';
+    return '<div onclick="'+clickFn+'" class="av-item">'+
+      '<div style="position:relative;">'+
+      '<div class="av-c" style="width:72px;height:72px;border-radius:50%;background:'+u.color+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:'+fs+'px;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);">'+
+      u.initials+'</div>'+removeBtn+'</div>'+
+      '<div style="font-size:13px;color:rgba(255,255,255,'+(isOutro?'.4':'.9')+');font-weight:600;max-width:80px;text-align:center;">'+label+'</div>'+
       '</div>';
   }).join('');
 }
@@ -2292,7 +2310,7 @@ if (document.readyState === 'loading') {
 <!-- ASSISTENTE AI -->
 <button id="assistBtn" onclick="toggleAssist()"
   style="position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--accent2);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:500;display:none;transition:transform .2s;"
-  onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</button>
+  class="assist-fab">💬</button>
 
 <div id="assistPanel" style="position:fixed;bottom:88px;right:24px;width:340px;max-height:520px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.2);z-index:500;display:none;flex-direction:column;overflow:hidden;">
   <div style="background:var(--accent2);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
@@ -2317,6 +2335,10 @@ if (document.readyState === 'loading') {
 .assist-bot{background:var(--surface2);color:var(--text);align-self:flex-start;border-bottom-left-radius:3px;}
 .assist-user{background:var(--accent2);color:#fff;align-self:flex-end;border-bottom-right-radius:3px;}
 .assist-loading{opacity:.6;font-style:italic;}
+.assist-fab:hover{transform:scale(1.1)!important;}
+.av-c{transition:transform .15s;}
+.av-item{cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;}
+.av-item:hover .av-c{transform:scale(1.1);}
 </style>
 </body>
 </html>
