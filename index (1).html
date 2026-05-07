@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WMS · Picking & Stock</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f3ef;
+  --surface: #ffffff;
+  --surface2: #eceae4;
+  --border: #d8d5cc;
+  --accent: #e8420a;
+  --accent2: #1a1a2e;
+  --text: #1a1a1a;
+  --muted: #888880;
+  --success: #2d8a4e;
+  --warning: #d97706;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Barlow', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+}
+
+/* NAV */
+.nav {
+  background: var(--accent2);
+  padding: 0 20px;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+
+.nav-logo {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  padding: 16px 20px 16px 0;
+  border-right: 1px solid rgba(255,255,255,0.1);
+  margin-right: 8px;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.nav-logo span { color: var(--accent); }
+
+.nav-tab {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.nav-tab:hover { color: rgba(255,255,255,0.8); }
+.nav-tab.active { color: #fff; border-bottom-color: var(--accent); }
+
+/* PAGES */
+.page { display: none; padding: 24px 20px; max-width: 800px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+}
+
+.card-title {
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+}
+
+.card-body { padding: 18px; }
+
+/* PAGE TITLES */
+.page-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  margin-bottom: 4px;
+}
+.page-sub {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s;
+  border: none;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #c73508; }
+.btn-dark { background: var(--accent2); color: #fff; }
+.btn-dark:hover { background: #0f0f1e; }
+.btn-ghost { background: none; border: 1px solid var(--border); color: var(--text); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #236e3e; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-danger { background: #dc2626; color: #fff; }
+
+/* INPUTS */
+.input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--muted); font-family: var(--sans); }
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.field { margin-bottom: 14px; }
+
+/* TABLES */
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th {
+  background: var(--surface2);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.tbl td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: var(--bg); }
+
+.mono { font-family: var(--mono); }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.badge-orange { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+.badge-green { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+.badge-red { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.badge-blue { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+/* SCANNER */
+.scanner-box {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+  aspect-ratio: 16/9;
+  display: none;
+}
+.scanner-box.visible { display: block; }
+.scanner-box video { width: 100%; height: 100%; object-fit: cover; }
+.scanner-box canvas { display: none; }
+
+.scan-aim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.aim-rect {
+  width: 60%;
+  aspect-ratio: 3/1;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+  position: relative;
+}
+.aim-line {
+  position: absolute;
+  left: 0; right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: aimline 1.8s linear infinite;
+}
+@keyframes aimline {
+  from { top: 0; } to { top: 100%; }
+}
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  padding: 10px 22px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--mono);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 999;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast-ok { background: var(--accent2); color: #fff; }
+.toast-err { background: #dc2626; color: #fff; }
+.toast-win { background: var(--success); color: #fff; }
+
+/* STATUS DOT */
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.dot.on { background: var(--success); animation: blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* EMPTY */
+.empty {
+  text-align: center;
+  padding: 32px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+
+/* PICKING SHEET */
+.pick-header {
+  background: var(--accent2);
+  color: #fff;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.pick-order-id {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.pick-meta { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+
+.pick-row {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.pick-sku-bar {
+  background: var(--surface2);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.pick-sku { font-family: var(--mono); font-weight: 700; font-size: 14px; }
+.pick-total { font-size: 12px; color: var(--muted); }
+
+.pick-location {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.pick-location:last-child { border-bottom: none; }
+.loc-badge {
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  min-width: 80px;
+  text-align: center;
+}
+.loc-qty { font-size: 14px; font-weight: 700; }
+.loc-arrow { color: var(--muted); font-size: 18px; }
+
+/* ALERTS */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.alert-warn { background: #fef3c7; border: 1px solid #fcd34d; color: #78350f; }
+.alert-info { background: #dbeafe; border: 1px solid #93c5fd; color: #1e3a8a; }
+.alert-err { background: #fee2e2; border: 1px solid #fca5a5; color: #7f1d1d; }
+
+/* STOCK LOW */
+.low-stock td { background: #fff7ed !important; }
+
+/* DIVIDER */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* QTY INPUT */
+.qty-input {
+  width: 70px;
+  text-align: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* TABS inside page */
+.inner-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 4px;
+}
+.inner-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  padding: 8px;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.18s;
+}
+.inner-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+/* CONFIRM overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.overlay.visible { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.modal-sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+@media(max-width:480px) {
+  .nav-logo { font-size: 13px; padding-right: 12px; }
+  .nav-tab { padding: 0 10px; font-size: 11px; }
+  .page { padding: 16px 12px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">WMS<span>·</span>pick</div>
+  <button class="nav-tab active" onclick="showPage('stock')">📦 Stock</button>
+  <button class="nav-tab" onclick="showPage('orders')">🛒 Encomendas</button>
+  <button class="nav-tab" onclick="showPage('picking')">📋 Picking</button>
+</nav>
+
+<!-- ═══════════════════════════════════ STOCK PAGE ═══ -->
+<div class="page active" id="page-stock">
+  <div class="page-title">Stock</div>
+  <div class="page-sub">Gestão de SKUs e posições de armazém</div>
+
+  <!-- Import -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Importar Excel</span>
+      <button class="btn btn-ghost btn-sm" onclick="downloadStockTemplate()">⬇ Template</button>
+    </div>
+    <div class="card-body">
+      <div class="alert alert-info">
+        ℹ️ O ficheiro Excel deve ter 3 colunas: <strong>SKU | Posição | Quantidade</strong> — uma linha por posição.
+      </div>
+      <label>Ficheiro Excel (.xlsx)</label>
+      <input type="file" id="stockFile" accept=".xlsx,.xls" onchange="importStock()" class="input" style="padding:8px;">
+    </div>
+  </div>
+
+  <!-- Add manual -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Adicionar / Editar entrada</span>
+    </div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:flex-end;">
+        <div class="field" style="margin:0">
+          <label>SKU</label>
+          <input class="input mono" id="s-sku" placeholder="ex: SKU-001">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Posição</label>
+          <input class="input mono" id="s-pos" placeholder="ex: A-01-02">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Quantidade</label>
+          <input class="input mono qty-input" id="s-qty" type="number" min="0" placeholder="0">
+        </div>
+        <button class="btn btn-primary" onclick="addStockEntry()">＋ Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock table -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Stock atual</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="input" id="stockSearch" placeholder="Pesquisar SKU ou posição..." style="width:180px;padding:6px 10px;font-size:12px;" oninput="renderStock()">
+        <button class="btn btn-ghost btn-sm" onclick="clearStock()">🗑 Limpar</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tbl" id="stockTable">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Posição</th>
+            <th>Quantidade</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="stockBody">
+          <tr><td colspan="5"><div class="empty"><div class="empty-icon">📦</div>Sem stock carregado.<br>Importa um Excel ou adiciona manualmente.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ ORDERS PAGE ═══ -->
+<div class="page" id="page-orders">
+  <div class="page-title">Encomendas</div>
+  <div class="page-sub">Cria e gere pedidos de picking</div>
+
+  <!-- Order list -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Encomendas ativas</span>
+      <button class="btn btn-primary btn-sm" onclick="newOrder()">＋ Nova encomenda</button>
+    </div>
+    <div id="ordersList">
+      <div class="empty"><div class="empty-icon">🛒</div>Sem encomendas.<br>Clica em "Nova encomenda" para começar.</div>
+    </div>
+  </div>
+
+  <!-- Active order editor -->
+  <div id="orderEditor" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" id="editorTitle">Editar encomenda</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="closeEditor()">Fechar</button>
+          <button class="btn btn-success btn-sm" onclick="generatePicking()">📋 Gerar Picking</button>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="inner-tabs">
+          <button class="inner-tab active" onclick="switchOrderTab('scanner')">📷 Scanner</button>
+          <button class="inner-tab" onclick="switchOrderTab('manual')">⌨️ Manual</button>
+          <button class="inner-tab" onclick="switchOrderTab('import')">📂 Importar</button>
+        </div>
+
+        <!-- Scanner tab -->
+        <div id="otab-scanner">
+          <div id="orderScannerBox" class="scanner-box">
+            <div id="orderInteractive"></div>
+            <div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+            <button class="btn btn-dark" id="btnOrderScan" onclick="toggleOrderScanner()">📷 Iniciar Scanner</button>
+            <span class="dot" id="orderScanDot"></span>
+            <span style="font-size:12px;color:var(--muted)" id="orderScanStatus">Scanner inativo</span>
+          </div>
+          <div class="divider"></div>
+          <div class="alert alert-info" style="font-size:12px;">
+            Cada leitura adiciona 1 unidade do SKU. Podes ajustar a quantidade na tabela abaixo.
+          </div>
+        </div>
+
+        <!-- Manual tab -->
+        <div id="otab-manual" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:flex-end;">
+            <div class="field" style="margin:0">
+              <label>SKU</label>
+              <input class="input mono" id="o-sku" placeholder="Código ou SKU...">
+            </div>
+            <div class="field" style="margin:0">
+              <label>Qty</label>
+              <input class="input mono qty-input" id="o-qty" type="number" min="1" value="1">
+            </div>
+            <button class="btn btn-primary" onclick="addOrderLine()">＋</button>
+          </div>
+        </div>
+
+        <!-- Import tab -->
+        <div id="otab-import" style="display:none;">
+          <div class="alert alert-info" style="font-size:12px;">
+            Excel com 2 colunas: <strong>SKU | Quantidade</strong>
+          </div>
+          <input type="file" id="orderFile" accept=".xlsx,.xls" onchange="importOrder()" class="input" style="padding:8px;">
+        </div>
+
+        <!-- Order lines -->
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <strong style="font-size:13px;">Linhas da encomenda</strong>
+          <span id="orderLineCount" style="font-size:12px;color:var(--muted)">0 SKUs</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="tbl">
+            <thead>
+              <tr><th>SKU</th><th>Quantidade pedida</th><th>Stock disponível</th><th></th></tr>
+            </thead>
+            <tbody id="orderLinesBody">
+              <tr><td colspan="4"><div class="empty" style="padding:16px;">Sem linhas.</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ PICKING PAGE ═══ -->
+<div class="page" id="page-picking">
+  <div class="page-title">Folha de Picking</div>
+  <div class="page-sub">Lista de recolha ordenada por posição</div>
+
+  <div id="pickingEmpty" class="card">
+    <div class="card-body">
+      <div class="empty">
+        <div class="empty-icon">📋</div>
+        Ainda não geraste nenhuma folha de picking.<br>
+        Vai a <strong>Encomendas</strong> e clica em "Gerar Picking".
+      </div>
+    </div>
+  </div>
+
+  <div id="pickingContent" style="display:none;">
+    <div id="pickingSheet"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-success" onclick="confirmPicking()">✓ Confirmar picking e atualizar stock</button>
+      <button class="btn btn-ghost" onclick="exportPickingExcel()">⬇ Exportar Excel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-title">Confirmar picking</div>
+    <div class="modal-sub" id="confirmModalText">O stock vai ser atualizado com base nas quantidades desta folha de picking. Esta ação não pode ser desfeita.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-success" onclick="doConfirmPicking()">✓ Confirmar e atualizar stock</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════ STATE ══════════════════════
+let stock = JSON.parse(localStorage.getItem('wms_stock') || '[]');
+// [{id, sku, position, qty}]
+
+let orders = JSON.parse(localStorage.getItem('wms_orders') || '[]');
+// [{id, name, lines:[{sku,qty}], status}]
+
+let activeOrderId = null;
+let currentPicking = null; // {orderId, lines:[{sku,position,qty}]}
+let orderScanning = false;
+let orderScanCooldown = false;
+
+function saveStock() { localStorage.setItem('wms_stock', JSON.stringify(stock)); }
+function saveOrders() { localStorage.setItem('wms_orders', JSON.stringify(orders)); }
+
+// ══════════════════════ NAV ══════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'stock') renderStock();
+  if (id === 'orders') renderOrders();
+  if (orderScanning && id !== 'orders') stopOrderScanner();
+}
+
+// ══════════════════════ TOAST ══════════════════════
+function toast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type} show`;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ══════════════════════ STOCK ══════════════════════
+function importStock() {
+  const file = document.getElementById('stockFile').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(e.target.result, {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+    let added = 0;
+    rows.forEach((row, i) => {
+      if (i === 0 && isNaN(row[2])) return; // skip header
+      const sku = String(row[0] || '').trim();
+      const pos = String(row[1] || '').trim();
+      const qty = parseInt(row[2]) || 0;
+      if (!sku || !pos) return;
+      // merge if exists
+      const existing = stock.find(s => s.sku === sku && s.position === pos);
+      if (existing) { existing.qty = qty; }
+      else { stock.push({id: Date.now()+Math.random(), sku, position: pos, qty}); added++; }
+    });
+    saveStock();
+    renderStock();
+    toast(`Stock importado: ${added} entradas`, 'win');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function addStockEntry() {
+  const sku = document.getElementById('s-sku').value.trim().toUpperCase();
+  const pos = document.getElementById('s-pos').value.trim().toUpperCase();
+  const qty = parseInt(document.getElementById('s-qty').value) || 0;
+  if (!sku || !pos) { toast('SKU e posição obrigatórios', 'err'); return; }
+  const existing = stock.find(s => s.sku === sku && s.position === pos);
+  if (existing) { existing.qty = qty; toast('Entrada atualizada'); }
+  else { stock.push({id: Date.now(), sku, position: pos, qty}); toast('Entrada adicionada', 'win'); }
+  saveStock();
+  renderStock();
+  document.getElementById('s-sku').value = '';
+  document.getElementById('s-pos').value = '';
+  document.getElementById('s-qty').value = '';
+}
+
+function deleteStockEntry(id) {
+  stock = stock.filter(s => s.id !== id);
+  saveStock();
+  renderStock();
+}
+
+function renderStock() {
+  const q = document.getElementById('stockSearch').value.toLowerCase();
+  const filtered = stock.filter(s =>
+    s.sku.toLowerCase().includes(q) || s.position.toLowerCase().includes(q)
+  );
+  const body = document.getElementById('stockBody');
+  if (!filtered.length) {
+    body.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">📦</div>${stock.length ? 'Sem resultados.' : 'Sem stock carregado.'}</div></td></tr>`;
+    return;
+  }
+  // Sort by position
+  filtered.sort((a,b) => a.position.localeCompare(b.position));
+  body.innerHTML = filtered.map(s => {
+    const state = s.qty === 0
+      ? `<span class="badge badge-red">Esgotado</span>`
+      : s.qty <= 5
+      ? `<span class="badge badge-orange">Baixo</span>`
+      : `<span class="badge badge-green">OK</span>`;
+    const cls = s.qty === 0 ? 'low-stock' : '';
+    return `<tr class="${cls}">
+      <td class="mono">${s.sku}</td>
+      <td class="mono">${s.position}</td>
+      <td class="mono" style="font-weight:700;">${s.qty}</td>
+      <td>${state}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="deleteStockEntry(${JSON.stringify(s.id)})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function clearStock() {
+  if (!confirm(`Apagar todo o stock (${stock.length} entradas)?`)) return;
+  stock = [];
+  saveStock();
+  renderStock();
+  toast('Stock limpo');
+}
+
+function downloadStockTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['SKU','Posição','Quantidade'],
+    ['SKU-001','A-01-01',10],
+    ['SKU-001','A-01-02',5],
+    ['SKU-002','B-03-01',20],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Stock');
+  XLSX.writeFile(wb, 'template_stock.xlsx');
+}
+
+// ══════════════════════ ORDERS ══════════════════════
+function newOrder() {
+  const id = 'ORD-' + Date.now();
+  const order = {id, name: id, lines: [], status: 'open', createdAt: new Date().toLocaleString('pt-PT')};
+  orders.unshift(order);
+  saveOrders();
+  renderOrders();
+  openEditor(id);
+}
+
+function renderOrders() {
+  const el = document.getElementById('ordersList');
+  if (!orders.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🛒</div>Sem encomendas.</div>`;
+    return;
+  }
+  el.innerHTML = orders.map(o => {
+    const badge = o.status === 'picked'
+      ? `<span class="badge badge-green">Picked</span>`
+      : `<span class="badge badge-blue">Aberta</span>`;
+    return `<div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div>
+        <div class="mono" style="font-weight:700;font-size:14px;">${o.id}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${o.lines.length} SKUs · ${o.createdAt}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${badge}
+        <button class="btn btn-ghost btn-sm" onclick="openEditor('${o.id}')">✏️ Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteOrder('${o.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteOrder(id) {
+  if (!confirm('Apagar encomenda?')) return;
+  orders = orders.filter(o => o.id !== id);
+  if (activeOrderId === id) { activeOrderId = null; document.getElementById('orderEditor').style.display = 'none'; }
+  saveOrders();
+  renderOrders();
+}
+
+function openEditor(id) {
+  activeOrderId = id;
+  const order = orders.find(o => o.id === id);
+  document.getElementById('editorTitle').textContent = order.id;
+  document.getElementById('orderEditor').style.display = 'block';
+  renderOrderLines();
+  document.getElementById('orderEditor').scrollIntoView({behavior:'smooth'});
+}
+
+function closeEditor() {
+  document.getElementById('orderEditor').style.display = 'none';
+  activeOrderId = null;
+  stopOrderScanner();
+}
+
+function switchOrderTab(tab) {
+  ['scanner','manual','import'].forEach(t => {
+    document.getElementById('otab-'+t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.inner-tab').forEach((b,i) => {
+    b.classList.toggle('active', ['scanner','manual','import'][i] === tab);
+  });
+  if (tab !== 'scanner') stopOrderScanner();
+}
+
+function addOrderLine(skuVal, qtyVal) {
+  const sku = (skuVal || document.getElementById('o-sku').value.trim()).toUpperCase();
+  const qty = parseInt(qtyVal || document.getElementById('o-qty').value) || 1;
+  if (!sku) { toast('SKU obrigatório', 'err'); return; }
+  const order = orders.find(o => o.id === activeOrderId);
+  if (!order) return;
+  const existing = order.lines.find(l => l.sku === sku);
+  if (existing) { existing.qty += qty; }
+  else { order.lines.push({sku, qty}); }
+  saveOrders();
+  renderOrderLines();
+  if (!skuVal) { document.getElementById('o-sku').value = ''; document.getElementById('o-qty').value = 1; }
+}
+
+function removeOrderLine(sku) {
+  const order = orders.find(o => o.id === activeOrderId);
+  if (!order) return;
+  order.lines = order.lines.filter(l => l.sku !== sku);
+  saveOrders();
+  renderOrderLines();
+}
+
+function updateOrderQty(sku, qty) {
+  const order = orders.find(o => o.id === activeOrderId);
+  if (!order) return;
+  const line = order.lines.find(l => l.sku === sku);
+  if (line) { line.qty = parseInt(qty) || 1; saveOrders(); }
+}
+
+function renderOrderLines() {
+  const order = orders.find(o => o.id === activeOrderId);
+  if (!order) return;
+  document.getElementById('orderLineCount').textContent = `${order.lines.length} SKUs`;
+  const body = document.getElementById('orderLinesBody');
+  if (!order.lines.length) {
+    body.innerHTML = `<tr><td colspan="4"><div class="empty" style="padding:16px;">Sem linhas.</div></td></tr>`;
+    return;
+  }
+  body.innerHTML = order.lines.map(l => {
+    const avail = stock.filter(s => s.sku === l.sku).reduce((a,s) => a+s.qty, 0);
+    const enough = avail >= l.qty;
+    const availBadge = avail === 0
+      ? `<span class="badge badge-red">0 unid.</span>`
+      : !enough
+      ? `<span class="badge badge-orange">${avail} unid.</span>`
+      : `<span class="badge badge-green">${avail} unid.</span>`;
+    return `<tr>
+      <td class="mono" style="font-weight:700;">${l.sku}</td>
+      <td><input class="input qty-input" type="number" min="1" value="${l.qty}" onchange="updateOrderQty('${l.sku}',this.value)"></td>
+      <td>${availBadge}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="removeOrderLine('${l.sku}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function importOrder() {
+  const file = document.getElementById('orderFile').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(e.target.result, {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+    rows.forEach((row, i) => {
+      if (i === 0 && isNaN(row[1])) return;
+      const sku = String(row[0] || '').trim().toUpperCase();
+      const qty = parseInt(row[1]) || 1;
+      if (sku) addOrderLine(sku, qty);
+    });
+    toast('Encomenda importada', 'win');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ══════════════════════ ORDER SCANNER ══════════════════════
+function toggleOrderScanner() {
+  if (orderScanning) stopOrderScanner();
+  else startOrderScanner();
+}
+
+function startOrderScanner() {
+  document.getElementById('orderScannerBox').classList.add('visible');
+  document.getElementById('orderScanDot').classList.add('on');
+  document.getElementById('orderScanStatus').textContent = 'A iniciar...';
+  document.getElementById('btnOrderScan').textContent = '⏹ Parar';
+  orderScanning = true;
+
+  Quagga.init({
+    inputStream: { name:'Live', type:'LiveStream', target: document.querySelector('#orderInteractive'),
+      constraints: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} } },
+    decoder: { readers:['ean_reader','ean_8_reader','upc_reader','code_128_reader','code_39_reader'] },
+    locate: true
+  }, err => {
+    if (err) {
+      toast('Câmara não disponível', 'err');
+      stopOrderScanner();
+      return;
+    }
+    document.getElementById('orderScanStatus').textContent = 'Scanner ativo';
+    Quagga.start();
+  });
+
+  Quagga.onDetected(result => {
+    if (orderScanCooldown) return;
+    orderScanCooldown = true;
+    setTimeout(() => orderScanCooldown = false, 1500);
+    const code = result.codeResult.code;
+    addOrderLine(code, 1);
+    toast('✓ ' + code, 'win');
+  });
+}
+
+function stopOrderScanner() {
+  if (!orderScanning) return;
+  try { Quagga.stop(); } catch(e) {}
+  document.getElementById('orderScannerBox').classList.remove('visible');
+  document.getElementById('orderScanDot').classList.remove('on');
+  document.getElementById('orderScanStatus').textContent = 'Scanner inativo';
+  document.getElementById('btnOrderScan').textContent = '📷 Iniciar Scanner';
+  orderScanning = false;
+}
+
+// ══════════════════════ PICKING GENERATION ══════════════════════
+function generatePicking() {
+  const order = orders.find(o => o.id === activeOrderId);
+  if (!order || !order.lines.length) { toast('Encomenda sem linhas', 'err'); return; }
+
+  const pickLines = []; // {sku, position, qty, stockId}
+  const warnings = [];
+
+  order.lines.forEach(line => {
+    let remaining = line.qty;
+    // Get stock positions for this SKU, sorted by position name
+    const positions = stock
+      .filter(s => s.sku === line.sku && s.qty > 0)
+      .sort((a,b) => a.position.localeCompare(b.position));
+
+    if (!positions.length) {
+      warnings.push(`${line.sku}: sem stock disponível`);
+      return;
+    }
+
+    positions.forEach(pos => {
+      if (remaining <= 0) return;
+      const take = Math.min(remaining, pos.qty);
+      pickLines.push({sku: line.sku, position: pos.position, qty: take, stockId: pos.id});
+      remaining -= take;
+    });
+
+    if (remaining > 0) {
+      warnings.push(`${line.sku}: stock insuficiente (faltam ${remaining} unid.)`);
+    }
+  });
+
+  // Sort by position for optimal route
+  pickLines.sort((a,b) => a.position.localeCompare(b.position));
+
+  currentPicking = {orderId: order.id, lines: pickLines, warnings};
+  renderPickingSheet();
+  showPage_picking();
+  toast('Folha de picking gerada!', 'win');
+}
+
+function showPage_picking() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-picking').classList.add('active');
+  document.querySelectorAll('.nav-tab')[2].classList.add('active');
+}
+
+function renderPickingSheet() {
+  if (!currentPicking) return;
+  document.getElementById('pickingEmpty').style.display = 'none';
+  document.getElementById('pickingContent').style.display = 'block';
+
+  const order = orders.find(o => o.id === currentPicking.orderId);
+  const now = new Date().toLocaleString('pt-PT');
+
+  // Group by SKU for display
+  const bySku = {};
+  currentPicking.lines.forEach(l => {
+    if (!bySku[l.sku]) bySku[l.sku] = [];
+    bySku[l.sku].push(l);
+  });
+
+  let html = `
+    <div class="pick-header">
+      <div>
+        <div class="pick-order-id">${currentPicking.orderId}</div>
+        <div class="pick-meta">Gerado em ${now} · ${currentPicking.lines.length} linhas de picking</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:24px;font-weight:800;">${Object.keys(bySku).length}</div>
+        <div style="font-size:11px;opacity:0.6;">SKUs</div>
+      </div>
+    </div>`;
+
+  if (currentPicking.warnings.length) {
+    html += `<div class="alert alert-warn">⚠️ <div><strong>Atenção:</strong><br>${currentPicking.warnings.join('<br>')}</div></div>`;
+  }
+
+  html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:10px;">Lista ordenada por posição</div>`;
+
+  // Show sorted by position
+  currentPicking.lines.forEach(l => {
+    // find total for this sku
+    const totalQty = currentPicking.lines.filter(x => x.sku === l.sku).reduce((a,x) => a+x.qty, 0);
+    html += `
+      <div class="pick-row">
+        <div class="pick-location">
+          <div class="loc-badge">${l.position}</div>
+          <div class="loc-arrow">→</div>
+          <div style="flex:1;">
+            <div class="mono" style="font-weight:700;font-size:14px;">${l.sku}</div>
+          </div>
+          <div class="loc-qty">${l.qty} unid.</div>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('pickingSheet').innerHTML = html;
+}
+
+function confirmPicking() {
+  if (!currentPicking) return;
+  document.getElementById('confirmModalText').textContent =
+    `Vais atualizar o stock para a encomenda ${currentPicking.orderId} com base nas ${currentPicking.lines.length} linhas de picking. Esta ação não pode ser desfeita.`;
+  document.getElementById('confirmModal').classList.add('visible');
+}
+
+function closeModal() {
+  document.getElementById('confirmModal').classList.remove('visible');
+}
+
+function doConfirmPicking() {
+  closeModal();
+  // Deduct stock
+  currentPicking.lines.forEach(l => {
+    const entry = stock.find(s => s.id === l.stockId);
+    if (entry) entry.qty = Math.max(0, entry.qty - l.qty);
+  });
+  // Mark order as picked
+  const order = orders.find(o => o.id === currentPicking.orderId);
+  if (order) order.status = 'picked';
+  saveStock();
+  saveOrders();
+  toast('Stock atualizado com sucesso!', 'win');
+  // Reset picking
+  currentPicking = null;
+  document.getElementById('pickingEmpty').style.display = '';
+  document.getElementById('pickingContent').style.display = 'none';
+}
+
+function exportPickingExcel() {
+  if (!currentPicking) return;
+  const rows = [['Posição','SKU','Quantidade']];
+  currentPicking.lines.forEach(l => rows.push([l.position, l.sku, l.qty]));
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Picking');
+  XLSX.writeFile(wb, `picking_${currentPicking.orderId}.xlsx`);
+  toast('Excel exportado', 'win');
+}
+
+// ══════════════════════ INIT ══════════════════════
+renderStock();
+renderOrders();
+</script>
+</body>
+</html>
