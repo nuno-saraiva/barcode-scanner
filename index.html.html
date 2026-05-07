@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scanner de Códigos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --accent: #c8f135;
+    --accent2: #35f1c8;
+    --text: #f0f0f0;
+    --muted: #666;
+    --danger: #ff4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 24px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+
+  .count-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: var(--accent);
+    color: #000;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+  }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    gap: 20px;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Scanner area */
+  .scanner-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .scanner-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .scanner-title {
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: all 0.3s;
+  }
+  .status-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.5s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .video-wrapper {
+    position: relative;
+    display: none;
+    background: #000;
+    aspect-ratio: 4/3;
+  }
+  .video-wrapper.visible { display: block; }
+
+  #interactive { width: 100%; height: 100%; }
+  #interactive video { width: 100%; height: 100%; object-fit: cover; }
+  #interactive canvas { display: none; }
+
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .scan-frame {
+    width: 65%;
+    aspect-ratio: 3/1.4;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 0 0 4000px rgba(0,0,0,0.4);
+  }
+
+  .scan-line {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scanline 2s linear infinite;
+  }
+  @keyframes scanline {
+    0% { top: 0; opacity: 1; }
+    100% { top: 100%; opacity: 0.3; }
+  }
+
+  .scanner-idle {
+    padding: 36px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .idle-icon {
+    width: 64px; height: 64px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+
+  .idle-text {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .btn-scan {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .btn-scan:hover { transform: scale(1.03); }
+  .btn-scan.stop {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  /* Manual input */
+  .manual-section {
+    display: flex;
+    gap: 10px;
+  }
+
+  .manual-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .manual-input::placeholder { color: var(--muted); }
+  .manual-input:focus { border-color: var(--accent); }
+
+  .btn-add {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    color: var(--accent);
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-add:hover { background: var(--accent); color: #000; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 20px; left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--accent);
+    color: #000;
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--danger); color: #fff; }
+
+  /* List */
+  .list-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .list-title {
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+  }
+
+  .btn-clear {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    padding: 6px 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-clear:hover { border-color: var(--danger); color: var(--danger); }
+
+  .items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .items-list::-webkit-scrollbar { width: 4px; }
+  .items-list::-webkit-scrollbar-track { background: transparent; }
+  .items-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .item-index {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 24px;
+    text-align: right;
+  }
+
+  .item-barcode {
+    flex: 1;
+    font-family: 'Space Mono', monospace;
+    font-size: 15px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    word-break: break-all;
+  }
+
+  .item-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    min-width: 70px;
+  }
+
+  .item-time {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .item-qty {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent2);
+  }
+
+  .btn-delete {
+    background: none;
+    border: none;
+    color: var(--border);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .btn-delete:hover { color: var(--danger); background: rgba(255,68,68,0.1); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.8;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+  .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* Export */
+  .export-row {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-export {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .btn-export:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn-export:first-child:hover { border-color: var(--accent); color: var(--accent); }
+
+  .duplicado-badge {
+    font-size: 10px;
+    background: rgba(53,241,200,0.15);
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .camera-unavailable {
+    padding: 28px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+    display: none;
+  }
+  .camera-unavailable.visible { display: flex; }
+
+  .unavail-icon {
+    font-size: 36px;
+    opacity: 0.7;
+  }
+
+  .unavail-title {
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  .unavail-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 320px;
+  }
+
+  .unavail-tip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    line-height: 1.7;
+    text-align: left;
+    width: 100%;
+  }
+  .unavail-tip b { color: var(--accent); font-weight: 700; }
+
+  .btn-retry {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    padding: 8px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-retry:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">scan<span>·</span>list</div>
+  <div class="count-badge" id="globalCount">0 itens</div>
+</header>
+
+<div class="main">
+
+  <!-- Scanner -->
+  <div class="scanner-card">
+    <div class="scanner-header">
+      <span class="scanner-title">Câmara</span>
+      <div class="status-dot" id="statusDot"></div>
+    </div>
+
+    <div class="scanner-idle" id="scannerIdle">
+      <div class="idle-icon">📷</div>
+      <p class="idle-text">Aponta a câmara a um código<br>de barras para o adicionar à lista</p>
+      <button class="btn-scan" id="btnScan" onclick="toggleScanner()">Iniciar Scanner</button>
+    </div>
+
+    <div class="video-wrapper" id="videoWrapper">
+      <div id="interactive" class="viewport"></div>
+      <div class="scan-overlay">
+        <div class="scan-frame">
+          <div class="scan-line"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="camera-unavailable" id="cameraUnavailable">
+      <div class="unavail-icon">📵</div>
+      <div class="unavail-title">Câmara não disponível</div>
+      <div class="unavail-desc">
+        O acesso à câmara não é permitido neste ambiente.<br>
+        Usa o campo de inserção manual abaixo, ou abre o ficheiro diretamente no browser.
+      </div>
+      <div class="unavail-tip">
+        <b>Para usar o scanner com câmara:</b><br>
+        1. Faz download do ficheiro HTML<br>
+        2. Abre-o no Chrome ou Safari<br>
+        3. Permite o acesso à câmara quando pedido
+      </div>
+      <button class="btn-retry" onclick="retryScan()">↺ Tentar novamente</button>
+    </div>
+
+    <div style="padding: 12px 16px; border-top: 1px solid var(--border); display: none;" id="stopBar">
+      <button class="btn-scan stop" style="width:100%;" onclick="toggleScanner()">⏹ Parar Scanner</button>
+    </div>
+  </div>
+
+  <!-- Manual input -->
+  <div class="manual-section">
+    <input class="manual-input" id="manualInput" placeholder="Inserir código manualmente..." maxlength="100"
+      onkeydown="if(event.key==='Enter') addManual()">
+    <button class="btn-add" onclick="addManual()" title="Adicionar">＋</button>
+  </div>
+
+  <!-- Lista -->
+  <div class="list-section">
+    <div class="list-header">
+      <div class="list-title">Lista</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div class="export-row" style="margin:0;">
+          <button class="btn-export" onclick="exportCSV()" title="Exportar CSV">⬇ CSV</button>
+          <button class="btn-export" onclick="exportTXT()" title="Exportar TXT">⬇ TXT</button>
+        </div>
+        <button class="btn-clear" onclick="clearAll()">Limpar tudo</button>
+      </div>
+    </div>
+
+    <div class="items-list" id="itemsList">
+      <div class="empty-state">
+        <div class="empty-icon">⬜</div>
+        Ainda não há códigos na lista.<br>
+        Usa a câmara ou insere manualmente.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let items = JSON.parse(localStorage.getItem('barcodes') || '[]');
+let scanning = false;
+let lastCode = '';
+let lastTime = 0;
+let cooldown = false;
+
+function save() {
+  localStorage.setItem('barcodes', JSON.stringify(items));
+}
+
+function renderList() {
+  const el = document.getElementById('itemsList');
+  const count = document.getElementById('globalCount');
+  count.textContent = `${items.length} ${items.length===1?'item':'itens'}`;
+
+  if (items.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">⬜</div>Ainda não há códigos na lista.<br>Usa a câmara ou insere manualmente.</div>`;
+    return;
+  }
+
+  // Count duplicates
+  const freq = {};
+  items.forEach(i => { freq[i.code] = (freq[i.code]||0)+1; });
+
+  el.innerHTML = items.map((item, idx) => {
+    const qty = freq[item.code];
+    const isDup = qty > 1;
+    return `<div class="item-card" id="item-${item.id}">
+      <span class="item-index">${String(idx+1).padStart(2,'0')}</span>
+      <span class="item-barcode">${item.code}</span>
+      <div class="item-meta">
+        <span class="item-time">${item.time}</span>
+        ${isDup ? `<span class="duplicado-badge">×${qty}</span>` : ''}
+      </div>
+      <button class="btn-delete" onclick="deleteItem(${item.id})" title="Remover">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addCode(code) {
+  code = code.trim();
+  if (!code) return;
+  const now = new Date();
+  const time = now.toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit'});
+  items.unshift({ id: Date.now(), code, time });
+  save();
+  renderList();
+}
+
+function deleteItem(id) {
+  items = items.filter(i => i.id !== id);
+  save();
+  renderList();
+  showToast('Removido', false);
+}
+
+function clearAll() {
+  if (items.length === 0) return;
+  if (confirm(`Apagar todos os ${items.length} itens?`)) {
+    items = [];
+    save();
+    renderList();
+    showToast('Lista limpa', false);
+  }
+}
+
+function addManual() {
+  const input = document.getElementById('manualInput');
+  const val = input.value.trim();
+  if (!val) { showToast('Código vazio', true); return; }
+  addCode(val);
+  input.value = '';
+  showToast('✓ ' + val);
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  void t.offsetWidth;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function showCameraUnavailable() {
+  const wrapper = document.getElementById('videoWrapper');
+  const idle = document.getElementById('scannerIdle');
+  const stopBar = document.getElementById('stopBar');
+  const dot = document.getElementById('statusDot');
+  const unavail = document.getElementById('cameraUnavailable');
+
+  wrapper.classList.remove('visible');
+  idle.style.display = 'none';
+  stopBar.style.display = 'none';
+  dot.classList.remove('active');
+  unavail.classList.add('visible');
+  scanning = false;
+}
+
+function retryScan() {
+  const unavail = document.getElementById('cameraUnavailable');
+  const idle = document.getElementById('scannerIdle');
+  unavail.classList.remove('visible');
+  idle.style.display = '';
+  startScanner();
+}
+
+function toggleScanner() {
+  if (!scanning) startScanner();
+  else stopScanner();
+}
+
+function startScanner() {
+  const wrapper = document.getElementById('videoWrapper');
+  const idle = document.getElementById('scannerIdle');
+  const stopBar = document.getElementById('stopBar');
+  const dot = document.getElementById('statusDot');
+
+  wrapper.classList.add('visible');
+  idle.style.display = 'none';
+  stopBar.style.display = 'block';
+  dot.classList.add('active');
+  scanning = true;
+
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector('#interactive'),
+      constraints: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+    },
+    decoder: {
+      readers: ["ean_reader","ean_8_reader","upc_reader","upc_e_reader","code_128_reader","code_39_reader","codabar_reader","i2of5_reader"]
+    },
+    locate: true
+  }, err => {
+    if (err) {
+      console.error(err);
+      showCameraUnavailable();
+      return;
+    }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(result => {
+    const code = result.codeResult.code;
+    const now = Date.now();
+    if (code === lastCode && now - lastTime < 2000) return;
+    if (cooldown) return;
+    cooldown = true;
+    setTimeout(() => cooldown = false, 1500);
+    lastCode = code;
+    lastTime = now;
+    addCode(code);
+    showToast('✓ ' + code);
+    // Flash effect
+    document.querySelector('.scan-frame').style.borderColor = '#fff';
+    setTimeout(() => document.querySelector('.scan-frame').style.borderColor = 'var(--accent)', 200);
+  });
+}
+
+function stopScanner() {
+  Quagga.stop();
+  const wrapper = document.getElementById('videoWrapper');
+  const idle = document.getElementById('scannerIdle');
+  const stopBar = document.getElementById('stopBar');
+  const dot = document.getElementById('statusDot');
+
+  wrapper.classList.remove('visible');
+  idle.style.display = '';
+  stopBar.style.display = 'none';
+  dot.classList.remove('active');
+  scanning = false;
+}
+
+function exportCSV() {
+  if (items.length === 0) { showToast('Lista vazia', true); return; }
+  const rows = ['Índice,Código,Hora', ...items.map((it,i) => `${i+1},${it.code},${it.time}`)];
+  download('codigos.csv', rows.join('\n'), 'text/csv');
+  showToast('CSV exportado ✓');
+}
+
+function exportTXT() {
+  if (items.length === 0) { showToast('Lista vazia', true); return; }
+  const lines = items.map((it,i) => `${String(i+1).padStart(3,'0')}  ${it.code}  [${it.time}]`);
+  download('codigos.txt', lines.join('\n'), 'text/plain');
+  showToast('TXT exportado ✓');
+}
+
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type}));
+  a.download = name;
+  a.click();
+}
+
+renderList();
+</script>
+</body>
+</html>
