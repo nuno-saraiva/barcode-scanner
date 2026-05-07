@@ -1817,8 +1817,8 @@ function renderPutawayGuides() {
       '<div style="font-size:11px;color:var(--muted);margin-top:3px">Emitida por '+g.emittedBy+' · '+g.emittedAt+(g.warns?.length?' · <span style="color:#dc2626">⚠️ '+g.warns.length+' sem posição</span>':'')+'</div></div>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
       '<span class="badge '+stCls+'">'+stLbl+'</span>'+
-      '<button class="btn btn-purple btn-sm" onclick="iniciarPutaway(''+d.id+'')">▶ Iniciar</button>'+
-      '<button class="btn btn-danger btn-sm" onclick="cancelPutawayGuia(''+d.id+'')">✕</button>'+
+      '<button class="btn btn-purple btn-sm" onclick="iniciarPutaway(\"'+d.id+'\")">▶ Iniciar</button>'+
+      '<button class="btn btn-danger btn-sm" onclick="cancelPutawayGuia(\"'+d.id+'\")">✕</button>'+
       '</div></div>'+
       '<div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">'+
       '<div style="height:100%;background:var(--purple);border-radius:20px;width:'+pct+'%;transition:width .4s;"></div></div>'+
