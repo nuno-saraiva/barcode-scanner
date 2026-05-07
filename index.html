@@ -290,7 +290,14 @@ select.input{appearance:auto;cursor:pointer;}
     }).join('');
   };
 
-  window._loginPreset = function(name) { window._doLoginFn(name); };
+  window._loginPreset = function(name) {
+    var attempts = 0;
+    function tryLogin() {
+      if (typeof _doLogin === 'function') { _doLogin(name); }
+      else if (attempts++ < 20) { setTimeout(tryLogin, 100); }
+    }
+    tryLogin();
+  };
   window._showOutro = function() {
     document.getElementById('avatarGrid').style.display='none';
     document.getElementById('outroSection').style.display='block';
@@ -306,7 +313,12 @@ select.input{appearance:auto;cursor:pointer;}
     var name = document.getElementById('loginName').value.trim();
     if (!name) { document.getElementById('loginError').style.display='block'; return; }
     saveExtra(name);
-    window._doLoginFn(name);
+    var attempts = 0;
+    function tryLogin() {
+      if (typeof _doLogin === 'function') { _doLogin(name); }
+      else if (attempts++ < 20) { setTimeout(tryLogin, 100); }
+    }
+    tryLogin();
   };
   window._removeExtra = function(name) {
     var ex = getExtras().filter(function(n){return n!==name;});
@@ -1202,7 +1214,7 @@ function cancelDocFromList(t, id) {
   if (!doc) return;
   const verb = t === 'order' ? 'encomenda' : 'devolução';
   if (doc.status === 'guia-emitida') {
-    if (!confirm('Cancelar '+verb+' '+id+'?\nA guia de '+(t==='order'?'preparação':'colocação')+' também será cancelada.')) return;
+    if (!confirm('Cancelar '+verb+' '+id+'. A guia de '+(t==='order'?'preparação':'colocação')+' também será cancelada.')) return;
     doc.guide = null; doc.putawayGuide = null;
   } else {
     if (!confirm('Cancelar '+verb+' '+id+'?')) return;
@@ -1768,11 +1780,7 @@ function genDoc(t) {
     if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
     if(pa.floor!==pb.floor)return pa.floor-pb.floor; return pa.slot-pb.slot; });
 
-  if (warns.length && !confirm('Aviso:
-'+warns.join('
-')+'
-
-Emitir guia mesmo assim?')) return;
+  if (warns.length && !confirm('Aviso: ' + warns.join(', ') + ' -- Emitir guia mesmo assim?')) return;
 
   doc.putawayGuide = { lines:pl, warns, emittedAt:new Date().toLocaleString('pt-PT'),
     emittedBy:currentUser?currentUser.name:'—', status:'pending', loja:'' };
@@ -1950,11 +1958,7 @@ function finalizePutaway() {
   if (!doc) return;
   const confirmed = putawayLines.filter(l=>l.status==='confirmed');
   if (!confirmed.length) { toast('Confirma pelo menos uma linha','err'); return; }
-  if (!confirm('Finalizar colocação de '+doc.id+'?
-
-✓ '+confirmed.length+' linhas
-
-O stock será acrescido agora.')) return;
+  if (!confirm('Finalizar colocação de ' + doc.id + '? ' + confirmed.length + ' linhas. O stock será acrescido agora.')) return;
   doc.snapshot = JSON.parse(JSON.stringify(stock));
   confirmed.forEach(l=>{
     if (!l.stockId) return; // no position — skip
