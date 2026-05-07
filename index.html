@@ -231,6 +231,8 @@ select.input{appearance:auto;cursor:pointer;}
 .presence-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;animation:pulse-dot 1.5s infinite;}
 @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.4;}}
 .presence-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;min-height:0;}
+.import-order-row{border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:background .15s;}
+.import-order-row:hover{background:var(--surface2);}
 </style>
 </head>
 <body>
@@ -3038,8 +3040,8 @@ function renderImportOrderList(q) {
     const total = o.lines.reduce((a,l) => a+l.qty, 0);
     const skus = o.lines.length;
     return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:background .15s;" ' +
-      'onmouseover="this.style.background=var(--surface2)" ' +
-      'onmouseout="this.style.background=''" ' +
+      'class="import-order-row" ' +
+      ''
       'onclick="importOrderAsReturn(' + JSON.stringify(o.id) + ')">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;">' +
       '<div>' +
