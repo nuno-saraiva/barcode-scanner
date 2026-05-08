@@ -139,11 +139,15 @@ select.input{appearance:auto;cursor:pointer;}
 .table-scroll{overflow-x:auto;}
 .table-scroll-top{height:14px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--border);background:var(--surface2);}
 .table-scroll-spacer{height:1px;}
-#stockTable th{position:sticky;top:52px;z-index:5;}
 @media(min-width:769px){
+  #stockTable th{position:sticky;top:52px;z-index:5;}
   .tbl[data-resizable-cols] .col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:2;touch-action:none;}
   .tbl[data-resizable-cols] .col-resizer:hover{background:rgba(232,66,10,.18);}
   body.resizing-cols{cursor:col-resize;user-select:none;}
+}
+@media(max-width:768px){
+  .table-scroll-top{display:none;}
+  #stockTable th{position:static;}
 }
 .mono{font-family:var(--mono);}
 .badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
