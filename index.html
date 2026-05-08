@@ -3953,6 +3953,7 @@ let spDocType = null;
 let spSelSku = null;
 
 function openSearchPanel(t) {
+  bindSearchPanelResults();
   spDocType = t;
   spSelSku = null;
   document.getElementById('spInput').value = '';
@@ -4006,11 +4007,17 @@ function spKey(e) {
   if (e.key === 'Escape') closeSearchPanel();
 }
 
-document.addEventListener('click', function(e) {
-  const item = e.target.closest('.sp-item');
-  if (!item) return;
-  spSelect(item.dataset.sku);
-});
+function bindSearchPanelResults() {
+  const res = document.getElementById('spResults');
+  if (!res || res._boundClick) return;
+  res.addEventListener('click', function(e) {
+    const item = e.target.closest('.sp-item');
+    if (!item) return;
+    e.stopPropagation();
+    spSelect(item.dataset.sku);
+  });
+  res._boundClick = true;
+}
 
 function spSelect(sku) {
   spSelSku = sku;
@@ -4039,6 +4046,7 @@ function _initApp() {
   setLang(detectDeviceLang());
   renderAvatarGrid();
   enableResizableTables();
+  bindSearchPanelResults();
   const _savedSession = localStorage.getItem('wms_session');
   if (_savedSession) {
     try {
