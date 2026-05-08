@@ -580,6 +580,7 @@ select.input{appearance:auto;cursor:pointer;}
         <select class="input input-sans" id="stockFilter" style="width:95px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
           <option value="">Todos</option><option value="mista">Mistas</option><option value="exclusiva">Exclusivas</option>
         </select>
+        <button class="btn btn-ghost btn-sm" onclick="exportStockExcel()" data-tip="Exportar toda a tabela de stock">⬇ Excel</button>
         <button class="btn btn-success btn-sm" onclick="openEntrada()" data-tip="Dar entrada de mercadoria recebida — peça a peça com scanner ou por Excel" data-tip-i="tip_dar_entrada" data-i="btn_dar_entrada">Dar Entrada</button>
         <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" data-tip="Comparar stock real com quantidades encomendadas ao fornecedor" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">📊 Inserir Stock Teórico</button>
         <button class="btn btn-ghost btn-sm" onclick="clearStock()" data-tip="Apagar todo o stock do armazém">🗑</button>
@@ -1370,9 +1371,9 @@ function renderStock(){
     th('position','Posição')+
     th('qty','Real','Stock físico contado no armazém');
   if(hasMov){
-    thCols += th('carteira','Carteira','Pedidos abertos ainda sem guia emitida');
-    thCols += th('emPrep','Em Prep.','Pedidos com guia emitida mas ainda não em preparação ativa');
-    thCols += th('faturado','Faturado','Pedidos já em curso ou concluídos');
+    thCols += th('carteira','Cart.','Pedidos abertos ainda sem guia emitida');
+    thCols += th('emPrep','Prep.','Pedidos com guia emitida mas ainda não em preparação ativa');
+    thCols += th('faturado','Fact.','Pedidos já em curso ou concluídos');
     thCols += th('devPedidas','Dev. Ped.','Devoluções pedidas sem guia emitida');
     thCols += th('devPrep','Dev. Col.','Devoluções com guia emitida, a aguardar colocação');
     thCols += th('devFeitas','Dev. Feitas','Devoluções já processadas e em stock');
@@ -1425,6 +1426,31 @@ function sortStock(col) {
 }
 function delStk(id){stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
 function clearStock(){if(!confirm(`Apagar ${stock.length} entradas?`))return;if(!requireAdminPassword('apagar todo o stock'))return;stock=[];saveStk();renderStock();toast('Stock limpo');}
+function safeFileName(name){return String(name||'export').replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,'_');}
+function exportStockExcel(){
+  if(!stock.length){toast('Sem stock para exportar','err');return;}
+  const metrics=calcStockMetrics();
+  const realBySku={};stock.forEach(s=>{realBySku[s.sku]=(realBySku[s.sku]||0)+s.qty;});
+  const hasTeorico=Object.keys(teorico).length>0;
+  const rows=[['SKU','Produto','Marca','ML','Posição','Real','Tipo de caixa','Estado','Cart.','Prep.','Fact.','Dev. Ped.','Dev. Col.','Dev. Feitas','Disponível']];
+  if(hasTeorico) rows[0].push('Teórico','Diferença');
+  stock.slice().sort((a,b)=>compareWarehousePosition(a,b)).forEach(s=>{
+    const info=skuInfo(s.sku);
+    const m=metrics[s.sku]||{};
+    const disp=calcDisponivel(s.sku,realBySku[s.sku]||0,metrics);
+    const status=s.qty===0?'Esgotado':s.qty<=5?'Baixo':'OK';
+    const row=[s.sku,info?.name||'',info?.brand||'',info?.ml||'',s.position,s.qty,normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva',status,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,disp];
+    if(hasTeorico){
+      const tq=teorico[s.sku]!==undefined?teorico[s.sku]:'';
+      row.push(tq,tq===''?'':s.qty-tq);
+    }
+    rows.push(row);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:30},{wch:16},{wch:8},{wch:10},{wch:8},{wch:14},{wch:10},{wch:8},{wch:8},{wch:8},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');
+  XLSX.writeFile(wb,'stock_atual.xlsx');toast('Excel exportado','win');
+}
 function warehouseShelves() {
   const custom = String(warehouseMap.customShelves||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
   if(custom.length) return custom;
@@ -1907,6 +1933,7 @@ function renderDocs(t){
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${d.lines.length} SKUs · ${tq} unid. · ${d.createdAt}</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <span class="badge s-${d.status}">${sl}${slSuffix}</span>
+        <button class="btn btn-ghost btn-sm" onclick="exportDocExcel('${t}','${d.id}')">⬇ Excel</button>
         ${canEdit?`<button class="btn btn-ghost btn-sm" onclick="openEd('${t}','${d.id}')">✏️</button>`:''}
         ${(d.status==='open'||d.status==='guia-emitida')?`<button class="btn btn-danger btn-sm" onclick="cancelDocFromList('${t}','${d.id}')">✕ Cancelar</button>`:''}
         <button class="btn btn-ghost btn-sm" onclick="delDoc('${t}','${d.id}')">🗑</button>
@@ -1918,6 +1945,22 @@ function delDoc(t,id){
   if(t==='order')orders=orders.filter(d=>d.id!==id);else rets=rets.filter(d=>d.id!==id);
   if(actId(t)===id){setAct(t,null);document.getElementById(t==='order'?'orderEditor':'returnEditor').style.display='none';}
   docSv(t);renderDocs(t);
+}
+function exportDocExcel(t,id){
+  const doc=docSt(t).find(d=>d.id===id);
+  if(!doc){toast('Documento não encontrado','err');return;}
+  const isOrder=t==='order';
+  const title=(isOrder?'Pedido':'Devolução')+': '+doc.id+(doc.client?' — '+doc.client:'');
+  const rows=[[title],['Estado: '+(doc.status||'—')+' · Criado por: '+(doc.createdBy||'—')+' · '+(doc.createdAt||'—')],[],['SKU','Nome','Marca','ML','Quantidade','Stock real']];
+  doc.lines.forEach(l=>{
+    const i=skuInfo(l.sku);
+    const real=stock.filter(s=>s.sku===l.sku).reduce((a,s)=>a+s.qty,0);
+    rows.push([l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,real]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:16},{wch:32},{wch:18},{wch:8},{wch:12},{wch:12}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,isOrder?'Pedido':'Devolucao');
+  XLSX.writeFile(wb,safeFileName(doc.id)+'.xlsx');toast('Excel exportado','win');
 }
 function openEd(t,id){
   setAct(t,id);const doc=docSt(t).find(d=>d.id===id);
@@ -2250,7 +2293,7 @@ function renderPickingGuides() {
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <span class="badge ${stCls}">${stLbl}</span>
           <button class="btn btn-primary btn-sm" onclick="iniciarPrep('${d.id}')">▶ Iniciar picking</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcelById('${d.id}')">⬇</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcelById('${d.id}')">⬇ Excel</button>
           <button class="btn btn-danger btn-sm" onclick="cancelGuia('${d.id}')">✕</button>
         </div>
       </div>
@@ -2561,6 +2604,7 @@ function renderPutawayGuides() {
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
       '<span class="badge '+stCls+'">'+stLbl+'</span>'+
       '<button class="btn btn-purple btn-sm" onclick="iniciarPutaway(\"'+d.id+'\")">▶ Iniciar</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="exportPutawayExcelById(\"'+d.id+'\")">⬇ Excel</button>'+
       '<button class="btn btn-danger btn-sm" onclick="cancelPutawayGuia(\"'+d.id+'\")">✕</button>'+
       '</div></div>'+
       '<div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">'+
@@ -2737,12 +2781,16 @@ function cancelPutawayPrep() {
 
 function exportPutawayExcel() {
   if (!putawayOrderId) return;
-  const doc = rets.find(d=>d.id===putawayOrderId);
-  if (!doc||!doc.putawayGuide) return;
+  exportPutawayExcelById(putawayOrderId, putawayLines);
+}
+
+function exportPutawayExcelById(retId, currentLines) {
+  const doc = rets.find(d=>d.id===retId);
+  if (!doc||!doc.putawayGuide) { toast('Guia não encontrada','err'); return; }
   const rows=[['Guia Devolucao: '+doc.id+(doc.client?' — '+doc.client:'')+(doc.putawayGuide?.loja?' <- '+doc.putawayGuide.loja:'')],
     ['Emitida por: '+(doc.putawayGuide.emittedBy||'—')+' · '+doc.putawayGuide.emittedAt],[],
     ['Posicao','SKU','Nome','Marca','ML','Qty pedida','Qty colocada','Estado']];
-  putawayLines.forEach(l=>{ const i=skuInfo(l.sku); rows.push([l.position,l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,l.qtyDone||0,l.status==='confirmed'?'Confirmado':'Pendente']); });
+  (currentLines||doc.putawayGuide.lines||[]).forEach(l=>{ const i=skuInfo(l.sku); rows.push([l.position,l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,l.qtyDone||0,l.status==='confirmed'?'Confirmado':'Pendente']); });
   const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Devolucao');
   XLSX.writeFile(wb,'Guia_'+doc.id+'.xlsx');toast('Excel exportado','win');
 }
@@ -2865,7 +2913,7 @@ function _doLogin(name) {
   window._doLoginFn = _doLogin;
   // Load user language preference
   const _userLang = localStorage.getItem('wms_lang_' + name);
-  if (_userLang && LANGS[_userLang]) setLang(_userLang);
+  setLang((_userLang && LANGS[_userLang]) ? _userLang : detectDeviceLang());
   currentUser = {name, loginAt: new Date().toLocaleString('pt-PT')};
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('userBadge').style.display='flex';
@@ -3195,6 +3243,14 @@ const LANGS = {
 };
 
 let currentLang = 'pt';
+
+function detectDeviceLang() {
+  const raw = (navigator.languages && navigator.languages[0]) || navigator.language || 'pt';
+  const lang = raw.toLowerCase();
+  if (lang.startsWith('en')) return 'en';
+  if (lang.startsWith('es')) return 'es';
+  return 'pt';
+}
 
 function tr(key) {
   return (LANGS[currentLang] && LANGS[currentLang][key]) || LANGS['pt'][key] || key;
@@ -3861,6 +3917,7 @@ function spConfirm() {
 
 // ══ INIT ══
 function _initApp() {
+  setLang(detectDeviceLang());
   renderAvatarGrid();
   const _savedSession = localStorage.getItem('wms_session');
   if (_savedSession) {
