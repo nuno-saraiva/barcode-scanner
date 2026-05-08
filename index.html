@@ -132,10 +132,15 @@ select.input{appearance:auto;cursor:pointer;}
 .sp-selected-sku{font-family:var(--mono);font-weight:700;color:var(--accent);}
 
 .tbl{width:100%;border-collapse:collapse;font-size:13px;}
-.tbl th{background:var(--surface2);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+.tbl th{background:var(--surface2);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;position:relative;}
 .tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .tbl tr:last-child td{border-bottom:none;}
 .tbl tr:hover td{background:var(--bg);}
+@media(min-width:769px){
+  .tbl[data-resizable-cols] .col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:2;touch-action:none;}
+  .tbl[data-resizable-cols] .col-resizer:hover{background:rgba(232,66,10,.18);}
+  body.resizing-cols{cursor:col-resize;user-select:none;}
+}
 .mono{font-family:var(--mono);}
 .badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
 .bdg-or{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
@@ -535,7 +540,7 @@ select.input{appearance:auto;cursor:pointer;}
         <button class="btn btn-ghost btn-sm" onclick="clearSkuDb()" data-tip="Apagar todo o catálogo de produtos">🗑 Limpar</button>
       </div>
     </div>
-    <div style="overflow-x:auto;"><table class="tbl">
+    <div style="overflow-x:auto;"><table class="tbl" id="skuDbTable" data-resizable-cols>
       <thead><tr><th>SKU</th><th>EAN</th><th>Nome</th><th>Marca</th><th>Categoria</th><th>ML</th><th></th></tr></thead>
       <tbody id="skuDbBody"></tbody>
     </table></div>
@@ -587,7 +592,7 @@ select.input{appearance:auto;cursor:pointer;}
       </div>
     </div>
     
-    <div style="overflow-x:auto;"><table class="tbl">
+    <div style="overflow-x:auto;"><table class="tbl" id="stockTable" data-resizable-cols>
       <thead id="stockThead"></thead>
       <tbody id="stockBody"></tbody>
     </table></div>
@@ -655,7 +660,7 @@ select.input{appearance:auto;cursor:pointer;}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <strong style="font-size:13px;">Linhas</strong><span id="orderLineCount" style="font-size:11px;color:var(--muted)">0</span>
         </div>
-        <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>SKU</th><th>Qty</th><th>Stock</th><th></th></tr></thead><tbody id="orderLinesBody"></tbody></table></div>
+        <div style="overflow-x:auto;"><table class="tbl" id="orderLinesTable" data-resizable-cols><thead><tr><th>EAN</th><th>SKU</th><th>Qty</th><th>Stock</th><th></th></tr></thead><tbody id="orderLinesBody"></tbody></table></div>
       </div>
     </div>
   </div>
@@ -759,7 +764,7 @@ select.input{appearance:auto;cursor:pointer;}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <strong style="font-size:13px;">Artigos</strong><span id="returnLineCount" style="font-size:11px;color:var(--muted)">0</span>
         </div>
-        <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>SKU</th><th>Qty</th><th>Stock</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
+        <div style="overflow-x:auto;"><table class="tbl" id="returnLinesTable" data-resizable-cols><thead><tr><th>EAN</th><th>SKU</th><th>Qty</th><th>Stock</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
       </div>
     </div>
   </div>
@@ -1227,6 +1232,51 @@ function focusBlankQty(id){
   setTimeout(()=>{el.focus();try{el.select();}catch(e){}},80);
 }
 
+function setTableColWidth(table, index, width) {
+  const w = Math.max(48, Math.round(width));
+  table.querySelectorAll('tr').forEach(row => {
+    const cell = row.children[index];
+    if (cell) {
+      cell.style.width = w + 'px';
+      cell.style.minWidth = w + 'px';
+      cell.style.maxWidth = w + 'px';
+    }
+  });
+}
+
+function enableResizableTables() {
+  if (window.innerWidth < 769) return;
+  document.querySelectorAll('table[data-resizable-cols]').forEach((table, tableIndex) => {
+    const key = 'wms_col_widths_' + (table.id || tableIndex);
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) { saved = {}; }
+    table.querySelectorAll('thead th').forEach((th, index) => {
+      if (saved[index]) setTableColWidth(table, index, saved[index]);
+      if (th.querySelector('.col-resizer')) return;
+      const grip = document.createElement('span');
+      grip.className = 'col-resizer';
+      grip.addEventListener('click', e => e.stopPropagation());
+      grip.addEventListener('mousedown', e => {
+        e.preventDefault(); e.stopPropagation();
+        const startX = e.clientX;
+        const startW = th.offsetWidth;
+        document.body.classList.add('resizing-cols');
+        const move = ev => setTableColWidth(table, index, startW + ev.clientX - startX);
+        const up = () => {
+          document.removeEventListener('mousemove', move);
+          document.removeEventListener('mouseup', up);
+          document.body.classList.remove('resizing-cols');
+          saved[index] = th.offsetWidth;
+          localStorage.setItem(key, JSON.stringify(saved));
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+      });
+      th.appendChild(grip);
+    });
+  });
+}
+
 // SKU DB
 function importSkuDb(){
   const file=document.getElementById('skuFile').files[0];if(!file)return;
@@ -1258,7 +1308,7 @@ function renderSkuDb(){
   const q=document.getElementById('dbSearch').value.toLowerCase();
   const f=skuDb.filter(d=>!q||[d.sku,d.ean,d.name,d.brand,d.category,d.ml].some(v=>(v||'').toLowerCase().includes(q)));
   const body=document.getElementById('skuDbBody');
-  if(!f.length){body.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">🗃</div>${skuDb.length?'Sem resultados.':'Base vazia.'}</div></td></tr>`;return;}
+  if(!f.length){body.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">🗃</div>${skuDb.length?'Sem resultados.':'Base vazia.'}</div></td></tr>`;enableResizableTables();return;}
   body.innerHTML=f.map(d=>`<tr>
     <td class="mono" style="font-weight:700">${d.sku}</td>
     <td class="mono" style="color:var(--muted)">${d.ean||'—'}</td>
@@ -1268,6 +1318,7 @@ function renderSkuDb(){
     <td class="mono">${d.ml||'—'}</td>
     <td><button class="btn btn-ghost btn-sm" onclick="delSku('${d.sku}')">✕</button></td>
   </tr>`).join('');
+  enableResizableTables();
 }
 function clearSkuDb(){if(!confirm(`Apagar ${skuDb.length} produtos?`))return;if(!requireAdminPassword('apagar a base de produtos'))return;skuDb=[];saveDb();renderSkuDb();toast('Base limpa');}
 function dlSkuTpl(){
@@ -1327,7 +1378,7 @@ function renderStock(){
   stock.forEach(s=>{ realBySku[s.sku]=(realBySku[s.sku]||0)+s.qty; });
 
   const filtered=stock.filter(s=>{
-    const i=skuInfo(s.sku);const str=[s.sku,s.position,i?.name,i?.brand,i?.category].filter(Boolean).join(' ').toLowerCase();
+    const i=skuInfo(s.sku);const str=[s.sku,i?.ean,s.position,i?.name,i?.brand,i?.category].filter(Boolean).join(' ').toLowerCase();
     return str.includes(q)&&(!ft||normBoxType(s.boxType)===ft);
   }).sort((a,b)=>{
     const rb={};stock.forEach(s=>{rb[s.sku]=(rb[s.sku]||0)+s.qty;});
@@ -1337,6 +1388,7 @@ function renderStock(){
       const disp=calcDisponivel(s.sku,rb[s.sku]||0,mx);
       const info=skuInfo(s.sku);
       if(col==='sku')     return s.sku;
+      if(col==='ean')     return info?.ean||'';
       if(col==='name')    return info?.name||'';
       if(col==='position'){const p=parsePos(s.position);return p.shelf+'|'+(p.floor*10+p.slot);}
       if(col==='qty')     return s.qty;
@@ -1374,6 +1426,7 @@ function renderStock(){
   }
     let thCols = '<tr>'+
     th('sku','SKU')+
+    th('ean','EAN')+
     th('name','Produto')+
     th('position','Posição')+
     th('qty','Real','Stock físico contado no armazém');
@@ -1393,9 +1446,9 @@ function renderStock(){
   thCols += '<th>Tipo</th><th>Estado</th><th></th></tr>';
   thead.innerHTML = thCols;
 
-  const totalCols = 4 + (hasMov?7:0) + (hasTeorico?2:0) + 3;
+  const totalCols = 5 + (hasMov?7:0) + (hasTeorico?2:0) + 3;
   const body=document.getElementById('stockBody');
-  if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+tr('misc_no_stock')+'</div></td></tr>';return;}
+  if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+tr('misc_no_stock')+'</div></td></tr>';enableResizableTables();return;}
 
   body.innerHTML=filtered.map(s=>{
     const st=s.qty===0?'<span class="badge bdg-rd">'+tr('st_empty')+'</span>':s.qty<=5?'<span class="badge bdg-or">'+tr('st_low')+'</span>':'<span class="badge bdg-gn">'+tr('st_ok')+'</span>';
@@ -1419,16 +1472,18 @@ function renderStock(){
       tCols+=diff===null?'<td style="color:var(--muted)">—</td>':diff===0?'<td><span class="badge bdg-gy">=</span></td>':diff>0?'<td><span class="badge bdg-gn">+'+diff+'</span></td>':'<td><span class="badge bdg-rd">'+diff+'</span></td>';
     }
 
-    return '<tr><td class="mono" style="font-weight:700">'+s.sku+'</td><td>'+skuPill(s.sku)+'</td><td class="mono">'+s.position+'</td>'+
+    const info=skuInfo(s.sku);
+    return '<tr><td class="mono" style="font-weight:700">'+s.sku+'</td><td class="mono" style="color:var(--muted)">'+(info?.ean||'—')+'</td><td>'+skuPill(s.sku)+'</td><td class="mono">'+s.position+'</td>'+
       '<td class="mono" style="font-weight:700">'+s.qty+'</td>'+movCols+tCols+
       '<td>'+bb+'</td><td>'+st+'</td>'+
       '<td><button class="btn btn-ghost btn-sm" onclick="delStk('+JSON.stringify(s.id)+')">✕</button></td></tr>';
   }).join('');
+  enableResizableTables();
 }
 
 function sortStock(col) {
   if (stockSort.col === col) stockSort.dir *= -1;
-  else { stockSort.col = col; stockSort.dir = col==='sku'||col==='name'||col==='position'?1:-1; }
+  else { stockSort.col = col; stockSort.dir = col==='sku'||col==='ean'||col==='name'||col==='position'?1:-1; }
   renderStock();
 }
 function delStk(id){stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
@@ -1439,14 +1494,14 @@ function exportStockExcel(){
   const metrics=calcStockMetrics();
   const realBySku={};stock.forEach(s=>{realBySku[s.sku]=(realBySku[s.sku]||0)+s.qty;});
   const hasTeorico=Object.keys(teorico).length>0;
-  const rows=[['SKU','Produto','Marca','ML','Posição','Real','Tipo de caixa','Estado','Cart.','Prep.','Fact.','Dev. Ped.','Dev. Col.','Dev. Feitas','Disponível']];
+  const rows=[['EAN','SKU','Produto','Marca','ML','Posição','Real','Tipo de caixa','Estado','Cart.','Prep.','Fact.','Dev. Ped.','Dev. Col.','Dev. Feitas','Disponível']];
   if(hasTeorico) rows[0].push('Teórico','Diferença');
   stock.slice().sort((a,b)=>compareWarehousePosition(a,b)).forEach(s=>{
     const info=skuInfo(s.sku);
     const m=metrics[s.sku]||{};
     const disp=calcDisponivel(s.sku,realBySku[s.sku]||0,metrics);
     const status=s.qty===0?'Esgotado':s.qty<=5?'Baixo':'OK';
-    const row=[s.sku,info?.name||'',info?.brand||'',info?.ml||'',s.position,s.qty,normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva',status,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,disp];
+    const row=[info?.ean||'',s.sku,info?.name||'',info?.brand||'',info?.ml||'',s.position,s.qty,normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva',status,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,disp];
     if(hasTeorico){
       const tq=teorico[s.sku]!==undefined?teorico[s.sku]:'';
       row.push(tq,tq===''?'':s.qty-tq);
@@ -1454,7 +1509,7 @@ function exportStockExcel(){
     rows.push(row);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:14},{wch:30},{wch:16},{wch:8},{wch:10},{wch:8},{wch:14},{wch:10},{wch:8},{wch:8},{wch:8},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10}];
+  ws['!cols']=[{wch:16},{wch:14},{wch:30},{wch:16},{wch:8},{wch:10},{wch:8},{wch:14},{wch:10},{wch:8},{wch:8},{wch:8},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');
   XLSX.writeFile(wb,'stock_atual.xlsx');toast('Excel exportado','win');
 }
@@ -1958,14 +2013,14 @@ function exportDocExcel(t,id){
   if(!doc){toast('Documento não encontrado','err');return;}
   const isOrder=t==='order';
   const title=(isOrder?'Pedido':'Devolução')+': '+doc.id+(doc.client?' — '+doc.client:'');
-  const rows=[[title],['Estado: '+(doc.status||'—')+' · Criado por: '+(doc.createdBy||'—')+' · '+(doc.createdAt||'—')],[],['SKU','Nome','Marca','ML','Quantidade','Stock real']];
+  const rows=[[title],['Estado: '+(doc.status||'—')+' · Criado por: '+(doc.createdBy||'—')+' · '+(doc.createdAt||'—')],[],['EAN','SKU','Nome','Marca','ML','Quantidade','Stock real']];
   doc.lines.forEach(l=>{
     const i=skuInfo(l.sku);
     const real=stock.filter(s=>s.sku===l.sku).reduce((a,s)=>a+s.qty,0);
-    rows.push([l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,real]);
+    rows.push([i?.ean||'',l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,real]);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:16},{wch:32},{wch:18},{wch:8},{wch:12},{wch:12}];
+  ws['!cols']=[{wch:16},{wch:16},{wch:32},{wch:18},{wch:8},{wch:12},{wch:12}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,isOrder?'Pedido':'Devolucao');
   XLSX.writeFile(wb,safeFileName(doc.id)+'.xlsx');toast('Excel exportado','win');
 }
@@ -2040,14 +2095,16 @@ function renderDocLines(t){
   const ce=t==='order'?'orderLineCount':'returnLineCount',be=t==='order'?'orderLinesBody':'returnLinesBody';
   document.getElementById(ce).textContent=`${doc.lines.length} SKUs · ${doc.lines.reduce((a,l)=>a+l.qty,0)} unid.`;
   const body=document.getElementById(be);
-  if(!doc.lines.length){body.innerHTML=`<tr><td colspan="5"><div class="empty" style="padding:12px;">Sem linhas.</div></td></tr>`;return;}
+  if(!doc.lines.length){body.innerHTML=`<tr><td colspan="5"><div class="empty" style="padding:12px;">Sem linhas.</div></td></tr>`;enableResizableTables();return;}
   body.innerHTML=doc.lines.map(l=>{
+    const info=skuInfo(l.sku);
     const av=stock.filter(s=>s.sku===l.sku).reduce((a,s)=>a+s.qty,0);
     const ab=t==='order'?(av===0?`<span class="badge bdg-rd">0</span>`:av<l.qty?`<span class="badge bdg-or">${av}</span>`:`<span class="badge bdg-gn">${av}</span>`):`<span class="badge bdg-bl">${av}</span>`;
-    return `<tr><td class="mono" style="font-weight:700">${l.sku}</td>
+    return `<tr><td class="mono" style="color:var(--muted)">${info?.ean||'—'}</td><td class="mono" style="font-weight:700">${l.sku}</td>
       <td><input class="input qty-in" type="number" min="1" value="${l.qty}" onchange="updDocQty('${t}','${l.sku}',this.value)"></td>
       <td>${ab}</td><td><button class="btn btn-ghost btn-sm" onclick="rmDocLine('${t}','${l.sku}')">✕</button></td></tr>`;
   }).join('');
+  enableResizableTables();
 }
 function importDocLines(t){
   const file=document.getElementById(t==='order'?'orderFile':'returnFile').files[0];if(!file)return;
@@ -2406,8 +2463,8 @@ function renderPrepLines() {
         <div class="prep-check ${checkCls}">${checkIcon}</div>
         <div class="prep-pos ${posClass}">${l.position}</div>
         <div style="flex:1;min-width:0">
-          <div class="mono" style="font-weight:700;font-size:13px">${l.sku}</div>
-          ${info ? `<div style="font-size:11px;color:var(--muted)">${info.name}${info.brand?' · '+info.brand:''}${info.ml?' · '+info.ml:''}</div>` : ''}
+          <div class="mono" style="font-weight:700;font-size:13px">${info?.ean||l.sku}</div>
+          ${info ? `<div style="font-size:11px;color:var(--muted)">${l.sku} · ${info.name}${info.brand?' · '+info.brand:''}${info.ml?' · '+info.ml:''}</div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0">
           ${isRuptura ? '<span class="ruptura-badge">RUTURA</span>' :
@@ -2530,15 +2587,15 @@ function exportGuiaExcelById(orderId) {
     ['Guia de Picking: '+doc.id+(doc.client?' — '+doc.client:'')+(doc.guide?.loja?' → '+doc.guide.loja:'')],
     ['Emitida por: '+(doc.guide.emittedBy||'—')+' · '+doc.guide.emittedAt],
     [],
-    ['Posição', 'SKU', 'Nome', 'Marca', 'ML', 'Qty pedida', 'Qty recolhida', 'Estado']
+    ['Posição', 'EAN', 'SKU', 'Nome', 'Marca', 'ML', 'Qty pedida', 'Qty recolhida', 'Estado']
   ];
   doc.guide.lines.forEach(l => {
     const i = skuInfo(l.sku);
-    rows.push([l.position, l.sku, i?.name||'', i?.brand||'', i?.ml||'', l.qty, l.qtyDone||0,
+    rows.push([l.position, i?.ean||'', l.sku, i?.name||'', i?.brand||'', i?.ml||'', l.qty, l.qtyDone||0,
       l.status==='confirmed'?'Confirmado':l.ruptura||l.status==='ruptura'?'Rutura':'Pendente']);
   });
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:8},{wch:12},{wch:28},{wch:16},{wch:8},{wch:12},{wch:14},{wch:12}];
+  ws['!cols'] = [{wch:8},{wch:16},{wch:12},{wch:28},{wch:16},{wch:8},{wch:12},{wch:14},{wch:12}];
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Guia');
   XLSX.writeFile(wb, 'Guia_' + doc.id + '.xlsx');
   toast('Excel exportado', 'win');
@@ -2709,8 +2766,8 @@ function renderPutawayLines() {
       '<div class="prep-check '+checkCls+'">'+checkIcon+'</div>'+
       '<div class="prep-pos '+posClass+'" style="'+(isConfirmed?'background:var(--purple)':isNoPos?'background:#dc2626':'background:var(--purple)')+'">'+(l.position==='???'?'S/POS':l.position)+'</div>'+
       '<div style="flex:1;min-width:0">'+
-      '<div class="mono" style="font-weight:700;font-size:13px">'+l.sku+'</div>'+
-      (info?'<div style="font-size:11px;color:var(--muted)">'+info.name+(info.brand?' · '+info.brand:'')+(info.ml?' · '+info.ml:'')+'</div>':'')+'</div>'+
+      '<div class="mono" style="font-weight:700;font-size:13px">'+(info?.ean||l.sku)+'</div>'+
+      (info?'<div style="font-size:11px;color:var(--muted)">'+l.sku+' · '+info.name+(info.brand?' · '+info.brand:'')+(info.ml?' · '+info.ml:'')+'</div>':'')+'</div>'+
       '<div style="text-align:right;flex-shrink:0">'+
       (isConfirmed?'<span class="badge bdg-gn">'+l.qtyDone+' colocados</span>':
        '<span style="font-weight:700;font-size:15px">'+l.qty+'</span><span style="font-size:11px;color:var(--muted)"> unid.</span>')+
@@ -2799,8 +2856,8 @@ function exportPutawayExcelById(retId, currentLines) {
   if (!doc||!doc.putawayGuide) { toast('Guia não encontrada','err'); return; }
   const rows=[['Guia Devolucao: '+doc.id+(doc.client?' — '+doc.client:'')+(doc.putawayGuide?.loja?' <- '+doc.putawayGuide.loja:'')],
     ['Emitida por: '+(doc.putawayGuide.emittedBy||'—')+' · '+doc.putawayGuide.emittedAt],[],
-    ['Posicao','SKU','Nome','Marca','ML','Qty pedida','Qty colocada','Estado']];
-  (currentLines||doc.putawayGuide.lines||[]).forEach(l=>{ const i=skuInfo(l.sku); rows.push([l.position,l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,l.qtyDone||0,l.status==='confirmed'?'Confirmado':'Pendente']); });
+    ['Posicao','EAN','SKU','Nome','Marca','ML','Qty pedida','Qty colocada','Estado']];
+  (currentLines||doc.putawayGuide.lines||[]).forEach(l=>{ const i=skuInfo(l.sku); rows.push([l.position,i?.ean||'',l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,l.qtyDone||0,l.status==='confirmed'?'Confirmado':'Pendente']); });
   const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Devolucao');
   XLSX.writeFile(wb,'Guia_'+doc.id+'.xlsx');toast('Excel exportado','win');
 }
@@ -3928,6 +3985,7 @@ function spConfirm() {
 function _initApp() {
   setLang(detectDeviceLang());
   renderAvatarGrid();
+  enableResizableTables();
   const _savedSession = localStorage.getItem('wms_session');
   if (_savedSession) {
     try {
