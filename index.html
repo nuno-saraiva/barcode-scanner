@@ -271,6 +271,18 @@ select.input{appearance:auto;cursor:pointer;}
 .nav{overflow:visible!important;}
 .nav-tabs-desktop{display:flex;align-items:stretch;flex:1;}
 .nav-right{display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;}
+.lang-sel{display:flex;align-items:center;gap:3px;}
+.lang-btn{min-width:30px;height:28px;border:1px solid rgba(255,255,255,.16);border-radius:4px;background:rgba(255,255,255,.16);color:rgba(255,255,255,.72);font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;padding:0 5px;line-height:1;display:inline-flex;align-items:center;justify-content:center;}
+.lang-btn.active{background:#fff;color:var(--accent2);border-color:#fff;opacity:1!important;}
+.lang-btn:hover{border-color:rgba(255,255,255,.55);color:#fff;}
+.flag{width:22px;height:15px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.18) inset;display:inline-block;position:relative;overflow:hidden;background:#fff;}
+.flag-pt{background:linear-gradient(90deg,#046a38 0 40%,#da291c 40% 100%);}
+.flag-pt:after{content:'';position:absolute;left:34%;top:50%;width:6px;height:6px;border-radius:50%;background:#ffcd00;border:1px solid #fff;transform:translate(-50%,-50%);}
+.flag-gb{background:#012169;}
+.flag-gb:before{content:'';position:absolute;inset:0;background:linear-gradient(27deg,transparent 0 42%,#fff 42% 48%,#c8102e 48% 52%,#fff 52% 58%,transparent 58%),linear-gradient(153deg,transparent 0 42%,#fff 42% 48%,#c8102e 48% 52%,#fff 52% 58%,transparent 58%);}
+.flag-gb:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0 38%,#fff 38% 45%,#c8102e 45% 55%,#fff 55% 62%,transparent 62%),linear-gradient(0deg,transparent 0 34%,#fff 34% 43%,#c8102e 43% 57%,#fff 57% 66%,transparent 66%);}
+.flag-es{background:linear-gradient(#aa151b 0 25%,#f1bf00 25% 75%,#aa151b 75% 100%);}
+.flag-es:after{content:'';position:absolute;left:6px;top:50%;width:4px;height:5px;border-radius:1px;background:#c60b1e;transform:translateY(-50%);}
 .nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:8px 10px;line-height:1;}
 .mob-nav-btn{display:flex;width:100%;background:none;border:none;color:rgba(255,255,255,.75);font-family:'Barlow',sans-serif;font-weight:600;font-size:14px;padding:12px 14px;cursor:pointer;border-radius:8px;text-align:left;transition:all .15s;text-transform:none;letter-spacing:normal;}
 .mob-nav-btn:hover,.mob-nav-btn.active{background:rgba(255,255,255,.1);color:#fff;}
@@ -483,9 +495,9 @@ select.input{appearance:auto;cursor:pointer;}
     <label class="nav-tab nav-desktop-only" data-tip="Restaurar backup" style="font-size:12px;padding:0 8px;opacity:.7;cursor:pointer;"><input type="file" id="restoreFileDesktop" accept=".json" onchange="importBackupDesktop()" style="display:none;">↩</label>
     <button class="nav-tab nav-desktop-only" onclick="openResetPlatformModal()" data-tip="Reset total da plataforma" style="font-size:12px;padding:0 8px;opacity:.75;color:#fca5a5;">⟲</button>
     <div class="lang-sel nav-desktop-only" data-tip="Idioma">
-      <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')" data-tip="Português">🇵🇹</button>
-      <button class="lang-btn" id="lang-en" onclick="setLang('en')" data-tip="English">🇬🇧</button>
-      <button class="lang-btn" id="lang-es" onclick="setLang('es')" data-tip="Español">🇪🇸</button>
+      <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')" data-tip="Português" aria-label="Português"><span class="flag flag-pt"></span></button>
+      <button class="lang-btn" id="lang-en" onclick="setLang('en')" data-tip="English" aria-label="English"><span class="flag flag-gb"></span></button>
+      <button class="lang-btn" id="lang-es" onclick="setLang('es')" data-tip="Español" aria-label="Español"><span class="flag flag-es"></span></button>
     </div>
     <div id="userBadge" style="display:none;align-items:center;gap:6px;padding:0 8px;">
       <span id="userBadgeName" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;"></span>
@@ -518,9 +530,9 @@ select.input{appearance:auto;cursor:pointer;}
   <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);">
     <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">🌐 Idioma</div>
     <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button class="lang-btn active" id="lang-pt-mob" onclick="setLang('pt')">🇵🇹</button>
-      <button class="lang-btn" id="lang-en-mob" onclick="setLang('en')">🇬🇧</button>
-      <button class="lang-btn" id="lang-es-mob" onclick="setLang('es')">🇪🇸</button>
+      <button class="lang-btn active" id="lang-pt-mob" onclick="setLang('pt')" aria-label="Português"><span class="flag flag-pt"></span></button>
+      <button class="lang-btn" id="lang-en-mob" onclick="setLang('en')" aria-label="English"><span class="flag flag-gb"></span></button>
+      <button class="lang-btn" id="lang-es-mob" onclick="setLang('es')" aria-label="Español"><span class="flag flag-es"></span></button>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <span id="mobileMenuUser" style="font-size:13px;color:rgba(255,255,255,.7);font-weight:600;"></span>
