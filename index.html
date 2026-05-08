@@ -231,6 +231,11 @@ select.input{appearance:auto;cursor:pointer;}
 .page-desc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--muted);line-height:1.7;}
 .page-desc strong{color:var(--text);font-weight:700;}
 .page-desc em{color:var(--accent);font-style:normal;font-weight:600;}
+.drawer-card summary{list-style:none;cursor:pointer;user-select:none;}
+.drawer-card summary::-webkit-details-marker{display:none;}
+.drawer-toggle{width:28px;height:28px;border:1px solid var(--border);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);background:var(--surface2);font-size:14px;transition:transform .18s ease;}
+.drawer-card[open] .drawer-toggle{transform:rotate(180deg);}
+.drawer-card .card-body{border-top:1px solid var(--border);}
 
 /* RESPONSIVE NAV */
 .nav{overflow:visible!important;}
@@ -530,25 +535,28 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-desc" data-html-i="stock_desc">Mapa de stock real por posição de armazém (estantes A→K, andares 1→5, posições 1→4). Usa <strong>Dar Entrada</strong> para registar mercadoria recebida peça a peça ou por Excel. Usa <strong>📊 Inserir Stock Teórico</strong> para carregar o ficheiro do fornecedor com as quantidades que devias ter recebido — a tabela mostra imediatamente as diferenças entre o stock real e o esperado. <strong>Nota:</strong> só existe um stock teórico de cada vez; cada nova importação substitui o anterior. As colunas de <em>Em carteira</em>, <em>Em preparação</em> e <em>Disponível</em> atualizam automaticamente com os pedidos em curso.</div>
 
   <!-- STOCK TABLE -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Mapa do armazém</span>
-      <span id="warehouseMapSummary" style="font-size:11px;color:var(--muted);font-family:var(--mono);"></span>
-    </div>
+  <details class="card drawer-card" id="warehouseMapDrawer">
+    <summary class="card-header">
+      <span class="card-title" data-i="warehouse_map_title">Mapa do armazém</span>
+      <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <span id="warehouseMapSummary" style="font-size:11px;color:var(--muted);font-family:var(--mono);"></span>
+        <span class="drawer-toggle">⌄</span>
+      </span>
+    </summary>
     <div class="card-body">
       <div class="g4">
-        <div class="field" style="margin:0"><label>Estantes</label><input class="input mono" id="wmShelves" type="number" min="1" max="26" value="11"></div>
-        <div class="field" style="margin:0"><label>Prateleiras</label><input class="input mono" id="wmLevels" type="number" min="1" max="9" value="5"></div>
-        <div class="field" style="margin:0"><label>Posições/prateleira</label><input class="input mono" id="wmSlots" type="number" min="1" max="9" value="4"></div>
-        <button class="btn btn-dark" onclick="saveWarehouseMapFromForm()">Guardar</button>
+        <div class="field" style="margin:0"><label data-i="warehouse_map_shelves">Estantes</label><input class="input mono" id="wmShelves" type="number" min="1" max="26" value="11"></div>
+        <div class="field" style="margin:0"><label data-i="warehouse_map_levels">Prateleiras</label><input class="input mono" id="wmLevels" type="number" min="1" max="9" value="5"></div>
+        <div class="field" style="margin:0"><label data-i="warehouse_map_slots">Posições/prateleira</label><input class="input mono" id="wmSlots" type="number" min="1" max="9" value="4"></div>
+        <button class="btn btn-dark" onclick="saveWarehouseMapFromForm()" data-i="btn_save">Guardar</button>
       </div>
       <div class="field" style="margin-top:12px;margin-bottom:0">
-        <label>Estantes personalizadas</label>
-        <input class="input mono" id="wmCustomShelves" placeholder="Opcional: A,B,C,D,E,K,N">
+        <label data-i="warehouse_map_custom">Estantes personalizadas</label>
+        <input class="input mono" id="wmCustomShelves" data-ph-i="warehouse_map_custom_ph" placeholder="Opcional: A,B,C,D,E,K,N">
       </div>
       <div id="warehouseMapPreview" style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;"></div>
     </div>
-  </div>
+  </details>
 
   <div class="card">
     <div class="card-header">
@@ -1139,6 +1147,7 @@ function showPage(id,btn){
   if(id!=='orders') stopScan('order');
   if(id!=='returns') stopScan('return');
   if(id!=='stock') stopScan('inv');
+  applyStaticTranslations();
   closeAc();
 }
 
@@ -1427,8 +1436,12 @@ function renderWarehouseMapForm() {
   s.value=warehouseMap.shelves||11; l.value=warehouseMap.levels||5; p.value=warehouseMap.slots||4; c.value=warehouseMap.customShelves||'';
   const positions=warehousePositions();
   const shelves=warehouseShelves();
-  document.getElementById('warehouseMapSummary').textContent = shelves.length+' est. · '+(warehouseMap.levels||5)+' prat. · '+(warehouseMap.slots||4)+' pos. · '+positions.length+' posições';
-  document.getElementById('warehouseMapPreview').innerHTML = 'Exemplo: <span class="mono">'+positions.slice(0,8).join(', ')+(positions.length>8?' ... '+positions[positions.length-1]:'')+'</span>';
+  document.getElementById('warehouseMapSummary').textContent = tr('warehouse_map_summary')
+    .replace('{shelves}', shelves.length)
+    .replace('{levels}', warehouseMap.levels||5)
+    .replace('{slots}', warehouseMap.slots||4)
+    .replace('{positions}', positions.length);
+  document.getElementById('warehouseMapPreview').innerHTML = tr('warehouse_map_example')+' <span class="mono">'+positions.slice(0,8).join(', ')+(positions.length>8?' ... '+positions[positions.length-1]:'')+'</span>';
 }
 function saveWarehouseMapFromForm() {
   warehouseMap = {
@@ -2958,7 +2971,15 @@ const LANGS = {
     btn_dar_entrada:'Dar Entrada', btn_teorico:'📊 Inserir Stock Teórico',
     btn_export:'⬇ Excel', btn_template:'⬇ Modelo', btn_template_excel:'⬇ Modelo Excel',
     btn_choose_file:'Escolher ficheiro', file_none:'Nenhum ficheiro selecionado',
-    btn_login:'Entrar →', btn_outro:'Outro', btn_back:'← Voltar',
+    btn_login:'Entrar →', btn_outro:'Outro', btn_back:'← Voltar', btn_save:'Guardar',
+    warehouse_map_title:'Mapa do armazém',
+    warehouse_map_shelves:'Estantes',
+    warehouse_map_levels:'Prateleiras',
+    warehouse_map_slots:'Posições/prateleira',
+    warehouse_map_custom:'Estantes personalizadas',
+    warehouse_map_custom_ph:'Opcional: A,B,C,D,E,K,N',
+    warehouse_map_summary:'{shelves} est. · {levels} prat. · {slots} pos. · {positions} posições',
+    warehouse_map_example:'Exemplo:',
     // Status
     st_open:'Aberta', st_picked:'Concluída', st_cancelled:'Anulada',
     st_returned:'Concluída', st_emitted:'📋 Guia emitida',
@@ -3031,7 +3052,15 @@ const LANGS = {
     btn_dar_entrada:'Stock In', btn_teorico:'📊 Insert Theoretical Stock',
     btn_export:'⬇ Excel', btn_template:'⬇ Template', btn_template_excel:'⬇ Excel template',
     btn_choose_file:'Choose file', file_none:'No file selected',
-    btn_login:'Enter →', btn_outro:'Other', btn_back:'← Back',
+    btn_login:'Enter →', btn_outro:'Other', btn_back:'← Back', btn_save:'Save',
+    warehouse_map_title:'Warehouse map',
+    warehouse_map_shelves:'Shelves',
+    warehouse_map_levels:'Levels',
+    warehouse_map_slots:'Positions/level',
+    warehouse_map_custom:'Custom shelves',
+    warehouse_map_custom_ph:'Optional: A,B,C,D,E,K,N',
+    warehouse_map_summary:'{shelves} shelves · {levels} levels · {slots} slots · {positions} positions',
+    warehouse_map_example:'Example:',
     st_open:'Open', st_picked:'Done', st_cancelled:'Cancelled',
     st_returned:'Done', st_emitted:'📋 Guide issued',
     st_prep:'🚶 In preparation', st_coloc:'🚶 In putaway', st_parcial:'⚠️ Partial',
@@ -3098,7 +3127,15 @@ const LANGS = {
     btn_dar_entrada:'Entrada Stock', btn_teorico:'📊 Inserir Stock Teórico',
     btn_export:'⬇ Excel', btn_template:'⬇ Plantilla', btn_template_excel:'⬇ Plantilla Excel',
     btn_choose_file:'Elegir archivo', file_none:'Ningún archivo seleccionado',
-    btn_login:'Entrar →', btn_outro:'Otro', btn_back:'← Volver',
+    btn_login:'Entrar →', btn_outro:'Otro', btn_back:'← Volver', btn_save:'Guardar',
+    warehouse_map_title:'Mapa del almacén',
+    warehouse_map_shelves:'Estanterías',
+    warehouse_map_levels:'Niveles',
+    warehouse_map_slots:'Posiciones/nivel',
+    warehouse_map_custom:'Estanterías personalizadas',
+    warehouse_map_custom_ph:'Opcional: A,B,C,D,E,K,N',
+    warehouse_map_summary:'{shelves} est. · {levels} niv. · {slots} pos. · {positions} posiciones',
+    warehouse_map_example:'Ejemplo:',
     st_open:'Abierto', st_picked:'Completado', st_cancelled:'Anulado',
     st_returned:'Completado', st_emitted:'📋 Guía emitida',
     st_prep:'🚶 En preparación', st_coloc:'🚶 En colocación', st_parcial:'⚠️ Parcial',
@@ -3177,6 +3214,11 @@ function setLang(lang) {
     const val = tr(key);
     if (val) el.setAttribute('data-tip', val);
   });
+  document.querySelectorAll('[data-ph-i]').forEach(el => {
+    const key = el.getAttribute('data-ph-i');
+    const val = tr(key);
+    if (val) el.setAttribute('placeholder', val);
+  });
   // Re-render dynamic content (only if logged in)
   if(currentUser){
     renderStock();
@@ -3191,10 +3233,31 @@ function setLang(lang) {
   if (sub) sub.textContent = tr('login_who');
   // Update page titles/subs
   applyStaticTranslations();
+  renderWarehouseMapForm();
   updateFileLabels();
 }
 
 function applyStaticTranslations() {
+  document.querySelectorAll('[data-i]').forEach(el => {
+    const key = el.getAttribute('data-i');
+    const val = tr(key);
+    if (val) el.textContent = val;
+  });
+  document.querySelectorAll('[data-html-i]').forEach(el => {
+    const key = el.getAttribute('data-html-i');
+    const val = tr(key);
+    if (val) el.innerHTML = val;
+  });
+  document.querySelectorAll('[data-ph-i]').forEach(el => {
+    const key = el.getAttribute('data-ph-i');
+    const val = tr(key);
+    if (val) el.setAttribute('placeholder', val);
+  });
+  document.querySelectorAll('[data-tip-i]').forEach(el => {
+    const key = el.getAttribute('data-tip-i');
+    const val = tr(key);
+    if (val) el.setAttribute('data-tip', val);
+  });
   const map = {
     'page-skudb': ['skudb_title','skudb_sub'],
     'page-stock': ['stock_title','stock_sub'],
