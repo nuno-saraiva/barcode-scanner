@@ -725,7 +725,219 @@ select.input{appearance:auto;cursor:pointer;}
 
 
 
+
+<!-- DAR ENTRADA PANEL -->
+<div class="search-panel-overlay" id="entradaOverlay" onclick="entradaClose(event)">
+  <div class="search-panel" style="max-width:520px;" onclick="event.stopPropagation()">
+    <div class="search-panel-head" style="flex-direction:column;align-items:stretch;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-weight:800;font-size:16px;">Dar Entrada de Stock</div>
+        <button class="btn btn-ghost btn-sm" onclick="closeEntrada()">✕</button>
+      </div>
+      <div class="inner-tabs" style="margin:0;">
+        <button class="inner-tab active" id="ent-tab-pick-btn" onclick="switchEntradaMode('pick')">📷 Peça a peça</button>
+        <button class="inner-tab" id="ent-tab-excel-btn" onclick="switchEntradaMode('excel')">📂 Excel</button>
+      </div>
+    </div>
+
+    <!-- PEÇA A PEÇA -->
+    <div id="ent-tab-pick" style="flex:1;overflow-y:auto;">
+      <div style="display:flex;border-bottom:1px solid var(--border);">
+        <div id="ent-s1" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--accent);color:#fff;">1 · Produto</div>
+        <div id="ent-s2" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--surface2);color:var(--muted);">2 · Quantidade</div>
+        <div id="ent-s3" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--surface2);color:var(--muted);">3 · Posição</div>
+      </div>
+
+      <!-- Step 1 -->
+      <div id="ent-step1" style="padding:16px;">
+        <div id="entScannerBox" class="scanner-box"><div id="entInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+          <button class="btn btn-dark btn-sm" id="btnEntScan" onclick="toggleScan('ent')">📷 Scanner</button>
+          <span class="dot" id="entScanDot"></span>
+          <span style="font-size:11px;color:var(--muted)" id="entScanStatus">Inativo</span>
+        </div>
+        <div class="ac-wrap" style="margin-bottom:8px;">
+          <input class="input" id="ent-search" placeholder="Nome, marca, EAN, SKU..." autocomplete="off"
+            oninput="acSearch('ent-search','ent-ac')"
+            onkeydown="acKey(event,'ent-search','ent-ac',entSelectFromAc)">
+          <div class="ac-list" id="ent-ac"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input class="input mono" id="ent-sku-manual" placeholder="EAN ou SKU direto..."
+            style="flex:1;" onkeydown="if(event.key==='Enter')entManualNext()">
+          <button class="btn btn-primary" onclick="entManualNext()">→</button>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div id="ent-step2" style="padding:16px;display:none;">
+        <div id="ent-sku-preview" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;"></div>
+        <label>Quantidade a dar entrada</label>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(-1)">−</button>
+          <input class="input mono" id="ent-qty" type="number" min="1" value="1"
+            style="font-size:24px;font-weight:700;text-align:center;flex:1;padding:10px;">
+          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(1)">＋</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="entGoStep(1)">← Voltar</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="entGoStep(3)">Confirmar quantidade →</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div id="ent-step3" style="padding:16px;display:none;">
+        <div id="ent-pos-warning" class="alert a-warn" style="display:none;margin-bottom:10px;"></div>
+        <label>Posição no armazém</label>
+        <select class="input mono" id="ent-pos-select" style="width:100%;margin-bottom:8px;" onchange="entPosSelected()">
+          <option value="">— Selecionar da lista —</option>
+        </select>
+        <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:8px;">ou introduz manualmente</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <input class="input mono" id="ent-pos-manual" placeholder="ex: A11, B23..."
+            oninput="entPosManualInput()" style="flex:1;font-size:15px;text-transform:uppercase;"
+            onkeydown="if(event.key==='Enter')entConfirm()">
+        </div>
+        <div id="ent-pos-info" style="font-size:12px;color:var(--muted);min-height:18px;margin-bottom:14px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="entGoStep(2)">← Voltar</button>
+          <button class="btn btn-success" style="flex:1;" onclick="entConfirm()">✓ Confirmar entrada</button>
+        </div>
+      </div>
+
+      <!-- Recap -->
+      <div id="ent-recap" style="display:none;border-top:1px solid var(--border);">
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+          <strong style="font-size:13px;">Entradas desta sessão</strong>
+          <button class="btn btn-ghost btn-sm" onclick="entClearRecap()">Limpar</button>
+        </div>
+        <div style="overflow-x:auto;max-height:180px;overflow-y:auto;">
+          <table class="tbl" style="font-size:12px;">
+            <thead><tr><th>SKU</th><th>Produto</th><th>Qty</th><th>Posição</th></tr></thead>
+            <tbody id="entRecapBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXCEL -->
+    <div id="ent-tab-excel" style="display:none;padding:16px;flex:1;overflow-y:auto;">
+      <div class="alert a-info">Colunas: <strong>SKU | Posição | Quantidade | Tipo de Caixa</strong></div>
+      <div style="margin-bottom:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()">⬇ Template Excel</button>
+      </div>
+      <input type="file" id="stockFile" accept=".xlsx,.xls" onchange="importStock()" class="input" style="padding:8px;">
+    </div>
+  </div>
+</div>
+
 <!-- STOCK TEÓRICO PANEL -->
+
+
+<!-- DAR ENTRADA PANEL -->
+<div class="search-panel-overlay" id="entradaOverlay" onclick="entradaClose(event)">
+  <div class="search-panel" style="max-width:520px;" onclick="event.stopPropagation()">
+    <div class="search-panel-head" style="flex-direction:column;align-items:stretch;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-weight:800;font-size:16px;">Dar Entrada de Stock</div>
+        <button class="btn btn-ghost btn-sm" onclick="closeEntrada()">✕</button>
+      </div>
+      <div class="inner-tabs" style="margin:0;">
+        <button class="inner-tab active" id="ent-tab-pick-btn" onclick="switchEntradaMode('pick')">📷 Peça a peça</button>
+        <button class="inner-tab" id="ent-tab-excel-btn" onclick="switchEntradaMode('excel')">📂 Excel</button>
+      </div>
+    </div>
+
+    <!-- PEÇA A PEÇA -->
+    <div id="ent-tab-pick" style="flex:1;overflow-y:auto;">
+      <div style="display:flex;border-bottom:1px solid var(--border);">
+        <div id="ent-s1" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--accent);color:#fff;">1 · Produto</div>
+        <div id="ent-s2" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--surface2);color:var(--muted);">2 · Quantidade</div>
+        <div id="ent-s3" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--surface2);color:var(--muted);">3 · Posição</div>
+      </div>
+
+      <!-- Step 1 -->
+      <div id="ent-step1" style="padding:16px;">
+        <div id="entScannerBox" class="scanner-box"><div id="entInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+          <button class="btn btn-dark btn-sm" id="btnEntScan" onclick="toggleScan('ent')">📷 Scanner</button>
+          <span class="dot" id="entScanDot"></span>
+          <span style="font-size:11px;color:var(--muted)" id="entScanStatus">Inativo</span>
+        </div>
+        <div class="ac-wrap" style="margin-bottom:8px;">
+          <input class="input" id="ent-search" placeholder="Nome, marca, EAN, SKU..." autocomplete="off"
+            oninput="acSearch('ent-search','ent-ac')"
+            onkeydown="acKey(event,'ent-search','ent-ac',entSelectFromAc)">
+          <div class="ac-list" id="ent-ac"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input class="input mono" id="ent-sku-manual" placeholder="EAN ou SKU direto..."
+            style="flex:1;" onkeydown="if(event.key==='Enter')entManualNext()">
+          <button class="btn btn-primary" onclick="entManualNext()">→</button>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div id="ent-step2" style="padding:16px;display:none;">
+        <div id="ent-sku-preview" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;"></div>
+        <label>Quantidade a dar entrada</label>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(-1)">−</button>
+          <input class="input mono" id="ent-qty" type="number" min="1" value="1"
+            style="font-size:24px;font-weight:700;text-align:center;flex:1;padding:10px;">
+          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(1)">＋</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="entGoStep(1)">← Voltar</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="entGoStep(3)">Confirmar quantidade →</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div id="ent-step3" style="padding:16px;display:none;">
+        <div id="ent-pos-warning" class="alert a-warn" style="display:none;margin-bottom:10px;"></div>
+        <label>Posição no armazém</label>
+        <select class="input mono" id="ent-pos-select" style="width:100%;margin-bottom:8px;" onchange="entPosSelected()">
+          <option value="">— Selecionar da lista —</option>
+        </select>
+        <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:8px;">ou introduz manualmente</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <input class="input mono" id="ent-pos-manual" placeholder="ex: A11, B23..."
+            oninput="entPosManualInput()" style="flex:1;font-size:15px;text-transform:uppercase;"
+            onkeydown="if(event.key==='Enter')entConfirm()">
+        </div>
+        <div id="ent-pos-info" style="font-size:12px;color:var(--muted);min-height:18px;margin-bottom:14px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="entGoStep(2)">← Voltar</button>
+          <button class="btn btn-success" style="flex:1;" onclick="entConfirm()">✓ Confirmar entrada</button>
+        </div>
+      </div>
+
+      <!-- Recap -->
+      <div id="ent-recap" style="display:none;border-top:1px solid var(--border);">
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+          <strong style="font-size:13px;">Entradas desta sessão</strong>
+          <button class="btn btn-ghost btn-sm" onclick="entClearRecap()">Limpar</button>
+        </div>
+        <div style="overflow-x:auto;max-height:180px;overflow-y:auto;">
+          <table class="tbl" style="font-size:12px;">
+            <thead><tr><th>SKU</th><th>Produto</th><th>Qty</th><th>Posição</th></tr></thead>
+            <tbody id="entRecapBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXCEL -->
+    <div id="ent-tab-excel" style="display:none;padding:16px;flex:1;overflow-y:auto;">
+      <div class="alert a-info">Colunas: <strong>SKU | Posição | Quantidade | Tipo de Caixa</strong></div>
+      <div style="margin-bottom:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()">⬇ Template Excel</button>
+      </div>
+      <input type="file" id="stockFile" accept=".xlsx,.xls" onchange="importStock()" class="input" style="padding:8px;">
+    </div>
+  </div>
+</div>
 
 <!-- STOCK TEÓRICO PANEL -->
 <div class="search-panel-overlay" id="teoricoOverlay" onclick="teoricoClose(event)">
@@ -826,6 +1038,7 @@ select.input{appearance:auto;cursor:pointer;}
 </div>
 
 <!-- lojaModal removed — client already set in order -->
+<div id="lojaModal" style="display:none;"></div>
 
 <!-- ORIGEM MODAL (devolução) -->
 <div class="overlay" id="origemModal">
@@ -3104,7 +3317,7 @@ function renderImportOrderList(q) {
     return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:background .15s;" ' +
       'class="import-order-row" ' +
       ''
-      'onclick="importOrderAsReturn(' + JSON.stringify(o.id) + ')">' +
+      'data-orderid="'+o.id.replace(/&/g,'&amp;')+'" onclick="importOrderByData(this)">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;">' +
       '<div>' +
       '<div style="font-weight:700;font-size:13px;">' + o.id + '</div>' +
@@ -3119,6 +3332,7 @@ function renderImportOrderList(q) {
   }).join('');
 }
 
+function importOrderByData(btn){ importOrderAsReturn(btn.getAttribute('data-orderid')); }
 function importOrderAsReturn(orderId) {
   closeImportFromOrder();
   const order = orders.find(o => o.id === orderId);
@@ -3147,7 +3361,7 @@ function importOrderAsReturn(orderId) {
   list.innerHTML = CLIENTS.map(c => {
     const count = docSt('return').filter(d => d.client===c).length + 1;
     const preview = 'Devolução ' + c + ' ' + count;
-    return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" onclick="selectClientForImport(' + JSON.stringify(c) + ')">' +
+    return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" data-client="'+c.replace(/&/g,'&amp;')+'" onclick="selectClientForImportByData(this)">' +
       '<span style="font-weight:600">' + c + '</span>' +
       '<span style="font-size:11px;color:var(--muted)">→ ' + preview + '</span>' +
       '</button>';
@@ -3158,6 +3372,7 @@ function importOrderAsReturn(orderId) {
 
 let _pendingImportLines = null;
 
+function selectClientForImportByData(btn){ selectClientForImport(btn.getAttribute('data-client')); }
 function selectClientForImport(client) {
   closeClientModal();
   createReturnFromOrder(client, _pendingImportLines);
