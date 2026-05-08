@@ -140,14 +140,12 @@ select.input{appearance:auto;cursor:pointer;}
 .table-scroll-top{height:14px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--border);background:var(--surface2);}
 .table-scroll-spacer{height:1px;}
 @media(min-width:769px){
-  #stockTable th{position:sticky;top:52px;z-index:5;}
   .tbl[data-resizable-cols] .col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:2;touch-action:none;}
   .tbl[data-resizable-cols] .col-resizer:hover{background:rgba(232,66,10,.18);}
   body.resizing-cols{cursor:col-resize;user-select:none;}
 }
 @media(max-width:768px){
   .table-scroll-top{display:none;}
-  #stockTable th{position:static;}
 }
 .mono{font-family:var(--mono);}
 .badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
@@ -591,9 +589,10 @@ select.input{appearance:auto;cursor:pointer;}
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <input class="input input-sans" id="stockSearch" placeholder="Pesquisar..." style="width:130px;padding:5px 10px;font-size:12px;" oninput="renderStock()">
         <select class="input input-sans" id="stockFilter" style="width:95px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
-          <option value="">Todos</option><option value="mista">Mistas</option><option value="exclusiva">Exclusivas</option>
+          <option value="">Todos</option><option value="mista">Mixed</option><option value="exclusiva">Mono</option>
         </select>
         <button class="btn btn-ghost btn-sm" onclick="exportStockExcel()" data-tip="Exportar toda a tabela de stock">⬇ Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()" data-tip="Descarregar modelo Excel para importar stock">⬇ Modelo</button>
         <button class="btn btn-success btn-sm" onclick="openEntrada()" data-tip="Dar entrada de mercadoria recebida — peça a peça com scanner ou por Excel" data-tip-i="tip_dar_entrada" data-i="btn_dar_entrada">Dar Entrada</button>
         <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" data-tip="Comparar stock real com quantidades encomendadas ao fornecedor" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">📊 Inserir Stock Teórico</button>
         <button class="btn btn-ghost btn-sm" onclick="clearStock()" data-tip="Apagar todo o stock do armazém">🗑</button>
@@ -901,8 +900,8 @@ select.input{appearance:auto;cursor:pointer;}
         <div id="ent-box-type-wrap" style="margin-bottom:14px;">
           <label>Tipo de caixa</label>
           <div class="inner-tabs" style="margin:0;">
-            <button type="button" class="inner-tab active" id="ent-box-mista-btn" onclick="entSetBoxType('mista')">📦 Mista</button>
-            <button type="button" class="inner-tab" id="ent-box-exclusiva-btn" onclick="entSetBoxType('exclusiva')">🔹 Exclusiva</button>
+            <button type="button" class="inner-tab active" id="ent-box-mista-btn" onclick="entSetBoxType('mista')">📦 Mixed</button>
+            <button type="button" class="inner-tab" id="ent-box-exclusiva-btn" onclick="entSetBoxType('exclusiva')">🔹 Mono</button>
           </div>
         </div>
         <div style="display:flex;gap:8px;">
@@ -1537,7 +1536,7 @@ function exportStockExcel(){
       const tq=teorico[s.sku]!==undefined?teorico[s.sku]:'';
       row.push(tq,tq===''?'':s.qty-tq);
     }
-    row.push(disp,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva',s.sku);
+    row.push(disp,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,normBoxType(s.boxType)==='mista'?'Mixed':'Mono',s.sku);
     rows.push(row);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
@@ -1589,7 +1588,7 @@ function saveWarehouseMapFromForm() {
   toast('Mapa do armazém guardado','win');
 }
 function dlStockTpl(){
-  const ws=XLSX.utils.aoa_to_sheet([['SKU','Posição','Quantidade','Tipo de Caixa'],['SKU-001','A11',10,'Mista'],['SKU-002','B23',20,'Exclusiva']]);
+  const ws=XLSX.utils.aoa_to_sheet([['EAN ou SKU','Posição','Quantidade','Tipo de Caixa'],['3600523540235','A11',10,'Mixed'],['SKU-002','B23',20,'Mono']]);
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');XLSX.writeFile(wb,'template_stock.xlsx');
 }
 
@@ -1776,7 +1775,7 @@ function entConfirm(){
   if(!isKnownWarehousePosition(pos) && !confirm('A posição '+pos+' não existe no mapa configurado. Queres usar esta posição mesmo assim?')) return;
   if(posEntries.length){
     const msg = 'A posição '+pos+' já contém:\n' +
-      posEntries.map(s=>'- '+s.sku+' · '+s.qty+' unid. · '+(normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva')).join('\n') +
+      posEntries.map(s=>'- '+s.sku+' · '+s.qty+' unid. · '+(normBoxType(s.boxType)==='mista'?'Mixed':'Mono')).join('\n') +
       '\n\nQueres adicionar '+entQty+' unid. de '+entSku+' nesta posição?';
     if(!confirm(msg)) return;
   }
@@ -2507,7 +2506,7 @@ function renderPrepLines() {
       ${!isConfirmed && !isRuptura ? `
       <div class="prep-line-body" id="prepbody-${idx}" style="display:none;">
         <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:10px;">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Pedido: <strong>${l.qty} unid.</strong> &nbsp;·&nbsp; Caixa: ${l.boxType==='mista'?'📦 Mista':'🔹 Exclusiva'}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Pedido: <strong>${l.qty} unid.</strong> &nbsp;·&nbsp; Caixa: ${l.boxType==='mista'?'📦 Mixed':'🔹 Mono'}</div>
           <div style="display:flex;align-items:center;gap:10px;">
             <label style="font-size:12px;margin:0;text-transform:none;">Recolhido:</label>
             <input class="input qty-in" type="number" min="0" max="${l.qty}" value="${l.qtyDone}"
@@ -3147,7 +3146,7 @@ const LANGS = {
     st_prep:'🚶 Em preparação', st_coloc:'🚶 Em colocação', st_parcial:'⚠️ Parcial',
     // Stock
     st_ok:'OK', st_low:'Baixo', st_empty:'Esgotado',
-    box_mixed:'📦 Mista', box_excl:'🔹 Exclusiva',
+    box_mixed:'📦 Mixed', box_excl:'🔹 Mono',
     // Labels
     lbl_client:'Cliente', lbl_store_dest:'Loja de destino', lbl_store_orig:'Loja de origem',
     lbl_sku:'SKU', lbl_pos:'Posição', lbl_qty:'Quantidade', lbl_type:'Tipo',
@@ -3226,7 +3225,7 @@ const LANGS = {
     st_returned:'Done', st_emitted:'📋 Guide issued',
     st_prep:'🚶 In preparation', st_coloc:'🚶 In putaway', st_parcial:'⚠️ Partial',
     st_ok:'OK', st_low:'Low', st_empty:'Out of stock',
-    box_mixed:'📦 Mixed', box_excl:'🔹 Exclusive',
+    box_mixed:'📦 Mixed', box_excl:'🔹 Mono',
     lbl_client:'Client', lbl_store_dest:'Destination store', lbl_store_orig:'Origin store',
     lbl_sku:'SKU', lbl_pos:'Position', lbl_qty:'Quantity', lbl_type:'Type',
     lbl_product:'Product', lbl_status:'Status', lbl_diff:'Difference',
@@ -3301,7 +3300,7 @@ const LANGS = {
     st_returned:'Completado', st_emitted:'📋 Guía emitida',
     st_prep:'🚶 En preparación', st_coloc:'🚶 En colocación', st_parcial:'⚠️ Parcial',
     st_ok:'OK', st_low:'Bajo', st_empty:'Sin stock',
-    box_mixed:'📦 Mixta', box_excl:'🔹 Exclusiva',
+    box_mixed:'📦 Mixed', box_excl:'🔹 Mono',
     lbl_client:'Cliente', lbl_store_dest:'Tienda destino', lbl_store_orig:'Tienda origen',
     lbl_sku:'SKU', lbl_pos:'Posición', lbl_qty:'Cantidad', lbl_type:'Tipo',
     lbl_product:'Producto', lbl_status:'Estado', lbl_diff:'Diferencia',
