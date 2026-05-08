@@ -861,6 +861,13 @@ select.input{appearance:auto;cursor:pointer;}
             onkeydown="if(event.key==='Enter')entConfirm()">
         </div>
         <div id="ent-pos-info" style="font-size:12px;color:var(--muted);min-height:18px;margin-bottom:14px;"></div>
+        <div id="ent-box-type-wrap" style="margin-bottom:14px;">
+          <label>Tipo de caixa</label>
+          <div class="inner-tabs" style="margin:0;">
+            <button type="button" class="inner-tab active" id="ent-box-mista-btn" onclick="entSetBoxType('mista')">📦 Mista</button>
+            <button type="button" class="inner-tab" id="ent-box-exclusiva-btn" onclick="entSetBoxType('exclusiva')">🔹 Exclusiva</button>
+          </div>
+        </div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-ghost" onclick="entGoStep(2)">← Voltar</button>
           <button class="btn btn-success" style="flex:1;" onclick="entConfirm()">✓ Confirmar entrada</button>
@@ -1231,7 +1238,7 @@ function renderSkuDb(){
     <td><button class="btn btn-ghost btn-sm" onclick="delSku('${d.sku}')">✕</button></td>
   </tr>`).join('');
 }
-function clearSkuDb(){if(!confirm(`Apagar ${skuDb.length} produtos?`))return;skuDb=[];saveDb();renderSkuDb();toast('Base limpa');}
+function clearSkuDb(){if(!confirm(`Apagar ${skuDb.length} produtos?`))return;if(!requireAdminPassword('apagar a base de produtos'))return;skuDb=[];saveDb();renderSkuDb();toast('Base limpa');}
 function dlSkuTpl(){
   const ws=XLSX.utils.aoa_to_sheet([['SKU','EAN','Nome','Marca','Categoria','ML'],['SKU-001','3614273123456','Teint Idole Ultra','Lancôme','Base','30ml'],['SKU-002','3605532000001','Rouge Allure','Chanel','Batom','3.5g']]);
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'SKUs');XLSX.writeFile(wb,'template_skus.xlsx');
@@ -1394,7 +1401,7 @@ function sortStock(col) {
   renderStock();
 }
 function delStk(id){stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
-function clearStock(){if(!confirm(`Apagar ${stock.length} entradas?`))return;stock=[];saveStk();renderStock();toast('Stock limpo');}
+function clearStock(){if(!confirm(`Apagar ${stock.length} entradas?`))return;if(!requireAdminPassword('apagar todo o stock'))return;stock=[];saveStk();renderStock();toast('Stock limpo');}
 function warehouseShelves() {
   const custom = String(warehouseMap.customShelves||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
   if(custom.length) return custom;
@@ -1463,15 +1470,16 @@ function exportTeoricoExcel(){
 }
 
 // ══ DAR ENTRADA — FLOATING PANEL ══
-let entSku=null, entQty=1, entRecap=[];
+let entSku=null, entQty=1, entBoxType='mista', entRecap=[];
 
 function openEntrada(){
-  entSku=null; entQty=1;
+  entSku=null; entQty=1; entSetBoxType('mista');
   ['ent-search','ent-sku-manual','ent-pos-manual'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ent-qty').value=1;
   document.getElementById('ent-pos-select').value='';
   document.getElementById('ent-pos-info').textContent='';
   document.getElementById('ent-pos-warning').style.display='none';
+  const boxWrap=document.getElementById('ent-box-type-wrap'); if(boxWrap) boxWrap.style.display='';
   entStepUI(1);
   switchEntradaMode('pick');
   // Populate position list sorted by warehouse route
@@ -1589,18 +1597,27 @@ function entPosManualInput(){
   entUpdatePosWarning();
 }
 
+function entSetBoxType(type){
+  entBoxType=type==='exclusiva'?'exclusiva':'mista';
+  const m=document.getElementById('ent-box-mista-btn'), e=document.getElementById('ent-box-exclusiva-btn');
+  if(m)m.classList.toggle('active',entBoxType==='mista');
+  if(e)e.classList.toggle('active',entBoxType==='exclusiva');
+}
+
 function entUpdatePosWarning(){
   const pos=document.getElementById('ent-pos-manual').value.trim().toUpperCase();
   const warn=document.getElementById('ent-pos-warning');
   const info=document.getElementById('ent-pos-info');
-  if(!pos){warn.style.display='none';info.textContent='';return;}
+  const boxWrap=document.getElementById('ent-box-type-wrap');
+  if(!pos){warn.style.display='none';info.textContent='';if(boxWrap)boxWrap.style.display='';return;}
   const existing=stock.filter(s=>s.sku===entSku&&s.position===pos);
   const otherSkus=stock.filter(s=>s.sku!==entSku&&s.position===pos);
+  if(boxWrap)boxWrap.style.display=otherSkus.length?'none':'';
   if(existing.length){
     warn.style.display='flex';
     warn.textContent='⚠️ Esta posição já tem '+existing[0].qty+' unid. de '+entSku+'. Ao confirmar serão adicionadas '+entQty+' unid.';
   } else warn.style.display='none';
-  if(otherSkus.length) info.innerHTML='<span style="color:var(--muted)">Outros SKUs aqui: '+otherSkus.map(s=>s.sku+' ('+s.qty+')').join(', ')+'</span>';
+  if(otherSkus.length) info.innerHTML='<span style="color:var(--muted)">Outros SKUs aqui: '+otherSkus.map(s=>s.sku+' ('+s.qty+')').join(', ')+'. A posição ficará como caixa mista.</span>';
   else info.textContent=existing.length?'':(isKnownWarehousePosition(pos)?'✓ Posição livre no mapa':'⚠️ Posição fora do mapa configurado');
 }
 
@@ -1617,26 +1634,28 @@ function entConfirm(){
     if(!confirm(msg)) return;
   }
   const same=stock.find(s=>s.sku===entSku&&s.position===pos);
+  const hasDifferentSku=posEntries.some(s=>s.sku!==entSku);
   if(same){
     same.qty += entQty;
-    if(posEntries.length>1) same.boxType='mista';
+    if(hasDifferentSku) same.boxType='mista';
   } else {
-    const boxType=posEntries.length?'mista':'mista';
+    const boxType=posEntries.length?'mista':entBoxType;
     stock.push({id:Date.now()+Math.random(),sku:entSku,position:pos,qty:entQty,boxType});
   }
-  if(posEntries.length) stock.forEach(s=>{ if(s.position===pos) s.boxType='mista'; });
+  if(hasDifferentSku || (posEntries.length && !same)) stock.forEach(s=>{ if(s.position===pos) s.boxType='mista'; });
   saveStk();renderStock();
   logAction('Entrada de stock',entSku+' qty:'+entQty+' pos:'+pos);
   const info=skuInfo(entSku);
   entRecap.unshift({sku:entSku,name:info?.name||'',qty:entQty,pos});
   renderEntRecap();
   toast('✓ '+entSku+' · '+entQty+' unid. @ '+pos,'win');
-  entSku=null;entQty=1;
+  entSku=null;entQty=1;entSetBoxType('mista');
   document.getElementById('ent-qty').value=1;
   document.getElementById('ent-pos-manual').value='';
   document.getElementById('ent-pos-select').value='';
   document.getElementById('ent-pos-info').textContent='';
   document.getElementById('ent-pos-warning').style.display='none';
+  const boxWrap=document.getElementById('ent-box-type-wrap'); if(boxWrap) boxWrap.style.display='';
   entStepUI(1);
 }
 
@@ -1737,7 +1756,7 @@ function importTeorico(){
     logAction('Stock teorico',loaded+' SKUs');toast(loaded+' SKUs teoricos','win');
   };r.readAsArrayBuffer(file);
 }
-function clearTeorico(){teorico={};renderStock();updateTeoricoStatus();toast('Stock teorico removido','ok');}
+function clearTeorico(){if(!requireAdminPassword('remover o stock teorico'))return;teorico={};renderStock();updateTeoricoStatus();toast('Stock teorico removido','ok');}
 function dlTeoricoTpl(){
   const ws=XLSX.utils.aoa_to_sheet([['SKU','EAN','Quantidade'],['SKU-001','3614273123456',24],['','3605532000001',12]]);
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Teorico');XLSX.writeFile(wb,'template_teorico.xlsx');
@@ -3240,6 +3259,16 @@ function exportBackup() {
 
 const BACKUP_PASSWORD = 'loreal10';
 let _pendingRestoreFile = null;
+
+function requireAdminPassword(action) {
+  const pw = prompt('Password para ' + action + ':');
+  if (pw === null) return false;
+  if (pw !== BACKUP_PASSWORD) {
+    toast('Password incorreta', 'err');
+    return false;
+  }
+  return true;
+}
 
 function importBackup() {
   const file = document.getElementById('restoreFile').files[0];
