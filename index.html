@@ -990,7 +990,7 @@ select.input{appearance:auto;cursor:pointer;}
     <div class="search-panel-head">
       <input id="spInput" placeholder="Nome, marca, categoria, EAN, SKU..." autocomplete="off"
         oninput="spSearch()" onkeydown="spKey(event)">
-      <button class="btn btn-ghost btn-sm" onclick="closeSearchPanel()">✕</button>
+      <button class="btn btn-ghost btn-sm" type="button" onclick="event.stopPropagation();closeSearchPanel()">✕</button>
     </div>
     <div class="search-panel-results" id="spResults">
       <div class="sp-empty">Começa a escrever para pesquisar no catálogo...</div>
@@ -1806,6 +1806,7 @@ function _addLine(t,sku,qty){
   // Optimistic local update
   if(ex) ex.qty=newQty; else doc.lines.push({sku,qty:newQty});
   renderDocLines(t);
+  renderDocs(t);
   toast('✓ '+sku+' +'+qty,'win');
   logAction(t==='order'?'Linha encomenda':'Linha devolução', sku+' +'+qty+' → '+actId(t));
 }
@@ -1814,12 +1815,13 @@ function rmDocLine(t,sku){
   deleteDocLine(t, doc.id, sku);
   doc.lines=doc.lines.filter(l=>l.sku!==sku);
   renderDocLines(t);
+  renderDocs(t);
 }
 function updDocQty(t,sku,qty){
   const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
   const q=parseInt(qty)||1;
   const l=doc.lines.find(l=>l.sku===sku);
-  if(l){l.qty=q; saveDocLine(t, doc.id, sku, q);}
+  if(l){l.qty=q; saveDocLine(t, doc.id, sku, q); renderDocLines(t); renderDocs(t);}
 }
 function renderDocLines(t){
   const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
@@ -1852,6 +1854,27 @@ function dlDocTpl(t){
 
 // SCANNER
 function toggleScan(t){scanning[t]?stopScan(t):startScan(t);}
+function cameraUnavailableReason() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    return location.protocol === 'file:'
+      ? 'Câmara indisponível neste modo. Abre a app por HTTPS para usar o scanner.'
+      : 'Câmara indisponível neste browser.';
+  }
+  return '';
+}
+function scannerUnavailable(t, msg) {
+  const ids={order:['orderScannerBox','orderScanDot','orderScanStatus','btnOrderScan'],
+    return:['returnScannerBox','returnScanDot','returnScanStatus','btnReturnScan'],
+    inv:['invScannerBox','invScanDot','invScanStatus','btnInvScan'],
+    ent:['entScannerBox','entScanDot','entScanStatus','btnEntScan']};
+  const [boxEl,dotEl,stEl,btnEl]=ids[t]||[];
+  if(boxEl) document.getElementById(boxEl)?.classList.remove('visible');
+  if(dotEl) document.getElementById(dotEl)?.classList.remove('on');
+  if(stEl) document.getElementById(stEl).textContent=msg;
+  if(btnEl) document.getElementById(btnEl).textContent='📷 '+(t==='inv'||t==='ent'?'Scanner':'Iniciar');
+  scanning[t]=false;
+  toast(msg,'err');
+}
 function startScan(t){
   const ids={order:['orderScannerBox','#orderInteractive','orderScanDot','orderScanStatus','btnOrderScan'],
     return:['returnScannerBox','#returnInteractive','returnScanDot','returnScanStatus','btnReturnScan'],
@@ -1859,8 +1882,12 @@ function startScan(t){
     ent:['entScannerBox','#entInteractive','entScanDot','entScanStatus','btnEntScan']};
   const [boxEl,intEl,dotEl,stEl,btnEl]=ids[t];
   if(typeof Quagga==='undefined'){
-    toast('Scanner indisponível','err');
-    stopScan(t);
+    scannerUnavailable(t,'Scanner indisponível');
+    return;
+  }
+  const camReason = cameraUnavailableReason();
+  if(camReason){
+    scannerUnavailable(t,camReason);
     return;
   }
   document.getElementById(boxEl).classList.add('visible');
@@ -1888,7 +1915,7 @@ function startScan(t){
     numOfWorkers:2,
     halfSample:false
   },
-  err=>{if(err){toast('Câmara não disponível','err');stopScan(t);return;}
+  err=>{if(err){scannerUnavailable(t,'Câmara não disponível ou sem permissão.');return;}
     document.getElementById(stEl).textContent='Ativo';
     Quagga.start();
   });
@@ -3508,9 +3535,10 @@ function openSearchPanel(t) {
 }
 
 function closeSearchPanel() {
-  if (spDocType) stopScan(spDocType);
+  const t = spDocType;
   document.getElementById('spOverlay').classList.remove('open');
   spDocType = null; spSelSku = null;
+  try { if (t) stopScan(t); } catch(e) {}
 }
 
 function spClose(e) {
