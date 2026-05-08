@@ -535,7 +535,7 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-sub">Catálogo central — EAN, nome, marca, categoria, ml</div>
   <div class="page-desc" data-html-i="skudb_desc">Catálogo central de produtos. Importa ou cria SKUs com EAN, nome, marca, categoria e ml. Esta base alimenta a <strong>pesquisa inteligente</strong>, a leitura por scanner, a resolução de EAN para SKU e a identificação de produtos em stock, encomendas, picking e devoluções. Sem esta base, os SKUs continuam a funcionar, mas aparecem com menos detalhe.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()" data-tip="Descarregar template Excel para importar produtos" data-i="btn_template">⬇ Modelo</button></div>
+    <div class="card-header"><span class="card-title" data-i="card_import_catalog">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()" data-tip="Descarregar template Excel para importar produtos" data-i="btn_template">⬇ Modelo</button></div>
     <div class="card-body">
       <div class="alert a-sky">ℹ️ Colunas: <strong>SKU | EAN | Nome | Marca | Categoria | ML</strong></div>
       <div class="file-picker">
@@ -547,7 +547,7 @@ select.input{appearance:auto;cursor:pointer;}
   </div>
 
   <div class="card">
-    <div class="card-header"><span class="card-title">Catálogo</span>
+    <div class="card-header"><span class="card-title" data-i="card_catalog">Catálogo</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <input class="input input-sans" id="dbSearch" placeholder="Pesquisar..." style="width:180px;padding:5px 10px;font-size:12px;" oninput="renderSkuDb()">
         <button class="btn btn-ghost btn-sm" onclick="clearSkuDb()" data-tip="Apagar todo o catálogo de produtos">🗑 Limpar</button>
@@ -592,7 +592,7 @@ select.input{appearance:auto;cursor:pointer;}
 
   <div class="card">
     <div class="card-header">
-      <span class="card-title">Stock atual</span>
+      <span class="card-title" data-i="card_current_stock">Stock atual</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <input class="input input-sans" id="stockSearch" placeholder="Pesquisar..." style="width:130px;padding:5px 10px;font-size:12px;" oninput="renderStock()">
         <select class="input input-sans" id="stockFilter" style="width:95px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
@@ -621,7 +621,7 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-sub">Pedidos de preparação e saída</div>
   <div class="page-desc" data-html-i="orders_desc">Cria pedidos de saída de stock por cliente. Adiciona SKUs por scanner, pesquisa, inserção manual ou Excel. As quantidades entram em <em>Em carteira</em> e reduzem o <strong>stock disponível</strong> para evitar dupla reserva. Ao emitir a guia, a preparação prioriza posições em caixas mistas e segue o percurso do armazém. O stock real só é deduzido quando o picking é confirmado linha a linha; pedidos ainda não concluídos podem libertar as unidades ao serem cancelados.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')" data-tip="Criar novo pedido de saída de stock">＋ Nova</button></div>
+    <div class="card-header"><span class="card-title" data-i="card_orders">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')" data-tip="Criar novo pedido de saída de stock">＋ Nova</button></div>
     <div id="ordersList"><div class="empty"><div class="empty-icon">🛒</div><span data-i="misc_no_orders">Sem encomendas.</span></div></div>
   </div>
   <div id="orderEditor" style="display:none;">
@@ -690,8 +690,8 @@ select.input{appearance:auto;cursor:pointer;}
   <!-- GUIDES LIST -->
   <div id="pickingListSection">
     <div class="card">
-      <div class="card-header"><span class="card-title">Guias em aberto</span></div>
-      <div id="pickingGuidesList"><div class="empty"><div class="empty-icon">📋</div>Nenhuma guia emitida. Vai a <strong>Encomendas</strong> e clica em "Emitir Guia".</div></div>
+      <div class="card-header"><span class="card-title" data-i="card_open_guides">Guias em aberto</span></div>
+      <div id="pickingGuidesList"><div class="empty"><div class="empty-icon">📋</div><span data-i="misc_no_guides_pick">Nenhuma guia emitida. Vai a Encomendas e clica em "Emitir Guia Preparação".</span></div></div>
     </div>
   </div>
 
@@ -725,7 +725,7 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-sub">Artigos devolvidos</div>
   <div class="page-desc" data-html-i="returns_desc">Regista artigos devolvidos pelas lojas. Podes criar uma devolução manualmente, importar por Excel, adicionar por scanner/pesquisa ou gerar uma devolução a partir de um pedido concluído. Depois de validares as linhas, emite a guia de entrada para indicar onde os artigos devem ser colocados. O stock só volta a contar no armazém quando a colocação é confirmada.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Devoluções</span><div style="display:flex;gap:6px;"><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução manualmente">＋ Nova</button><button class="btn btn-ghost btn-sm" onclick="openImportFromOrder()" data-tip="Criar devolução a partir de um pedido concluído">📋 Criar devolução a partir de pedido</button></div></div>
+    <div class="card-header"><span class="card-title" data-i="card_returns">Devoluções</span><div style="display:flex;gap:6px;"><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução manualmente">＋ Nova</button><button class="btn btn-ghost btn-sm" onclick="openImportFromOrder()" data-tip="Criar devolução a partir de um pedido concluído">📋 Criar devolução a partir de pedido</button></div></div>
     <div id="returnsList"><div class="empty"><div class="empty-icon">↩️</div><span data-i="misc_no_rets">Sem devoluções.</span></div></div>
   </div>
   <div id="returnEditor" style="display:none;">
@@ -794,8 +794,8 @@ select.input{appearance:auto;cursor:pointer;}
   <!-- GUIDES LIST -->
   <div id="putawayListSection">
     <div class="card">
-      <div class="card-header"><span class="card-title">Guias de devolução em aberto</span></div>
-      <div id="putawayGuidesList"><div class="empty"><div class="empty-icon">↩️</div>Nenhuma guia emitida. Vai a <strong>Devoluções</strong> e clica em "Emitir Guia Devolução".</div></div>
+      <div class="card-header"><span class="card-title" data-i="card_open_return_guides">Guias de devolução em aberto</span></div>
+      <div id="putawayGuidesList"><div class="empty"><div class="empty-icon">↩️</div><span data-i="misc_no_guides_put">Nenhuma guia emitida. Vai a Devoluções e clica em "Emitir Guia Devolução".</span></div></div>
     </div>
   </div>
 
@@ -2460,7 +2460,7 @@ function renderPickingGuides() {
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <span class="badge ${stCls}">${stLbl}</span>
-          <button class="btn btn-primary btn-sm" onclick="iniciarPrep('${d.id}')">▶ Iniciar picking</button>
+          <button class="btn btn-primary btn-sm" onclick="iniciarPrep('${d.id}')">${tr('btn_start_pick')}</button>
           <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcelById('${d.id}')">⬇ Excel</button>
           <button class="btn btn-danger btn-sm" onclick="cancelGuia('${d.id}')">✕</button>
         </div>
@@ -2775,10 +2775,10 @@ function renderPutawayGuides() {
     return '<div style="padding:14px 16px;border-bottom:1px solid var(--border);">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">'+
       '<div><div class="mono" style="font-weight:700;font-size:14px">'+d.id+(d.client?' <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· '+d.client+'</span>':'')+'</div>'+
-      '<div style="font-size:11px;color:var(--muted);margin-top:3px">Emitida por '+g.emittedBy+' · '+g.emittedAt+(g.warns?.length?' · <span style="color:#dc2626">⚠️ '+g.warns.length+' sem posição</span>':'')+'</div></div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-top:3px">'+tr('misc_issued_by')+' '+g.emittedBy+' · '+g.emittedAt+(g.warns?.length?' · <span style="color:#dc2626">⚠️ '+g.warns.length+' sem posição</span>':'')+'</div></div>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
       '<span class="badge '+stCls+'">'+stLbl+'</span>'+
-      '<button class="btn btn-purple btn-sm" onclick="iniciarPutaway(\"'+d.id+'\")">▶ Iniciar</button>'+
+      '<button class="btn btn-purple btn-sm" onclick="iniciarPutaway(\"'+d.id+'\")">'+tr('btn_start_put')+'</button>'+
       '<button class="btn btn-ghost btn-sm" onclick="exportPutawayExcelById(\"'+d.id+'\")">⬇ Excel</button>'+
       '<button class="btn btn-danger btn-sm" onclick="cancelPutawayGuia(\"'+d.id+'\")">✕</button>'+
       '</div></div>'+
@@ -3209,6 +3209,13 @@ const LANGS = {
     btn_export:'⬇ Excel', btn_template:'⬇ Modelo', btn_template_excel:'⬇ Modelo Excel',
     btn_choose_file:'Escolher ficheiro', file_none:'Nenhum ficheiro selecionado',
     btn_login:'Entrar →', btn_outro:'Outro', btn_back:'← Voltar', btn_save:'Guardar',
+    card_import_catalog:'Importar catálogo',
+    card_catalog:'Catálogo',
+    card_current_stock:'Stock atual',
+    card_orders:'Encomendas',
+    card_returns:'Devoluções',
+    card_open_guides:'Guias em aberto',
+    card_open_return_guides:'Guias de devolução em aberto',
     warehouse_map_title:'Mapa do armazém',
     warehouse_map_shelves:'Estantes',
     warehouse_map_levels:'Prateleiras',
@@ -3290,6 +3297,13 @@ const LANGS = {
     btn_export:'⬇ Excel', btn_template:'⬇ Template', btn_template_excel:'⬇ Excel template',
     btn_choose_file:'Choose file', file_none:'No file selected',
     btn_login:'Enter →', btn_outro:'Other', btn_back:'← Back', btn_save:'Save',
+    card_import_catalog:'Import catalogue',
+    card_catalog:'Catalogue',
+    card_current_stock:'Current stock',
+    card_orders:'Orders',
+    card_returns:'Returns',
+    card_open_guides:'Open guides',
+    card_open_return_guides:'Open return guides',
     warehouse_map_title:'Warehouse map',
     warehouse_map_shelves:'Shelves',
     warehouse_map_levels:'Levels',
@@ -3365,6 +3379,13 @@ const LANGS = {
     btn_export:'⬇ Excel', btn_template:'⬇ Plantilla', btn_template_excel:'⬇ Plantilla Excel',
     btn_choose_file:'Elegir archivo', file_none:'Ningún archivo seleccionado',
     btn_login:'Entrar →', btn_outro:'Otro', btn_back:'← Volver', btn_save:'Guardar',
+    card_import_catalog:'Importar catálogo',
+    card_catalog:'Catálogo',
+    card_current_stock:'Stock actual',
+    card_orders:'Pedidos',
+    card_returns:'Devoluciones',
+    card_open_guides:'Guías abiertas',
+    card_open_return_guides:'Guías de devolución abiertas',
     warehouse_map_title:'Mapa del almacén',
     warehouse_map_shelves:'Estanterías',
     warehouse_map_levels:'Niveles',
