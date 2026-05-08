@@ -482,7 +482,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-skudb">
   <div class="page-title">Base de Dados Geral</div>
   <div class="page-sub">Catálogo central — EAN, nome, marca, categoria, ml</div>
-  <div class="page-desc">Catálogo central de todos os produtos. Importa um ficheiro Excel com SKU, EAN, nome, marca, categoria e ml. Esta base é usada em toda a app para <strong>pesquisa inteligente</strong>, preenchimento automático e identificação de produtos no picking. Sem esta base, os SKUs aparecem sem nome — começa sempre por aqui.</div>
+  <div class="page-desc" data-html-i="skudb_desc">Catálogo central de todos os produtos. Importa um ficheiro Excel com SKU, EAN, nome, marca, categoria e ml. Esta base é usada em toda a app para <strong>pesquisa inteligente</strong>, preenchimento automático e identificação de produtos no picking. Sem esta base, os SKUs aparecem sem nome — começa sempre por aqui.</div>
   <div class="card">
     <div class="card-header"><span class="card-title">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()" data-tip="Descarregar template Excel para importar produtos" data-i="btn_template">⬇ Modelo</button></div>
     <div class="card-body">
@@ -513,7 +513,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page active" id="page-stock">
   <div class="page-title">Stock</div>
   <div class="page-sub">Consulta de stock por posição</div>
-  <div class="page-desc">Mapa de stock real por posição de armazém (estantes A→K, andares 1→5, posições 1→4). Usa <strong>Dar Entrada</strong> para registar mercadoria recebida peça a peça ou por Excel. Usa <strong>📊 Inserir Stock Teórico</strong> para carregar o ficheiro do fornecedor com as quantidades que devias ter recebido — a tabela mostra imediatamente as diferenças entre o stock real e o esperado. <strong>Nota:</strong> só existe um stock teórico de cada vez; cada nova importação substitui o anterior. As colunas de <em>Em carteira</em>, <em>Em preparação</em> e <em>Disponível</em> atualizam automaticamente com os pedidos em curso.</div>
+  <div class="page-desc" data-html-i="stock_desc">Mapa de stock real por posição de armazém (estantes A→K, andares 1→5, posições 1→4). Usa <strong>Dar Entrada</strong> para registar mercadoria recebida peça a peça ou por Excel. Usa <strong>📊 Inserir Stock Teórico</strong> para carregar o ficheiro do fornecedor com as quantidades que devias ter recebido — a tabela mostra imediatamente as diferenças entre o stock real e o esperado. <strong>Nota:</strong> só existe um stock teórico de cada vez; cada nova importação substitui o anterior. As colunas de <em>Em carteira</em>, <em>Em preparação</em> e <em>Disponível</em> atualizam automaticamente com os pedidos em curso.</div>
 
   <!-- STOCK TABLE -->
   <div class="card">
@@ -542,7 +542,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-orders">
   <div class="page-title">Encomendas</div>
   <div class="page-sub">Pedidos de preparação e saída</div>
-  <div class="page-desc">Cria pedidos de saída de stock. Escolhe o cliente e adiciona SKUs por scanner, pesquisa inteligente ou Excel. Ao criar um pedido, as unidades ficam imediatamente em <em>Em carteira</em> e reduzem o <strong>stock disponível</strong> — evitando que dois pedidos em simultâneo comprometam as mesmas unidades. O stock real só é deduzido quando o operador confirma o picking linha a linha. Ao cancelar um pedido em estado <em>Aberto</em> ou <em>Guia emitida</em>, as unidades são libertadas e o stock disponível é revisto automaticamente.</div>
+  <div class="page-desc" data-html-i="orders_desc">Cria pedidos de saída de stock. Escolhe o cliente e adiciona SKUs por scanner, pesquisa inteligente ou Excel. Ao criar um pedido, as unidades ficam imediatamente em <em>Em carteira</em> e reduzem o <strong>stock disponível</strong> — evitando que dois pedidos em simultâneo comprometam as mesmas unidades. O stock real só é deduzido quando o operador confirma o picking linha a linha. Ao cancelar um pedido em estado <em>Aberto</em> ou <em>Guia emitida</em>, as unidades são libertadas e o stock disponível é revisto automaticamente.</div>
   <div class="card">
     <div class="card-header"><span class="card-title">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')" data-tip="Criar novo pedido de saída de stock">＋ Nova</button></div>
     <div id="ordersList"><div class="empty"><div class="empty-icon">🛒</div><span data-i="misc_no_orders">Sem encomendas.</span></div></div>
@@ -608,7 +608,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-picking">
   <div class="page-title">Para Preparação</div>
   <div class="page-sub">Guias de saída — preparação linha a linha</div>
-  <div class="page-desc">Lista de guias de picking emitidas e à espera de preparação. A guia tem o nome <em>Guia_</em> seguido do nome do pedido. Clica em <strong>▶ Iniciar picking</strong> para começar — o operador é guiado posição a posição pelo armazém, com o percurso otimizado por ordem de estante. O stock só é deduzido quando o picking é finalizado e confirmado.</div>
+  <div class="page-desc" data-html-i="pick_desc">Lista de guias de picking emitidas e à espera de preparação. A guia tem o nome <em>Guia_</em> seguido do nome do pedido. Clica em <strong>▶ Iniciar picking</strong> para começar — o operador é guiado posição a posição pelo armazém, com o percurso otimizado por ordem de estante. O stock só é deduzido quando o picking é finalizado e confirmado.</div>
 
   <!-- GUIDES LIST -->
   <div id="pickingListSection">
@@ -646,7 +646,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-returns">
   <div class="page-title">Devoluções</div>
   <div class="page-sub">Artigos devolvidos</div>
-  <div class="page-desc">Regista artigos devolvidos pelas lojas. Escolhe o cliente, adiciona os SKUs devolvidos e emite a guia de colocação. O stock só entra no sistema após o operador confirmar a colocação linha a linha. Devolução por scanner, pesquisa inteligente ou Excel.</div>
+  <div class="page-desc" data-html-i="returns_desc">Regista artigos devolvidos pelas lojas. Escolhe o cliente, adiciona os SKUs devolvidos e emite a guia de colocação. O stock só entra no sistema após o operador confirmar a colocação linha a linha. Devolução por scanner, pesquisa inteligente ou Excel.</div>
   <div class="card">
     <div class="card-header"><span class="card-title">Devoluções</span><div style="display:flex;gap:6px;"><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução manualmente">＋ Nova</button><button class="btn btn-ghost btn-sm" onclick="openImportFromOrder()" data-tip="Criar devolução a partir de um pedido concluído">📋 Criar devolução a partir de pedido</button></div></div>
     <div id="returnsList"><div class="empty"><div class="empty-icon">↩️</div><span data-i="misc_no_rets">Sem devoluções.</span></div></div>
@@ -712,7 +712,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-putaway">
   <div class="page-title">Dar Entrada</div>
   <div class="page-sub">Guias de entrada — colocação linha a linha</div>
-  <div class="page-desc">Lista de guias de entrada de stock por devolução, com nome <em>Guia_</em> seguido do nome da devolução. Clica em <strong>▶ Iniciar</strong> — o operador é indicado posição a posição onde colocar cada artigo, com percurso otimizado. O stock só é acrescido quando a colocação é finalizada e confirmada.</div>
+  <div class="page-desc" data-html-i="putaway_desc">Lista de guias de entrada de stock por devolução, com nome <em>Guia_</em> seguido do nome da devolução. Clica em <strong>▶ Iniciar</strong> — o operador é indicado posição a posição onde colocar cada artigo, com percurso otimizado. O stock só é acrescido quando a colocação é finalizada e confirmada.</div>
 
   <!-- GUIDES LIST -->
   <div id="putawayListSection">
@@ -2769,6 +2769,12 @@ const LANGS = {
     pick_title:'Para Preparação', pick_sub:'Guias de saída — preparação linha a linha',
     ret_title:'Devoluções', ret_sub:'Registo de artigos devolvidos',
     putaway_title:'Dar Entrada', putaway_sub:'Guias de entrada de stock — colocação linha a linha',
+    skudb_desc:'Catálogo central de todos os produtos. Importa um ficheiro Excel com SKU, EAN, nome, marca, categoria e ml. Esta base é usada em toda a app para <strong>pesquisa inteligente</strong>, preenchimento automático e identificação de produtos no picking. Sem esta base, os SKUs aparecem sem nome — começa sempre por aqui.',
+    stock_desc:'Mapa de stock real por posição de armazém (estantes A→K, andares 1→5, posições 1→4). Usa <strong>Dar Entrada</strong> para registar mercadoria recebida peça a peça ou por Excel. Usa <strong>📊 Inserir Stock Teórico</strong> para carregar o ficheiro do fornecedor com as quantidades que devias ter recebido — a tabela mostra imediatamente as diferenças entre o stock real e o esperado. <strong>Nota:</strong> só existe um stock teórico de cada vez; cada nova importação substitui o anterior. As colunas de <em>Em carteira</em>, <em>Em preparação</em> e <em>Disponível</em> atualizam automaticamente com os pedidos em curso.',
+    orders_desc:'Cria pedidos de saída de stock. Escolhe o cliente e adiciona SKUs por scanner, pesquisa inteligente ou Excel. Ao criar um pedido, as unidades ficam imediatamente em <em>Em carteira</em> e reduzem o <strong>stock disponível</strong> — evitando que dois pedidos em simultâneo comprometam as mesmas unidades. O stock real só é deduzido quando o operador confirma o picking linha a linha. Ao cancelar um pedido em estado <em>Aberto</em> ou <em>Guia emitida</em>, as unidades são libertadas e o stock disponível é revisto automaticamente.',
+    pick_desc:'Lista de guias de picking emitidas e à espera de preparação. A guia tem o nome <em>Guia_</em> seguido do nome do pedido. Clica em <strong>▶ Iniciar picking</strong> para começar — o operador é guiado posição a posição pelo armazém, com o percurso otimizado por ordem de estante. O stock só é deduzido quando o picking é finalizado e confirmado.',
+    returns_desc:'Regista artigos devolvidos pelas lojas. Escolhe o cliente, adiciona os SKUs devolvidos e emite a guia de colocação. O stock só entra no sistema após o operador confirmar a colocação linha a linha. Devolução por scanner, pesquisa inteligente ou Excel.',
+    putaway_desc:'Lista de guias de entrada de stock por devolução, com nome <em>Guia_</em> seguido do nome da devolução. Clica em <strong>▶ Iniciar</strong> — o operador é indicado posição a posição onde colocar cada artigo, com percurso otimizado. O stock só é acrescido quando a colocação é finalizada e confirmada.',
     // Buttons
     btn_new_order:'＋ Nova encomenda', btn_new_ret:'＋ Nova devolução',
     btn_emit_pick:'📦 Emitir Guia Preparação', btn_emit_put:'📥 Emitir Guia Entrada',
@@ -2837,6 +2843,12 @@ const LANGS = {
     pick_title:'For Preparation', pick_sub:'Outbound guides — line by line picking',
     ret_title:'Returns', ret_sub:'Register returned items',
     putaway_title:'Stock In', putaway_sub:'Inbound stock guides — line by line putaway',
+    skudb_desc:'Central catalogue for all products. Import an Excel file with SKU, EAN, name, brand, category and ml. This database is used across the app for <strong>smart search</strong>, automatic filling and product identification during picking. Without it, SKUs appear without names — always start here.',
+    stock_desc:'Real stock map by warehouse position (shelves A→K, levels 1→5, positions 1→4). Use <strong>Stock In</strong> to register received goods item by item or by Excel. Use <strong>📊 Insert Theoretical Stock</strong> to upload the supplier file with the quantities you should have received — the table immediately shows the differences between real and expected stock. <strong>Note:</strong> only one theoretical stock file exists at a time; each new import replaces the previous one. The <em>In cart</em>, <em>In preparation</em> and <em>Available</em> columns update automatically with active orders.',
+    orders_desc:'Create outbound stock orders. Choose the client and add SKUs by scanner, smart search or Excel. When an order is created, the units immediately move to <em>In cart</em> and reduce <strong>available stock</strong>, preventing two simultaneous orders from reserving the same units. Real stock is deducted only when the operator confirms picking line by line. When an order in <em>Open</em> or <em>Guide issued</em> status is cancelled, the units are released and available stock is recalculated automatically.',
+    pick_desc:'List of issued picking guides waiting for preparation. The guide name starts with <em>Guide_</em> followed by the order name. Click <strong>▶ Start picking</strong> to begin — the operator is guided position by position through the warehouse, with the route optimized by shelf order. Stock is deducted only when picking is finalized and confirmed.',
+    returns_desc:'Register items returned by stores. Choose the client, add the returned SKUs and issue the putaway guide. Stock only enters the system after the operator confirms putaway line by line. Returns can be added by scanner, smart search or Excel.',
+    putaway_desc:'List of inbound stock guides from returns, named <em>Guide_</em> followed by the return name. Click <strong>▶ Start</strong> — the operator is guided position by position on where to place each item, with an optimized route. Stock is added only when putaway is finalized and confirmed.',
     btn_new_order:'＋ New order', btn_new_ret:'＋ New return',
     btn_emit_pick:'📦 Issue Picking Guide', btn_emit_put:'📥 Issue Entry Guide',
     btn_start_pick:'▶ Start picking', btn_start_put:'▶ Start',
@@ -2898,6 +2910,12 @@ const LANGS = {
     pick_title:'Para Preparación', pick_sub:'Guías de salida — preparación línea a línea',
     ret_title:'Devoluciones', ret_sub:'Registro de artículos devueltos',
     putaway_title:'Entrada Stock', putaway_sub:'Guías de entrada de stock — colocación línea a línea',
+    skudb_desc:'Catálogo central de todos los productos. Importa un archivo Excel con SKU, EAN, nombre, marca, categoría y ml. Esta base se usa en toda la app para <strong>búsqueda inteligente</strong>, autocompletado e identificación de productos en el picking. Sin esta base, los SKUs aparecen sin nombre — empieza siempre aquí.',
+    stock_desc:'Mapa de stock real por posición de almacén (estanterías A→K, niveles 1→5, posiciones 1→4). Usa <strong>Entrada Stock</strong> para registrar mercancía recibida artículo a artículo o por Excel. Usa <strong>📊 Insertar Stock Teórico</strong> para cargar el archivo del proveedor con las cantidades que deberías haber recibido — la tabla muestra inmediatamente las diferencias entre el stock real y el esperado. <strong>Nota:</strong> solo existe un stock teórico cada vez; cada nueva importación sustituye la anterior. Las columnas de <em>En cartera</em>, <em>En preparación</em> y <em>Disponible</em> se actualizan automáticamente con los pedidos en curso.',
+    orders_desc:'Crea pedidos de salida de stock. Elige el cliente y añade SKUs por escáner, búsqueda inteligente o Excel. Al crear un pedido, las unidades pasan inmediatamente a <em>En cartera</em> y reducen el <strong>stock disponible</strong>, evitando que dos pedidos simultáneos reserven las mismas unidades. El stock real solo se deduce cuando el operador confirma el picking línea a línea. Al cancelar un pedido en estado <em>Abierto</em> o <em>Guía emitida</em>, las unidades se liberan y el stock disponible se recalcula automáticamente.',
+    pick_desc:'Lista de guías de picking emitidas y pendientes de preparación. La guía empieza por <em>Guía_</em> seguido del nombre del pedido. Haz clic en <strong>▶ Iniciar picking</strong> para empezar — el operador es guiado posición a posición por el almacén, con la ruta optimizada por orden de estantería. El stock solo se deduce cuando el picking se finaliza y confirma.',
+    returns_desc:'Registra artículos devueltos por las tiendas. Elige el cliente, añade los SKUs devueltos y emite la guía de colocación. El stock solo entra en el sistema cuando el operador confirma la colocación línea a línea. La devolución puede hacerse por escáner, búsqueda inteligente o Excel.',
+    putaway_desc:'Lista de guías de entrada de stock por devolución, con nombre <em>Guía_</em> seguido del nombre de la devolución. Haz clic en <strong>▶ Iniciar</strong> — el operador recibe la posición donde colocar cada artículo, con ruta optimizada. El stock solo se añade cuando la colocación se finaliza y confirma.',
     btn_new_order:'＋ Nuevo pedido', btn_new_ret:'＋ Nueva devolución',
     btn_emit_pick:'📦 Emitir Guía Preparación', btn_emit_put:'📥 Emitir Guía Entrada',
     btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
@@ -2973,6 +2991,11 @@ function setLang(lang) {
     const key = el.getAttribute('data-i');
     const val = tr(key);
     if (val) el.textContent = val;
+  });
+  document.querySelectorAll('[data-html-i]').forEach(el => {
+    const key = el.getAttribute('data-html-i');
+    const val = tr(key);
+    if (val) el.innerHTML = val;
   });
   // Update tooltips
   document.querySelectorAll('[data-tip-i]').forEach(el => {
