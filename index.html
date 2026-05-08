@@ -639,7 +639,7 @@ select.input{appearance:auto;cursor:pointer;}
         <div id="otab-manual" style="display:none;">
           <div class="g-add manual-add">
             <div class="field" style="margin:0"><label>SKU / EAN</label><input class="input mono" id="o-sku" placeholder="Código..."></div>
-            <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="o-qty" type="number" min="1" value="1" style="width:100%;"></div>
+            <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="o-qty" type="number" inputmode="numeric" min="1" placeholder="" style="width:100%;"></div>
             <button class="btn btn-primary" onclick="addDocLine('order')">＋</button>
           </div>
         </div>
@@ -743,7 +743,7 @@ select.input{appearance:auto;cursor:pointer;}
         <div id="rtab-manual" style="display:none;">
           <div class="g-add manual-add">
             <div class="field" style="margin:0"><label>SKU / EAN</label><input class="input mono" id="r-sku" placeholder="Código..."></div>
-            <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="r-qty" type="number" min="1" value="1" style="width:100%;"></div>
+            <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="r-qty" type="number" inputmode="numeric" min="1" placeholder="" style="width:100%;"></div>
             <button class="btn btn-purple" onclick="addDocLine('return')">＋</button>
           </div>
         </div>
@@ -859,7 +859,7 @@ select.input{appearance:auto;cursor:pointer;}
         <label>Quantidade a dar entrada</label>
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
           <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(-1)">−</button>
-          <input class="input mono" id="ent-qty" type="number" min="1" value="1"
+          <input class="input mono" id="ent-qty" type="number" inputmode="numeric" min="1" placeholder=""
             style="font-size:24px;font-weight:700;text-align:center;flex:1;padding:10px;">
           <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(1)">＋</button>
         </div>
@@ -968,7 +968,7 @@ select.input{appearance:auto;cursor:pointer;}
     <label style="font-size:12px;margin-bottom:6px;display:block;">Quantidade</label>
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;">
       <button onclick="scanQtyAdj(-1)" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:20px;cursor:pointer;line-height:1;">−</button>
-      <input type="number" id="scanQtyInput" min="1" value="1"
+      <input type="number" id="scanQtyInput" inputmode="numeric" min="1" placeholder=""
         style="width:80px;text-align:center;font-size:24px;font-weight:700;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:'IBM Plex Mono',monospace;"
         onkeydown="if(event.key==='Enter')scanQtyConfirm()">
       <button onclick="scanQtyAdj(1)" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:20px;cursor:pointer;line-height:1;">＋</button>
@@ -1066,7 +1066,7 @@ select.input{appearance:auto;cursor:pointer;}
         <div style="font-size:11px;color:var(--muted)" id="spSelName"></div>
       </div>
       <label style="margin:0;text-transform:none;font-size:12px;color:var(--muted);">Qty</label>
-      <input class="input qty-in" id="spQty" type="number" min="1" value="1" style="width:68px;">
+      <input class="input qty-in" id="spQty" type="number" inputmode="numeric" min="1" placeholder="" style="width:68px;">
       <button class="btn btn-primary" id="spAddBtn" onclick="spConfirm()">＋ Adicionar</button>
     </div>
   </div>
@@ -1219,6 +1219,13 @@ function acKey(ev,inpId,lstId,onEnter){
 }
 function closeAc(){document.querySelectorAll('.ac-list').forEach(a=>a.classList.remove('open'));}
 document.addEventListener('click',e=>{if(!e.target.closest('.ac-wrap'))closeAc();});
+
+function focusBlankQty(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.value='';
+  setTimeout(()=>{el.focus();try{el.select();}catch(e){}},80);
+}
 
 // SKU DB
 function importSkuDb(){
@@ -1528,7 +1535,7 @@ let entSku=null, entQty=1, entBoxType='mista', entRecap=[];
 function openEntrada(){
   entSku=null; entQty=1; entSetBoxType('mista');
   ['ent-search','ent-sku-manual','ent-pos-manual'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('ent-qty').value=1;
+  document.getElementById('ent-qty').value='';
   document.getElementById('ent-pos-select').value='';
   document.getElementById('ent-pos-info').textContent='';
   document.getElementById('ent-pos-warning').style.display='none';
@@ -1598,7 +1605,7 @@ function entStepUI(n){
     el.style.color=i<=n?'#fff':'var(--muted)';
   });
   if(n===1) setTimeout(()=>document.getElementById('ent-search').focus(),80);
-  if(n===2) setTimeout(()=>document.getElementById('ent-qty').focus(),80);
+  if(n===2) focusBlankQty('ent-qty');
   if(n===3) setTimeout(()=>document.getElementById('ent-pos-manual').focus(),80);
 }
 
@@ -1703,7 +1710,7 @@ function entConfirm(){
   renderEntRecap();
   toast('✓ '+entSku+' · '+entQty+' unid. @ '+pos,'win');
   entSku=null;entQty=1;entSetBoxType('mista');
-  document.getElementById('ent-qty').value=1;
+  document.getElementById('ent-qty').value='';
   document.getElementById('ent-pos-manual').value='';
   document.getElementById('ent-pos-select').value='';
   document.getElementById('ent-pos-info').textContent='';
@@ -1981,13 +1988,15 @@ function switchTab(t,tab){
   tabs.forEach(x=>document.getElementById(p+'tab-'+x).style.display=x===tab?'':'none');
   document.querySelectorAll(`#${t==='order'?'orderEditor':'returnEditor'} .inner-tab`).forEach((b,i)=>b.classList.toggle('active',tabs[i]===tab));
   if(tab!=='scanner')stopScan(t);
+  if(tab==='manual') setTimeout(()=>document.getElementById(p+'-sku').focus(),80);
 }
 function addDocLine(t){
   const se=t==='order'?'o-sku':'r-sku',qe=t==='order'?'o-qty':'r-qty';
   const sku=resolveSku(document.getElementById(se).value.trim());
   const qty=parseInt(document.getElementById(qe).value)||1;
   if(!sku){toast('SKU obrigatório','err');return;}
-  _addLine(t,sku,qty);document.getElementById(se).value='';document.getElementById(qe).value=1;
+  _addLine(t,sku,qty);document.getElementById(se).value='';document.getElementById(qe).value='';
+  setTimeout(()=>document.getElementById(se).focus(),80);
 }
 function docAddFromAc(t,sku){
   if(!sku)return;_addLine(t,sku,1);
@@ -1997,7 +2006,8 @@ function docAddFromAc(t,sku){
 function docAddManual(t,skuEl,qtyEl){
   const sku=document.getElementById(skuEl).value.trim();const qty=parseInt(document.getElementById(qtyEl).value)||1;
   if(!sku){toast('Seleciona um SKU','err');return;}
-  _addLine(t,sku,qty);document.getElementById(skuEl).value='';document.getElementById(qtyEl).value=1;
+  _addLine(t,sku,qty);document.getElementById(skuEl).value='';document.getElementById(qtyEl).value='';
+  setTimeout(()=>document.getElementById(skuEl).focus(),80);
 }
 function _addLine(t,sku,qty){
   const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
@@ -3807,9 +3817,9 @@ function showScanQtyModal(t, sku) {
   const info = skuInfo(sku);
   document.getElementById('scanQtySkuLabel').textContent = sku;
   document.getElementById('scanQtyNameLabel').textContent = info ? info.name + (info.brand?' · '+info.brand:'') : '';
-  document.getElementById('scanQtyInput').value = 1;
+  document.getElementById('scanQtyInput').value = '';
   document.getElementById('scanQtyModal').classList.add('visible');
-  setTimeout(() => document.getElementById('scanQtyInput').select(), 80);
+  setTimeout(() => { const el=document.getElementById('scanQtyInput'); el.focus(); el.select(); }, 80);
 }
 
 function scanQtyAdj(delta) {
@@ -3842,7 +3852,7 @@ function openSearchPanel(t) {
   document.getElementById('spInput').value = '';
   document.getElementById('spResults').innerHTML = '<div class="sp-empty">Começa a escrever para pesquisar no catálogo...</div>';
   document.getElementById('spQtyRow').style.display = 'none';
-  document.getElementById('spQty').value = 1;
+  document.getElementById('spQty').value = '';
   document.getElementById('spOverlay').classList.add('open');
   setTimeout(() => document.getElementById('spInput').focus(), 80);
 }
@@ -3898,8 +3908,7 @@ function spSelect(sku) {
   document.getElementById('spSelSku').textContent = sku;
   document.getElementById('spSelName').textContent = info ? info.name + (info.brand ? ' · ' + info.brand : '') : '';
   document.getElementById('spQtyRow').style.display = 'flex';
-  document.getElementById('spQty').value = 1;
-  document.getElementById('spQty').focus();
+  focusBlankQty('spQty');
   document.querySelectorAll('.sp-item').forEach(el => el.classList.toggle('sp-item-sel', el.dataset.sku === sku));
 }
 
