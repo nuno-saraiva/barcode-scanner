@@ -1946,8 +1946,8 @@ function _addLine(t,sku,qty){
   const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
   const ex=doc.lines.find(l=>l.sku===sku);
   const newQty = ex ? ex.qty+qty : qty;
-  // Write individual line doc — safe for concurrent edits
-  saveDocLine(t, doc.id, sku, newQty);
+  // Atomic increment keeps concurrent users from overwriting each other.
+  incrementDocLine(t, doc.id, sku, qty);
   // Optimistic local update
   if(ex) ex.qty=newQty; else doc.lines.push({sku,qty:newQty});
   renderDocLines(t);
@@ -3440,9 +3440,14 @@ function syncMobileLang() {
 // ══ PRESENCE (who is editing this doc) ══
 let _presenceRef = null;
 let _presenceInterval = null;
+let _presenceUnsub = null;
 
 function presenceKey(t, id) {
   return 'presence_' + t + '_' + id;
+}
+
+function presenceUserKey() {
+  return (currentUser ? currentUser.name : 'anon').replace(/[^a-zA-Z0-9_\-]/g, '_');
 }
 
 function startPresence(t, id) {
@@ -3451,28 +3456,32 @@ function startPresence(t, id) {
   const key = presenceKey(t, id);
   const ref = window._db.collection('presence').doc(key);
   _presenceRef = ref;
+  const myKey = presenceUserKey();
 
   // Write my presence
   const writePresence = () => {
     ref.set({
       docId: id,
       docType: t,
-      users: firebase.firestore.FieldValue.arrayUnion({
-        name: currentUser.name,
-        at: Date.now()
-      })
+      users: {
+        [myKey]: {
+          name: currentUser.name,
+          at: Date.now()
+        }
+      }
     }, {merge: true}).catch(() => {});
   };
   writePresence();
   _presenceInterval = setInterval(writePresence, 8000); // heartbeat every 8s
 
   // Listen for others
-  ref.onSnapshot(snap => {
+  _presenceUnsub = ref.onSnapshot(snap => {
     if (!snap.exists) return;
     const data = snap.data();
     const now = Date.now();
+    const users = Array.isArray(data.users) ? data.users : Object.values(data.users || {});
     // Filter: only users active in last 20s, not myself
-    const active = (data.users || []).filter(u =>
+    const active = users.filter(u =>
       u.name !== currentUser.name && (now - u.at) < 20000
     );
     renderPresenceBar(t, active);
@@ -3480,13 +3489,22 @@ function startPresence(t, id) {
 }
 
 function stopPresence() {
+  if (_presenceUnsub) { _presenceUnsub(); _presenceUnsub = null; }
   if (_presenceInterval) { clearInterval(_presenceInterval); _presenceInterval = null; }
   if (_presenceRef && currentUser) {
     // Remove my entry
+    const myKey = presenceUserKey();
     _presenceRef.get().then(snap => {
       if (!snap.exists) return;
-      const users = (snap.data().users || []).filter(u => u.name !== currentUser.name);
-      _presenceRef.set({users}, {merge: false}).catch(() => {});
+      const data = snap.data();
+      if (Array.isArray(data.users)) {
+        const users = data.users.filter(u => u.name !== currentUser.name);
+        _presenceRef.set({users}, {merge: false}).catch(() => {});
+      } else {
+        const users = {...(data.users || {})};
+        delete users[myKey];
+        _presenceRef.set({docId: data.docId, docType: data.docType, users}, {merge: false}).catch(() => {});
+      }
     }).catch(() => {});
     _presenceRef = null;
   }
@@ -3524,6 +3542,23 @@ async function saveDocLine(t, docId, sku, qty) {
   });
 }
 
+async function incrementDocLine(t, docId, sku, delta) {
+  if (!window._db) return;
+  const col = t === 'order' ? 'order_lines' : 'return_lines';
+  const ldid = lineDocId(docId, sku);
+  const ref = window._db.collection(col).doc(ldid);
+  await window._db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    const currentQty = snap.exists ? (parseInt(snap.data().qty) || 0) : 0;
+    tx.set(ref, {
+      docId, sku,
+      qty: currentQty + delta,
+      updatedAt: Date.now(),
+      updatedBy: currentUser ? currentUser.name : '—'
+    });
+  }).catch(() => saveDocLine(t, docId, sku, delta));
+}
+
 async function deleteDocLine(t, docId, sku) {
   if (!window._db) return;
   const col = t === 'order' ? 'order_lines' : 'return_lines';
@@ -3552,6 +3587,7 @@ function startLinesListener(t, docId) {
     if (!doc) return;
     doc.lines = lines.map(l => ({sku: l.sku, qty: l.qty}));
     renderDocLines(t);
+    renderDocs(t);
     renderStock(); // refresh disponivel
   });
 }
