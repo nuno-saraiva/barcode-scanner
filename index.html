@@ -555,7 +555,7 @@ select.input{appearance:auto;cursor:pointer;}
             <button class="btn btn-dark btn-sm" id="btnOrderScan" onclick="toggleScan('order')">📷 Iniciar</button>
             <span class="dot" id="orderScanDot"></span><span style="font-size:11px;color:var(--muted)" id="orderScanStatus">Inativo</span>
           </div>
-          <div class="alert a-info" style="font-size:12px;">Cada leitura adiciona 1 unidade.</div>
+          <div class="alert a-info" style="font-size:12px;">Após cada leitura escolhes a quantidade.</div>
         </div>
         <div id="otab-search" style="display:none;">
           <div style="padding:20px 0;text-align:center;">
@@ -754,6 +754,28 @@ select.input{appearance:auto;cursor:pointer;}
 
 
 
+
+<!-- SCAN QTY MODAL -->
+<div class="overlay" id="scanQtyModal">
+  <div class="modal" style="max-width:320px;text-align:center;">
+    <div class="modal-title">📷 Artigo lido</div>
+    <div id="scanQtySkuLabel" style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);margin:8px 0;"></div>
+    <div id="scanQtyNameLabel" style="font-size:13px;color:var(--muted);margin-bottom:16px;"></div>
+    <label style="font-size:12px;margin-bottom:6px;display:block;">Quantidade</label>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;">
+      <button onclick="scanQtyAdj(-1)" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:20px;cursor:pointer;line-height:1;">−</button>
+      <input type="number" id="scanQtyInput" min="1" value="1"
+        style="width:80px;text-align:center;font-size:24px;font-weight:700;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:'IBM Plex Mono',monospace;"
+        onkeydown="if(event.key==='Enter')scanQtyConfirm()">
+      <button onclick="scanQtyAdj(1)" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:20px;cursor:pointer;line-height:1;">＋</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="scanQtyCancel()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="scanQtyConfirm()">✓ Adicionar</button>
+    </div>
+  </div>
+</div>
+
 <!-- BACKUP PASSWORD MODAL -->
 <div class="overlay" id="backupPwModal">
   <div class="modal" style="max-width:360px;">
@@ -869,7 +891,9 @@ let invPos='',invBox='mista',invLines=[],invSess=[];
 // ── Firebase helpers (compat SDK) ──
 async function fbSet(col, id, data) {
   if (!window._db) return;
-  await window._db.collection(col).doc(id).set({...data, _updated: firebase.firestore.FieldValue.serverTimestamp()});
+  try {
+    await window._db.collection(col).doc(id).set({...data, _updated: firebase.firestore.FieldValue.serverTimestamp()});
+  } catch(e) { console.warn('fbSet failed:', col, e.message); }
 }
 async function fbDel(col, id) {
   if (!window._db) return;
@@ -1518,7 +1542,7 @@ function newDoc(t){
     const count = docSt(t).filter(d=>d.client===c).length + 1;
     const prefix = isOrder ? 'Pedido' : 'Devolução';
     const preview = prefix+' '+c+' '+count;
-    return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" onclick="selectClient('+JSON.stringify(c)+')">' +
+    return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" data-client="'+c.replace(/"/g,'&quot;')+'" onclick="selectClientByData(this)">' +
       '<span style="font-weight:600">'+c+'</span>' +
       '<span style="font-size:11px;color:var(--muted)">→ '+preview+'</span>' +
       '</button>';
@@ -1531,6 +1555,7 @@ function closeClientModal(){
   _pendingDocType = null;
 }
 
+function selectClientByData(btn){ selectClient(btn.getAttribute('data-client')); }
 function selectClient(client){
   // Save type BEFORE closeClientModal() clears it
   const t = _pendingDocType;
@@ -1549,7 +1574,6 @@ function selectClient(client){
   const id = prefix+' '+client+' '+count;
   docSt(t).unshift({id, client, lines:[], status:'open',
     createdAt: dateStr, createdBy: currentUser?currentUser.name:'—', snapshot:null});
-  docSv(t);
   // Navigate to the correct page first
   const pageId = t==='order' ? 'page-orders' : 'page-returns';
   const navBtn = document.querySelector('[data-page="'+(t==='order'?'orders':'returns')+'"]');
@@ -1558,6 +1582,7 @@ function selectClient(client){
   document.getElementById(pageId).classList.add('active');
   if(navBtn) navBtn.classList.add('active');
   renderDocs(t);
+  try { docSv(t); } catch(e) { console.warn('Save failed (offline?):', e); }
   openEd(t, id);
 }
 function renderDocs(t){
@@ -1589,8 +1614,9 @@ function delDoc(t,id){
 }
 function openEd(t,id){
   setAct(t,id);const doc=docSt(t).find(d=>d.id===id);
-  startPresence(t,id);
-  startLinesListener(t,id);
+  if(!doc){toast('Documento não encontrado','err');return;}
+  try{startPresence(t,id);}catch(e){}
+  try{startLinesListener(t,id);}catch(e){}
   document.getElementById(t==='order'?'editorTitle':'retEdTitle').textContent=doc.id;
   const _clientEl=document.getElementById(t==='order'?'o-client':'r-client');
   if(_clientEl) _clientEl.textContent=doc.client||'';
@@ -1695,7 +1721,7 @@ function startScan(t){
   Quagga.onDetected(res=>{
     if(scanCD[t])return;scanCD[t]=true;setTimeout(()=>scanCD[t]=false,1500);
     const sku=resolveSku(res.codeResult.code);
-    if(t==='inv')invAddFromAc(sku);else _addLine(t,sku,1);
+    if(t==='inv'){invAddFromAc(sku);}else{showScanQtyModal(t,sku);}
   });
 }
 function stopScan(t){
@@ -2573,7 +2599,7 @@ const LANGS = {
     tip_pick_list:'Lista de guias emitidas à espera de preparação. Clica em "Iniciar" para começar.',
     tip_put_list:'Lista de guias de devolução à espera de colocação. Clica em "Iniciar" para começar.',
     tip_cancel_doc:'Cancela o documento se ainda não foi para o armazém. Documentos confirmados não podem ser cancelados.',
-    tip_scanner:'Lê códigos de barras com a câmara. Cada leitura adiciona 1 unidade.',
+    tip_scanner:'Lê códigos de barras com a câmara. Após cada leitura escolhes a quantidade.',
     tip_search:'Pesquisa por nome, marca, categoria, EAN ou SKU.',
     tip_lang:'Seleciona o idioma da interface.',
     // Login
@@ -3171,6 +3197,39 @@ document.addEventListener('click', function(e) {
   if (typeof window._removeExtra === 'function') window._removeExtra(name);
   else if (typeof removeExtraUser === 'function') removeExtraUser(name);
 }, true); // capture phase — fires before parent handlers
+
+
+// ══ SCAN QTY MODAL ══
+let _scanQtyType = null, _scanQtySku = null;
+
+function showScanQtyModal(t, sku) {
+  _scanQtyType = t; _scanQtySku = sku;
+  const info = skuInfo(sku);
+  document.getElementById('scanQtySkuLabel').textContent = sku;
+  document.getElementById('scanQtyNameLabel').textContent = info ? info.name + (info.brand?' · '+info.brand:'') : '';
+  document.getElementById('scanQtyInput').value = 1;
+  document.getElementById('scanQtyModal').classList.add('visible');
+  setTimeout(() => document.getElementById('scanQtyInput').select(), 80);
+}
+
+function scanQtyAdj(delta) {
+  const el = document.getElementById('scanQtyInput');
+  el.value = Math.max(1, (parseInt(el.value)||1) + delta);
+}
+
+function scanQtyConfirm() {
+  const qty = parseInt(document.getElementById('scanQtyInput').value) || 1;
+  document.getElementById('scanQtyModal').classList.remove('visible');
+  if (_scanQtyType && _scanQtySku) {
+    _addLine(_scanQtyType, _scanQtySku, qty);
+  }
+  _scanQtyType = null; _scanQtySku = null;
+}
+
+function scanQtyCancel() {
+  document.getElementById('scanQtyModal').classList.remove('visible');
+  _scanQtyType = null; _scanQtySku = null;
+}
 
 // ══ INIT ══
 function _initApp() {
