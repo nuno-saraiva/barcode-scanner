@@ -532,6 +532,26 @@ select.input{appearance:auto;cursor:pointer;}
   <!-- STOCK TABLE -->
   <div class="card">
     <div class="card-header">
+      <span class="card-title">Mapa do armazém</span>
+      <span id="warehouseMapSummary" style="font-size:11px;color:var(--muted);font-family:var(--mono);"></span>
+    </div>
+    <div class="card-body">
+      <div class="g4">
+        <div class="field" style="margin:0"><label>Estantes</label><input class="input mono" id="wmShelves" type="number" min="1" max="26" value="11"></div>
+        <div class="field" style="margin:0"><label>Prateleiras</label><input class="input mono" id="wmLevels" type="number" min="1" max="9" value="5"></div>
+        <div class="field" style="margin:0"><label>Posições/prateleira</label><input class="input mono" id="wmSlots" type="number" min="1" max="9" value="4"></div>
+        <button class="btn btn-dark" onclick="saveWarehouseMapFromForm()">Guardar</button>
+      </div>
+      <div class="field" style="margin-top:12px;margin-bottom:0">
+        <label>Estantes personalizadas</label>
+        <input class="input mono" id="wmCustomShelves" placeholder="Opcional: A,B,C,D,E,K,N">
+      </div>
+      <div id="warehouseMapPreview" style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
       <span class="card-title">Stock atual</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <input class="input input-sans" id="stockSearch" placeholder="Pesquisar..." style="width:130px;padding:5px 10px;font-size:12px;" oninput="renderStock()">
@@ -1038,6 +1058,7 @@ let auditLog = []; // local session audit trail
 
 let activeOrd=null, activeRet=null;
 let stockSort={col:'position',dir:1};
+let warehouseMap={shelves:11,levels:5,slots:4,customShelves:''};
 let scanning={order:false,return:false,inv:false,ent:false};
 let scanCD={order:false,return:false,inv:false,ent:false};
 let curPick=null;
@@ -1068,6 +1089,7 @@ async function saveStk() { await fbSet('config', 'stock',  {items: stock}); }
 async function saveOrd() { await fbSet('config', 'orders', {items: orders}); }
 async function saveRet() { await fbSet('config', 'returns',{items: rets}); }
 async function saveTeorico() { await fbSet('config', 'teorico', {items: teorico}); }
+async function saveWarehouseMap() { await fbSet('config', 'warehouseMap', {items: warehouseMap}); }
 
 // ── Audit log ──
 function logAction(action, detail) {
@@ -1373,6 +1395,45 @@ function sortStock(col) {
 }
 function delStk(id){stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
 function clearStock(){if(!confirm(`Apagar ${stock.length} entradas?`))return;stock=[];saveStk();renderStock();toast('Stock limpo');}
+function warehouseShelves() {
+  const custom = String(warehouseMap.customShelves||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  if(custom.length) return custom;
+  return Array.from({length: Math.max(1, Math.min(26, parseInt(warehouseMap.shelves)||11))}, (_,i)=>String.fromCharCode(65+i));
+}
+function warehousePositions() {
+  const levels = Math.max(1, Math.min(9, parseInt(warehouseMap.levels)||5));
+  const slots = Math.max(1, Math.min(9, parseInt(warehouseMap.slots)||4));
+  const positions = [];
+  warehouseShelves().forEach(shelf => {
+    for(let level=1; level<=levels; level++){
+      for(let slot=1; slot<=slots; slot++) positions.push(shelf + level + slot);
+    }
+  });
+  return positions;
+}
+function isKnownWarehousePosition(pos) {
+  return warehousePositions().includes(String(pos||'').trim().toUpperCase());
+}
+function renderWarehouseMapForm() {
+  const s=document.getElementById('wmShelves'), l=document.getElementById('wmLevels'), p=document.getElementById('wmSlots'), c=document.getElementById('wmCustomShelves');
+  if(!s||!l||!p||!c)return;
+  s.value=warehouseMap.shelves||11; l.value=warehouseMap.levels||5; p.value=warehouseMap.slots||4; c.value=warehouseMap.customShelves||'';
+  const positions=warehousePositions();
+  const shelves=warehouseShelves();
+  document.getElementById('warehouseMapSummary').textContent = shelves.length+' est. · '+(warehouseMap.levels||5)+' prat. · '+(warehouseMap.slots||4)+' pos. · '+positions.length+' posições';
+  document.getElementById('warehouseMapPreview').innerHTML = 'Exemplo: <span class="mono">'+positions.slice(0,8).join(', ')+(positions.length>8?' ... '+positions[positions.length-1]:'')+'</span>';
+}
+function saveWarehouseMapFromForm() {
+  warehouseMap = {
+    shelves: Math.max(1, Math.min(26, parseInt(document.getElementById('wmShelves').value)||11)),
+    levels: Math.max(1, Math.min(9, parseInt(document.getElementById('wmLevels').value)||5)),
+    slots: Math.max(1, Math.min(9, parseInt(document.getElementById('wmSlots').value)||4)),
+    customShelves: document.getElementById('wmCustomShelves').value.trim()
+  };
+  saveWarehouseMap();
+  renderWarehouseMapForm();
+  toast('Mapa do armazém guardado','win');
+}
 function dlStockTpl(){
   const ws=XLSX.utils.aoa_to_sheet([['SKU','Posição','Quantidade','Tipo de Caixa'],['SKU-001','A11',10,'Mista'],['SKU-002','B23',20,'Exclusiva']]);
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');XLSX.writeFile(wb,'template_stock.xlsx');
@@ -1415,7 +1476,7 @@ function openEntrada(){
   switchEntradaMode('pick');
   // Populate position list sorted by warehouse route
   const sel=document.getElementById('ent-pos-select');
-  const positions=[...new Set(stock.map(s=>s.position))].sort((a,b)=>{
+  const positions=[...new Set([...warehousePositions(), ...stock.map(s=>s.position)])].sort((a,b)=>{
     const pa=parsePos(a),pb=parsePos(b);
     if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
     if(pa.floor!==pb.floor)return pa.floor-pb.floor;
@@ -1537,10 +1598,10 @@ function entUpdatePosWarning(){
   const otherSkus=stock.filter(s=>s.sku!==entSku&&s.position===pos);
   if(existing.length){
     warn.style.display='flex';
-    warn.textContent='⚠️ Esta posição já tem '+existing[0].qty+' unid. de '+entSku+'. Ao confirmar o stock passa a ser '+entQty+' unid.';
+    warn.textContent='⚠️ Esta posição já tem '+existing[0].qty+' unid. de '+entSku+'. Ao confirmar serão adicionadas '+entQty+' unid.';
   } else warn.style.display='none';
   if(otherSkus.length) info.innerHTML='<span style="color:var(--muted)">Outros SKUs aqui: '+otherSkus.map(s=>s.sku+' ('+s.qty+')').join(', ')+'</span>';
-  else info.textContent=existing.length?'':'✓ Posição nova';
+  else info.textContent=existing.length?'':(isKnownWarehousePosition(pos)?'✓ Posição livre no mapa':'⚠️ Posição fora do mapa configurado');
 }
 
 function entConfirm(){
@@ -1548,9 +1609,22 @@ function entConfirm(){
   if(!pos){toast('Indica a posição','err');return;}
   if(!entSku){toast('Sem produto selecionado','err');return;}
   const posEntries=stock.filter(s=>s.position===pos);
-  const boxType=posEntries[0]?.boxType||'mista';
-  stock=stock.filter(s=>!(s.sku===entSku&&s.position===pos));
-  stock.push({id:Date.now()+Math.random(),sku:entSku,position:pos,qty:entQty,boxType});
+  if(!isKnownWarehousePosition(pos) && !confirm('A posição '+pos+' não existe no mapa configurado. Queres usar esta posição mesmo assim?')) return;
+  if(posEntries.length){
+    const msg = 'A posição '+pos+' já contém:\n' +
+      posEntries.map(s=>'- '+s.sku+' · '+s.qty+' unid. · '+(normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva')).join('\n') +
+      '\n\nQueres adicionar '+entQty+' unid. de '+entSku+' nesta posição?';
+    if(!confirm(msg)) return;
+  }
+  const same=stock.find(s=>s.sku===entSku&&s.position===pos);
+  if(same){
+    same.qty += entQty;
+    if(posEntries.length>1) same.boxType='mista';
+  } else {
+    const boxType=posEntries.length?'mista':'mista';
+    stock.push({id:Date.now()+Math.random(),sku:entSku,position:pos,qty:entQty,boxType});
+  }
+  if(posEntries.length) stock.forEach(s=>{ if(s.position===pos) s.boxType='mista'; });
   saveStk();renderStock();
   logAction('Entrada de stock',entSku+' qty:'+entQty+' pos:'+pos);
   const info=skuInfo(entSku);
@@ -2030,8 +2104,8 @@ function sortPickLines(lines) {
   });
 }
 function parsePos(pos) {
-  // e.g. A11 → shelf=A, floor=1, slot=1 | B34 → shelf=B, floor=3, slot=4
-  const m = String(pos).match(/^([A-Ka-k])([1-5])([1-4])$/);
+  // e.g. A11 → shelf=A, shelf level=1, slot=1 | B34 → shelf=B, level=3, slot=4
+  const m = String(pos).match(/^([A-Za-z]+)([1-9])([1-9])$/);
   if (!m) return {shelf: pos, floor: 0, slot: 0};
   return {shelf: m[1].toUpperCase(), floor: parseInt(m[2]), slot: parseInt(m[3])};
 }
@@ -2775,6 +2849,7 @@ function renderRecentUsers() { /* replaced by avatar grid */ }
 // ══ FIRESTORE SYNC ══
 function initApp() {
   if (!window._db) { toast('Erro: Firebase não carregou. Recarrega a página.', 'err'); return; }
+  renderWarehouseMapForm();
 
   // Listen to all collections in real-time
   fbListen('config', docs => {
@@ -2784,6 +2859,7 @@ function initApp() {
       if (d.id === 'orders')  { orders = d.items||[]; renderDocs('order'); if(activeOrd) renderDocLines('order'); renderStock(); }
       if (d.id === 'returns') { rets = d.items||[]; renderDocs('return'); if(activeRet) renderDocLines('return'); renderStock(); }
       if (d.id === 'teorico') { teorico = d.items||[]; renderStock(); }
+      if (d.id === 'warehouseMap') { warehouseMap = {...warehouseMap, ...(d.items||{})}; renderWarehouseMapForm(); }
     });
   });
 
