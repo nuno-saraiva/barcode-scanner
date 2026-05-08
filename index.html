@@ -89,6 +89,15 @@ select.input{appearance:auto;cursor:pointer;}
 .semaphore{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
 
 /* SEARCH PANEL */
+
+.sp-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
+.sp-item:hover,.sp-item-sel{background:var(--surface2);}
+.sp-empty{padding:20px;text-align:center;color:var(--muted);font-size:13px;}
+.sp-qty-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface2);}
+.sp-selected-info{flex:1;}
+.sp-selected-sku{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;color:var(--accent);}
+.search-panel-results{flex:1;overflow-y:auto;max-height:350px;}
+
 .search-panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:60px 16px 20px;}
 .search-panel-overlay.open{display:flex;}
 .search-panel{background:var(--surface);border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;max-height:80vh;display:flex;flex-direction:column;}
@@ -1518,9 +1527,14 @@ function entSelectFromAc(sku){
   document.getElementById('ent-search').value='';
   acSel['ent-search']=null;
   const info=skuInfo(sku);
-  document.getElementById('ent-sku-preview').innerHTML=
-    `<div class="mono" style="font-weight:700;font-size:15px;color:var(--accent)">${sku}</div>`+
-    (info?`<div style="font-weight:600;margin-top:3px">${info.name}</div><div style="font-size:12px;color:var(--muted)">${info.brand}${info.ml?' · '+info.ml:''}</div>`:'');
+  let html = '<div class="mono" style="font-weight:700;font-size:15px;color:var(--accent)">'+sku+'</div>';
+  if(info){
+    html += '<div style="font-weight:600;margin-top:3px">'+info.name+'</div>';
+    html += '<div style="font-size:12px;color:var(--muted)">'+info.brand+(info.ml?' · '+info.ml:'')+'</div>';
+  } else {
+    html += '<div class="alert a-warn" style="margin-top:8px;font-size:12px;">⚠️ Código não encontrado na base de dados. O stock será registado apenas com este código.</div>';
+  }
+  document.getElementById('ent-sku-preview').innerHTML = html;
   entGoStep(2);
 }
 
@@ -1933,8 +1947,22 @@ function startScan(t){
     err=>{if(err){toast('Câmara não disponível','err');stopScan(t);return;}document.getElementById(stEl).textContent='Ativo';Quagga.start();});
   Quagga.onDetected(res=>{
     if(scanCD[t])return;scanCD[t]=true;setTimeout(()=>scanCD[t]=false,1500);
-    const sku=resolveSku(res.codeResult.code);
-    if(t==='inv'){invAddFromAc(sku);}else{showScanQtyModal(t,sku);}
+    const rawCode = res.codeResult.code;
+    const sku = resolveSku(rawCode);
+    if(t==='inv'){ invAddFromAc(sku); }
+    else if(t==='ent'){
+      // Dar Entrada flow — go to step 2 (quantity)
+      stopScan('ent');
+      entSelectFromAc(sku);
+      // If SKU not in database, still show it with a warning
+      if(!skuInfo(sku)){
+        document.getElementById('ent-sku-preview').innerHTML =
+          '<div class="mono" style="font-weight:700;font-size:15px;color:var(--accent)">'+sku+'</div>'+
+          '<div class="alert a-warn" style="margin-top:6px;font-size:12px;">⚠️ SKU/EAN não encontrado na base de dados. Podes continuar com o código: '+rawCode+'</div>';
+        entGoStep(2);
+      }
+    }
+    else{ showScanQtyModal(t, sku); }
   });
 }
 function stopScan(t){
@@ -3444,6 +3472,88 @@ function scanQtyConfirm() {
 function scanQtyCancel() {
   document.getElementById('scanQtyModal').classList.remove('visible');
   _scanQtyType = null; _scanQtySku = null;
+}
+
+
+// ══ SEARCH PANEL ══
+let spDocType = null;
+let spSelSku = null;
+
+function openSearchPanel(t) {
+  spDocType = t;
+  spSelSku = null;
+  document.getElementById('spInput').value = '';
+  document.getElementById('spResults').innerHTML = '<div class="sp-empty">Começa a escrever para pesquisar no catálogo...</div>';
+  document.getElementById('spQtyRow').style.display = 'none';
+  document.getElementById('spQty').value = 1;
+  document.getElementById('spOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('spInput').focus(), 80);
+}
+
+function closeSearchPanel() {
+  document.getElementById('spOverlay').classList.remove('open');
+  spDocType = null; spSelSku = null;
+}
+
+function spClose(e) {
+  if (e.target === document.getElementById('spOverlay')) closeSearchPanel();
+}
+
+function spSearch() {
+  const q = document.getElementById('spInput').value.trim().toLowerCase();
+  const res = document.getElementById('spResults');
+  if (!q) { res.innerHTML = '<div class="sp-empty">Começa a escrever para pesquisar no catálogo...</div>'; return; }
+  if (!skuDb.length) { res.innerHTML = '<div class="sp-empty">Base de dados vazia. Importa primeiro na Base de Dados Geral.</div>'; return; }
+
+  const hits = skuDb.filter(s => {
+    return [s.sku, s.ean, s.name, s.brand, s.category, s.ml].filter(Boolean).join(' ').toLowerCase().includes(q);
+  }).slice(0, 12);
+
+  if (!hits.length) { res.innerHTML = '<div class="sp-empty">Sem resultados para "' + q + '".</div>'; return; }
+
+  res.innerHTML = hits.map(s => {
+    const disp = spDocType ? (() => {
+      const realBySku = {}; stock.forEach(st => { realBySku[st.sku] = (realBySku[st.sku]||0) + st.qty; });
+      const metrics = calcStockMetrics();
+      const d = calcDisponivel(s.sku, realBySku[s.sku]||0, metrics);
+      return '<span style="font-size:11px;color:' + (d <= 0 ? '#dc2626' : d <= 5 ? '#d97706' : '#065f46') + ';font-weight:700;">' + d + ' disp.</span>';
+    })() : '';
+    return '<div class="sp-item" data-sku="' + s.sku + '" onclick="spSelect(' + JSON.stringify(s.sku) + ')">' +
+      '<div style="font-weight:700;font-size:13px;">' + s.name + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);">' + s.brand + (s.ml ? ' · ' + s.ml : '') + ' · <span class="mono">' + s.sku + '</span> ' + disp + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function spKey(e) {
+  if (e.key === 'Enter') {
+    const first = document.querySelector('.sp-item');
+    if (first) first.click();
+  }
+  if (e.key === 'Escape') closeSearchPanel();
+}
+
+function spSelect(sku) {
+  spSelSku = sku;
+  const info = skuDb.find(s => s.sku === sku);
+  document.getElementById('spSelSku').textContent = sku;
+  document.getElementById('spSelName').textContent = info ? info.name + (info.brand ? ' · ' + info.brand : '') : '';
+  document.getElementById('spQtyRow').style.display = 'flex';
+  document.getElementById('spQty').value = 1;
+  document.getElementById('spQty').focus();
+  document.querySelectorAll('.sp-item').forEach(el => el.classList.toggle('sp-item-sel', el.dataset.sku === sku));
+}
+
+function spConfirm() {
+  if (!spSelSku || !spDocType) return;
+  const qty = parseInt(document.getElementById('spQty').value) || 1;
+  _addLine(spDocType, spSelSku, qty);
+  // Reset for next item
+  spSelSku = null;
+  document.getElementById('spQtyRow').style.display = 'none';
+  document.getElementById('spInput').value = '';
+  document.getElementById('spResults').innerHTML = '<div class="sp-empty">Produto adicionado! Pesquisa o próximo.</div>';
+  setTimeout(() => document.getElementById('spInput').focus(), 80);
 }
 
 // ══ INIT ══
