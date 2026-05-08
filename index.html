@@ -136,6 +136,10 @@ select.input{appearance:auto;cursor:pointer;}
 .tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .tbl tr:last-child td{border-bottom:none;}
 .tbl tr:hover td{background:var(--bg);}
+.table-scroll{overflow-x:auto;}
+.table-scroll-top{height:14px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--border);background:var(--surface2);}
+.table-scroll-spacer{height:1px;}
+#stockTable th{position:sticky;top:52px;z-index:5;}
 @media(min-width:769px){
   .tbl[data-resizable-cols] .col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:2;touch-action:none;}
   .tbl[data-resizable-cols] .col-resizer:hover{background:rgba(232,66,10,.18);}
@@ -592,7 +596,8 @@ select.input{appearance:auto;cursor:pointer;}
       </div>
     </div>
     
-    <div style="overflow-x:auto;"><table class="tbl" id="stockTable" data-resizable-cols>
+    <div class="table-scroll-top" data-scroll-sync="stock"><div class="table-scroll-spacer" id="stockTopScrollSpacer"></div></div>
+    <div class="table-scroll" id="stockTableScroll" data-scroll-sync="stock"><table class="tbl" id="stockTable" data-resizable-cols>
       <thead id="stockThead"></thead>
       <tbody id="stockBody"></tbody>
     </table></div>
@@ -1268,6 +1273,7 @@ function enableResizableTables() {
           document.body.classList.remove('resizing-cols');
           saved[index] = th.offsetWidth;
           localStorage.setItem(key, JSON.stringify(saved));
+          setupStockScrollSync();
         };
         document.addEventListener('mousemove', move);
         document.addEventListener('mouseup', up);
@@ -1275,6 +1281,27 @@ function enableResizableTables() {
       th.appendChild(grip);
     });
   });
+  setupStockScrollSync();
+}
+
+function setupStockScrollSync() {
+  const top = document.querySelector('.table-scroll-top[data-scroll-sync="stock"]');
+  const bottom = document.getElementById('stockTableScroll');
+  const table = document.getElementById('stockTable');
+  const spacer = document.getElementById('stockTopScrollSpacer');
+  if(!top||!bottom||!table||!spacer)return;
+  spacer.style.width = table.scrollWidth + 'px';
+  if(top._syncReady)return;
+  let lock = false;
+  const sync = (from, to) => {
+    if(lock)return;
+    lock = true;
+    to.scrollLeft = from.scrollLeft;
+    lock = false;
+  };
+  top.addEventListener('scroll',()=>sync(top,bottom));
+  bottom.addEventListener('scroll',()=>sync(bottom,top));
+  top._syncReady = true;
 }
 
 // SKU DB
@@ -1425,11 +1452,15 @@ function renderStock(){
     return h;
   }
     let thCols = '<tr>'+
-    th('sku','SKU')+
     th('ean','EAN')+
     th('name','Produto')+
     th('position','Posição')+
     th('qty','Real','Stock físico contado no armazém');
+  if(hasTeorico){
+    thCols += th('teorico','Teórico');
+    thCols += th('diff','Diferença');
+  }
+  thCols += th('disponivel','Disponível','Stock real − Em carteira − Em preparação + Devoluções realizadas','background:#e8f4f0;color:#065f46;font-weight:800;');
   if(hasMov){
     thCols += th('carteira','Cart.','Pedidos abertos ainda sem guia emitida');
     thCols += th('emPrep','Prep.','Pedidos com guia emitida mas ainda não em preparação ativa');
@@ -1437,31 +1468,26 @@ function renderStock(){
     thCols += th('devPedidas','Dev. Ped.','Devoluções pedidas sem guia emitida');
     thCols += th('devPrep','Dev. Col.','Devoluções com guia emitida, a aguardar colocação');
     thCols += th('devFeitas','Dev. Feitas','Devoluções já processadas e em stock');
-    thCols += th('disponivel','Disponível','Stock real − Em carteira − Em preparação + Devoluções realizadas','background:#e8f4f0;color:#065f46;font-weight:800;');
   }
-  if(hasTeorico){
-    thCols += th('teorico','Teórico');
-    thCols += th('diff','Diferença');
-  }
-  thCols += '<th>Tipo</th><th>Estado</th><th></th></tr>';
+  thCols += '<th>Tipo</th><th data-tip="Estado por quantidade real: OK acima de 5, Baixo entre 1 e 5, Esgotado quando é 0.">Estado</th><th></th></tr>';
   thead.innerHTML = thCols;
 
-  const totalCols = 5 + (hasMov?7:0) + (hasTeorico?2:0) + 3;
+  const totalCols = 5 + 1 + (hasMov?6:0) + (hasTeorico?2:0) + 3;
   const body=document.getElementById('stockBody');
-  if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+tr('misc_no_stock')+'</div></td></tr>';enableResizableTables();return;}
+  if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+tr('misc_no_stock')+'</div></td></tr>';enableResizableTables();setTimeout(setupStockScrollSync,0);return;}
 
   body.innerHTML=filtered.map(s=>{
     const st=s.qty===0?'<span class="badge bdg-rd">'+tr('st_empty')+'</span>':s.qty<=5?'<span class="badge bdg-or">'+tr('st_low')+'</span>':'<span class="badge bdg-gn">'+tr('st_ok')+'</span>';
     const bb=normBoxType(s.boxType)==='mista'?'<span class="badge bdg-mx">'+tr('box_mixed')+'</span>':'<span class="badge bdg-ex">'+tr('box_excl')+'</span>';
 
+    const disponivel=calcDisponivel(s.sku, realBySku[s.sku]||0, metrics);
+    const dispClass=disponivel<=0?'color:#dc2626;font-weight:800':disponivel<=5?'color:#d97706;font-weight:700':'color:#065f46;font-weight:700';
+    const dispCol='<td class="mono" style="'+dispClass+';background:#f0fdf4;padding:8px 10px;">'+disponivel+'</td>';
     let movCols='';
     if(hasMov){
       const m=metrics[s.sku]||{};
-      const disponivel=calcDisponivel(s.sku, realBySku[s.sku]||0, metrics);
-      const dispClass=disponivel<=0?'color:#dc2626;font-weight:800':disponivel<=5?'color:#d97706;font-weight:700':'color:#065f46;font-weight:700';
       const cell = v => v>0?'<td class="mono" style="color:#1e40af">'+v+'</td>':'<td class="mono" style="color:var(--muted)">—</td>';
-      movCols=cell(m.carteira||0)+cell(m.emPrep||0)+cell(m.faturado||0)+cell(m.devPedidas||0)+cell(m.devPrep||0)+cell(m.devFeitas||0)+
-        '<td class="mono" style="'+dispClass+';background:#f0fdf4;padding:8px 10px;">'+disponivel+'</td>';
+      movCols=cell(m.carteira||0)+cell(m.emPrep||0)+cell(m.faturado||0)+cell(m.devPedidas||0)+cell(m.devPrep||0)+cell(m.devFeitas||0);
     }
 
     let tCols='';
@@ -1473,12 +1499,13 @@ function renderStock(){
     }
 
     const info=skuInfo(s.sku);
-    return '<tr><td class="mono" style="font-weight:700">'+s.sku+'</td><td class="mono" style="color:var(--muted)">'+(info?.ean||'—')+'</td><td>'+skuPill(s.sku)+'</td><td class="mono">'+s.position+'</td>'+
-      '<td class="mono" style="font-weight:700">'+s.qty+'</td>'+movCols+tCols+
+    return '<tr><td class="mono" style="font-weight:700">'+(info?.ean||s.sku)+'</td><td>'+skuPill(s.sku)+'</td><td class="mono">'+s.position+'</td>'+
+      '<td class="mono" style="font-weight:700">'+s.qty+'</td>'+tCols+dispCol+movCols+
       '<td>'+bb+'</td><td>'+st+'</td>'+
       '<td><button class="btn btn-ghost btn-sm" onclick="delStk('+JSON.stringify(s.id)+')">✕</button></td></tr>';
   }).join('');
   enableResizableTables();
+  setTimeout(setupStockScrollSync,0);
 }
 
 function sortStock(col) {
@@ -1486,7 +1513,7 @@ function sortStock(col) {
   else { stockSort.col = col; stockSort.dir = col==='sku'||col==='ean'||col==='name'||col==='position'?1:-1; }
   renderStock();
 }
-function delStk(id){stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
+function delStk(id){if(!requireAdminPassword('apagar esta linha de stock'))return;stock=stock.filter(s=>s.id!==id);saveStk();renderStock();}
 function clearStock(){if(!confirm(`Apagar ${stock.length} entradas?`))return;if(!requireAdminPassword('apagar todo o stock'))return;stock=[];saveStk();renderStock();toast('Stock limpo');}
 function safeFileName(name){return String(name||'export').replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,'_');}
 function exportStockExcel(){
@@ -1494,22 +1521,24 @@ function exportStockExcel(){
   const metrics=calcStockMetrics();
   const realBySku={};stock.forEach(s=>{realBySku[s.sku]=(realBySku[s.sku]||0)+s.qty;});
   const hasTeorico=Object.keys(teorico).length>0;
-  const rows=[['EAN','SKU','Produto','Marca','ML','Posição','Real','Tipo de caixa','Estado','Cart.','Prep.','Fact.','Dev. Ped.','Dev. Col.','Dev. Feitas','Disponível']];
+  const rows=[['EAN','Produto','Marca','ML','Posição','Real']];
   if(hasTeorico) rows[0].push('Teórico','Diferença');
+  rows[0].push('Disponível','Cart.','Prep.','Fact.','Dev. Ped.','Dev. Col.','Dev. Feitas','Tipo de caixa','Estado','SKU');
   stock.slice().sort((a,b)=>compareWarehousePosition(a,b)).forEach(s=>{
     const info=skuInfo(s.sku);
     const m=metrics[s.sku]||{};
     const disp=calcDisponivel(s.sku,realBySku[s.sku]||0,metrics);
     const status=s.qty===0?'Esgotado':s.qty<=5?'Baixo':'OK';
-    const row=[info?.ean||'',s.sku,info?.name||'',info?.brand||'',info?.ml||'',s.position,s.qty,normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva',status,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,disp];
+    const row=[info?.ean||'',info?.name||'',info?.brand||'',info?.ml||'',s.position,s.qty];
     if(hasTeorico){
       const tq=teorico[s.sku]!==undefined?teorico[s.sku]:'';
       row.push(tq,tq===''?'':s.qty-tq);
     }
+    row.push(disp,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva',status,s.sku);
     rows.push(row);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:16},{wch:14},{wch:30},{wch:16},{wch:8},{wch:10},{wch:8},{wch:14},{wch:10},{wch:8},{wch:8},{wch:8},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10}];
+  ws['!cols']=[{wch:16},{wch:30},{wch:16},{wch:8},{wch:10},{wch:8},{wch:10},{wch:10},{wch:12},{wch:8},{wch:8},{wch:8},{wch:10},{wch:10},{wch:12},{wch:14},{wch:10},{wch:14}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');
   XLSX.writeFile(wb,'stock_atual.xlsx');toast('Excel exportado','win');
 }
