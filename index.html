@@ -1253,7 +1253,7 @@ function renderStock(){
 
   const filtered=stock.filter(s=>{
     const i=skuInfo(s.sku);const str=[s.sku,s.position,i?.name,i?.brand,i?.category].filter(Boolean).join(' ').toLowerCase();
-    return str.includes(q)&&(!ft||s.boxType===ft);
+    return str.includes(q)&&(!ft||normBoxType(s.boxType)===ft);
   }).sort((a,b)=>{
     const rb={};stock.forEach(s=>{rb[s.sku]=(rb[s.sku]||0)+s.qty;});
     const mx=calcStockMetrics();
@@ -1324,7 +1324,7 @@ function renderStock(){
 
   body.innerHTML=filtered.map(s=>{
     const st=s.qty===0?'<span class="badge bdg-rd">'+tr('st_empty')+'</span>':s.qty<=5?'<span class="badge bdg-or">'+tr('st_low')+'</span>':'<span class="badge bdg-gn">'+tr('st_ok')+'</span>';
-    const bb=s.boxType==='mista'?'<span class="badge bdg-mx">'+tr('box_mixed')+'</span>':'<span class="badge bdg-ex">'+tr('box_excl')+'</span>';
+    const bb=normBoxType(s.boxType)==='mista'?'<span class="badge bdg-mx">'+tr('box_mixed')+'</span>':'<span class="badge bdg-ex">'+tr('box_excl')+'</span>';
 
     let movCols='';
     if(hasMov){
@@ -1549,7 +1549,7 @@ function importStock(){
       const sku=resolveSku(String(row[0]||'').trim());
       const pos=String(row[1]||'').trim().toUpperCase();
       const qty=parseInt(row[2])||0;
-      const bt=String(row[3]||'').toLowerCase().includes('excl')?'exclusiva':'mista';
+      const bt=normBoxType(row[3]);
       if(!sku||!pos)return;
       stock=stock.filter(s=>!(s.sku===sku&&s.position===pos));
       stock.push({id:Date.now()+Math.random(),sku,position:pos,qty,boxType:bt});
@@ -1943,12 +1943,24 @@ function stopScan(t){
 
 // ══ WAREHOUSE POSITION SORT ══
 // Format: A11 = estante A, andar 1, posição 1 → sort: estante(A-K), andar(1-5), pos(1-4)
+function normBoxType(type) {
+  const v = String(type || 'mista').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return /excl|unic|mono|single/.test(v) ? 'exclusiva' : 'mista';
+}
+function boxPriority(type) {
+  return normBoxType(type) === 'mista' ? 0 : 1;
+}
+function compareWarehousePosition(a, b) {
+  const pa = parsePos(a.position), pb = parsePos(b.position);
+  if (pa.shelf !== pb.shelf) return pa.shelf.localeCompare(pb.shelf);
+  if (pa.floor !== pb.floor) return pa.floor - pb.floor;
+  return pa.slot - pb.slot;
+}
 function sortPickLines(lines) {
   return [...lines].sort((a, b) => {
-    const pa = parsePos(a.position), pb = parsePos(b.position);
-    if (pa.shelf !== pb.shelf) return pa.shelf.localeCompare(pb.shelf);
-    if (pa.floor !== pb.floor) return pa.floor - pb.floor;
-    return pa.slot - pb.slot;
+    const bp = boxPriority(a.boxType) - boxPriority(b.boxType);
+    if (bp) return bp;
+    return compareWarehousePosition(a, b);
   });
 }
 function parsePos(pos) {
@@ -1970,11 +1982,9 @@ function emitirGuia() {
     // Priority: caixas mistas first, then exclusivas; within each group sort by position
     const positions = stock.filter(s => s.sku === line.sku && s.qty > 0)
       .sort((a, b) => {
-        if (a.boxType !== b.boxType) return a.boxType === 'mista' ? -1 : 1;
-        const pa = parsePos(a.position), pb = parsePos(b.position);
-        if (pa.shelf !== pb.shelf) return pa.shelf.localeCompare(pb.shelf);
-        if (pa.floor !== pb.floor) return pa.floor - pb.floor;
-        return pa.slot - pb.slot;
+        const bp = boxPriority(a.boxType) - boxPriority(b.boxType);
+        if (bp) return bp;
+        return compareWarehousePosition(a, b);
       });
 
     if (!positions.length) {
@@ -1985,7 +1995,7 @@ function emitirGuia() {
     positions.forEach(pos => {
       if (rem <= 0) return;
       const take = Math.min(rem, pos.qty);
-      pl.push({sku: line.sku, position: pos.position, qty: take, qtyDone: take, stockId: pos.id, boxType: pos.boxType, ruptura: false, status: 'pending'});
+      pl.push({sku: line.sku, position: pos.position, qty: take, qtyDone: take, stockId: pos.id, boxType: normBoxType(pos.boxType), ruptura: false, status: 'pending'});
       rem -= take;
     });
     if (rem > 0) {
@@ -2305,24 +2315,27 @@ function genDoc(t) {
   const pl = [], warns = [];
   doc.lines.forEach(line => {
     let rem = line.qty;
-    // Priority: mista first, then exclusiva, sorted by warehouse route
-    const positions = [...stock.filter(s=>s.sku===line.sku&&s.boxType==='mista'),
-                       ...stock.filter(s=>s.sku===line.sku&&s.boxType==='exclusiva')]
-      .sort((a,b)=>{ const pa=parsePos(a.position),pb=parsePos(b.position);
-        if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
-        if(pa.floor!==pb.floor)return pa.floor-pb.floor; return pa.slot-pb.slot; });
+    // Priority: caixas mistas first, then exclusivas/mono; within each group sort by route.
+    const positions = stock.filter(s=>s.sku===line.sku&&s.qty>0)
+      .sort((a,b)=>{
+        const bp = boxPriority(a.boxType) - boxPriority(b.boxType);
+        if(bp) return bp;
+        return compareWarehousePosition(a,b);
+      });
     if (positions.length) {
       positions.forEach(p=>{ if(rem<=0)return;
-        pl.push({sku:line.sku,position:p.position,qty:Math.min(rem,999),stockId:p.id,boxType:p.boxType,status:'pending',qtyDone:Math.min(rem,999)});rem=0;});
+        pl.push({sku:line.sku,position:p.position,qty:Math.min(rem,999),stockId:p.id,boxType:normBoxType(p.boxType),status:'pending',qtyDone:Math.min(rem,999)});rem=0;});
     }
     if (rem > 0) {
       pl.push({sku:line.sku,position:'???',qty:rem,stockId:null,boxType:'mista',status:'pending',qtyDone:rem,noPos:true});
       warns.push(line.sku+': sem posição conhecida no stock');
     }
   });
-  pl.sort((a,b)=>{ const pa=parsePos(a.position),pb=parsePos(b.position);
-    if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
-    if(pa.floor!==pb.floor)return pa.floor-pb.floor; return pa.slot-pb.slot; });
+  pl.sort((a,b)=>{
+    const bp = boxPriority(a.boxType) - boxPriority(b.boxType);
+    if(bp) return bp;
+    return compareWarehousePosition(a,b);
+  });
 
   if (warns.length && !confirm('Aviso: ' + warns.join(', ') + ' -- Emitir guia mesmo assim?')) return;
 
