@@ -1469,20 +1469,20 @@ function renderStock(){
     thCols += th('devPrep','Dev. Col.','Devoluções com guia emitida, a aguardar colocação');
     thCols += th('devFeitas','Dev. Feitas','Devoluções já processadas e em stock');
   }
-  thCols += '<th>Tipo</th><th data-tip="Estado por quantidade real: OK acima de 5, Baixo entre 1 e 5, Esgotado quando é 0.">Estado</th><th></th></tr>';
+  thCols += '<th>Tipo</th><th></th></tr>';
   thead.innerHTML = thCols;
 
-  const totalCols = 5 + 1 + (hasMov?6:0) + (hasTeorico?2:0) + 3;
+  const totalCols = 5 + 1 + (hasMov?6:0) + (hasTeorico?2:0) + 2;
   const body=document.getElementById('stockBody');
   if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+tr('misc_no_stock')+'</div></td></tr>';enableResizableTables();setTimeout(setupStockScrollSync,0);return;}
 
   body.innerHTML=filtered.map(s=>{
-    const st=s.qty===0?'<span class="badge bdg-rd">'+tr('st_empty')+'</span>':s.qty<=5?'<span class="badge bdg-or">'+tr('st_low')+'</span>':'<span class="badge bdg-gn">'+tr('st_ok')+'</span>';
     const bb=normBoxType(s.boxType)==='mista'?'<span class="badge bdg-mx">'+tr('box_mixed')+'</span>':'<span class="badge bdg-ex">'+tr('box_excl')+'</span>';
 
     const disponivel=calcDisponivel(s.sku, realBySku[s.sku]||0, metrics);
-    const dispClass=disponivel<=0?'color:#dc2626;font-weight:800':disponivel<=5?'color:#d97706;font-weight:700':'color:#065f46;font-weight:700';
-    const dispCol='<td class="mono" style="'+dispClass+';background:#f0fdf4;padding:8px 10px;">'+disponivel+'</td>';
+    const dispClass=disponivel<=0?'color:#991b1b;font-weight:800;background:#fee2e2':disponivel<3?'color:#92400e;font-weight:800;background:#fef3c7':'color:#065f46;font-weight:700;background:#f0fdf4';
+    const rowWarn=disponivel<=0?'background:linear-gradient(90deg,rgba(254,226,226,.72),rgba(254,226,226,.2));':disponivel<3?'background:linear-gradient(90deg,rgba(254,243,199,.72),rgba(254,243,199,.2));':'';
+    const dispCol='<td class="mono" style="'+dispClass+';padding:8px 10px;">'+disponivel+'</td>';
     let movCols='';
     if(hasMov){
       const m=metrics[s.sku]||{};
@@ -1499,9 +1499,9 @@ function renderStock(){
     }
 
     const info=skuInfo(s.sku);
-    return '<tr><td class="mono" style="font-weight:700">'+(info?.ean||s.sku)+'</td><td>'+skuPill(s.sku)+'</td><td class="mono">'+s.position+'</td>'+
+    return '<tr style="'+rowWarn+'"><td class="mono" style="font-weight:700">'+(info?.ean||s.sku)+'</td><td>'+skuPill(s.sku)+'</td><td class="mono">'+s.position+'</td>'+
       '<td class="mono" style="font-weight:700">'+s.qty+'</td>'+tCols+dispCol+movCols+
-      '<td>'+bb+'</td><td>'+st+'</td>'+
+      '<td>'+bb+'</td>'+
       '<td><button class="btn btn-ghost btn-sm" onclick="delStk('+JSON.stringify(s.id)+')">✕</button></td></tr>';
   }).join('');
   enableResizableTables();
@@ -1523,18 +1523,17 @@ function exportStockExcel(){
   const hasTeorico=Object.keys(teorico).length>0;
   const rows=[['EAN','Produto','Marca','ML','Posição','Real']];
   if(hasTeorico) rows[0].push('Teórico','Diferença');
-  rows[0].push('Disponível','Cart.','Prep.','Fact.','Dev. Ped.','Dev. Col.','Dev. Feitas','Tipo de caixa','Estado','SKU');
+  rows[0].push('Disponível','Cart.','Prep.','Fact.','Dev. Ped.','Dev. Col.','Dev. Feitas','Tipo de caixa','SKU');
   stock.slice().sort((a,b)=>compareWarehousePosition(a,b)).forEach(s=>{
     const info=skuInfo(s.sku);
     const m=metrics[s.sku]||{};
     const disp=calcDisponivel(s.sku,realBySku[s.sku]||0,metrics);
-    const status=s.qty===0?'Esgotado':s.qty<=5?'Baixo':'OK';
     const row=[info?.ean||'',info?.name||'',info?.brand||'',info?.ml||'',s.position,s.qty];
     if(hasTeorico){
       const tq=teorico[s.sku]!==undefined?teorico[s.sku]:'';
       row.push(tq,tq===''?'':s.qty-tq);
     }
-    row.push(disp,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva',status,s.sku);
+    row.push(disp,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,normBoxType(s.boxType)==='mista'?'Mista':'Exclusiva',s.sku);
     rows.push(row);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
