@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -193,6 +193,9 @@ select.input{appearance:auto;cursor:pointer;}
 .ac-sku{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--accent);}
 .ac-name{font-size:13px;font-weight:600;margin:1px 0;}
 .ac-meta{font-size:11px;color:var(--muted);}
+.file-input{position:absolute;inline-size:1px;block-size:1px;opacity:0;pointer-events:none;}
+.file-picker{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.file-name{font-size:12px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
 /* SKU pill */
 .sku-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;}
 .sku-pname{font-weight:600;}
@@ -481,10 +484,14 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-sub">Catálogo central — EAN, nome, marca, categoria, ml</div>
   <div class="page-desc">Catálogo central de todos os produtos. Importa um ficheiro Excel com SKU, EAN, nome, marca, categoria e ml. Esta base é usada em toda a app para <strong>pesquisa inteligente</strong>, preenchimento automático e identificação de produtos no picking. Sem esta base, os SKUs aparecem sem nome — começa sempre por aqui.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()" data-tip="Descarregar template Excel para importar produtos">⬇ Template</button></div>
+    <div class="card-header"><span class="card-title">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()" data-tip="Descarregar template Excel para importar produtos" data-i="btn_template">⬇ Modelo</button></div>
     <div class="card-body">
       <div class="alert a-sky">ℹ️ Colunas: <strong>SKU | EAN | Nome | Marca | Categoria | ML</strong></div>
-      <input type="file" id="skuFile" accept=".xlsx,.xls" onchange="importSkuDb()" class="input" style="padding:8px;">
+      <div class="file-picker">
+        <label class="btn btn-ghost btn-sm" for="skuFile" data-i="btn_choose_file">Escolher ficheiro</label>
+        <span class="file-name" data-file-name-for="skuFile" data-i="file_none">Nenhum ficheiro selecionado</span>
+      </div>
+      <input type="file" id="skuFile" accept=".xlsx,.xls" onchange="fileInputChanged(this);importSkuDb()" class="file-input">
     </div>
   </div>
 
@@ -556,7 +563,7 @@ select.input{appearance:auto;cursor:pointer;}
           <button class="inner-tab active" onclick="switchTab('order','scanner')">📷 Scanner</button>
           <button class="inner-tab" onclick="switchTab('order','search')">🔍 Pesquisa</button>
           <button class="inner-tab" onclick="switchTab('order','manual')">⌨️ Manual</button>
-          <button class="inner-tab" onclick="switchTab('order','import')">📂 Import</button>
+          <button class="inner-tab" onclick="switchTab('order','import')" data-i="tab_import">📂 Importar</button>
         </div>
         <div id="otab-scanner">
           <div id="orderScannerBox" class="scanner-box"><div id="orderInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
@@ -580,8 +587,12 @@ select.input{appearance:auto;cursor:pointer;}
           </div>
         </div>
         <div id="otab-import" style="display:none;">
-          <div class="alert a-info" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('order')">⬇ Template</button></div>
-          <input type="file" id="orderFile" accept=".xlsx,.xls" onchange="importDocLines('order')" class="input" style="padding:8px;">
+          <div class="alert a-info" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('order')" data-i="btn_template">⬇ Modelo</button></div>
+          <div class="file-picker">
+            <label class="btn btn-ghost btn-sm" for="orderFile" data-i="btn_choose_file">Escolher ficheiro</label>
+            <span class="file-name" data-file-name-for="orderFile" data-i="file_none">Nenhum ficheiro selecionado</span>
+          </div>
+          <input type="file" id="orderFile" accept=".xlsx,.xls" onchange="fileInputChanged(this);importDocLines('order')" class="file-input">
         </div>
         <div class="divider"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -656,7 +667,7 @@ select.input{appearance:auto;cursor:pointer;}
           <button class="inner-tab active" onclick="switchTab('return','scanner')">📷 Scanner</button>
           <button class="inner-tab" onclick="switchTab('return','search')">🔍 Pesquisa</button>
           <button class="inner-tab" onclick="switchTab('return','manual')">⌨️ Manual</button>
-          <button class="inner-tab" onclick="switchTab('return','import')">📂 Import</button>
+          <button class="inner-tab" onclick="switchTab('return','import')" data-i="tab_import">📂 Importar</button>
         </div>
         <div id="rtab-scanner">
           <div id="returnScannerBox" class="scanner-box"><div id="returnInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
@@ -680,8 +691,12 @@ select.input{appearance:auto;cursor:pointer;}
           </div>
         </div>
         <div id="rtab-import" style="display:none;">
-          <div class="alert a-pur" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('return')">⬇ Template</button></div>
-          <input type="file" id="returnFile" accept=".xlsx,.xls" onchange="importDocLines('return')" class="input" style="padding:8px;">
+          <div class="alert a-pur" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('return')" data-i="btn_template">⬇ Modelo</button></div>
+          <div class="file-picker">
+            <label class="btn btn-ghost btn-sm" for="returnFile" data-i="btn_choose_file">Escolher ficheiro</label>
+            <span class="file-name" data-file-name-for="returnFile" data-i="file_none">Nenhum ficheiro selecionado</span>
+          </div>
+          <input type="file" id="returnFile" accept=".xlsx,.xls" onchange="fileInputChanged(this);importDocLines('return')" class="file-input">
         </div>
         <div class="divider"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -735,111 +750,6 @@ select.input{appearance:auto;cursor:pointer;}
 
 
 
-<!-- DAR ENTRADA PANEL -->
-<div class="search-panel-overlay" id="entradaOverlay" onclick="entradaClose(event)">
-  <div class="search-panel" style="max-width:520px;" onclick="event.stopPropagation()">
-    <div class="search-panel-head" style="flex-direction:column;align-items:stretch;gap:10px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-weight:800;font-size:16px;">Dar Entrada de Stock</div>
-        <button class="btn btn-ghost btn-sm" onclick="closeEntrada()">✕</button>
-      </div>
-      <div class="inner-tabs" style="margin:0;">
-        <button class="inner-tab active" id="ent-tab-pick-btn" onclick="switchEntradaMode('pick')">📷 Peça a peça</button>
-        <button class="inner-tab" id="ent-tab-excel-btn" onclick="switchEntradaMode('excel')">📂 Excel</button>
-      </div>
-    </div>
-
-    <!-- PEÇA A PEÇA -->
-    <div id="ent-tab-pick" style="flex:1;overflow-y:auto;">
-      <div style="display:flex;border-bottom:1px solid var(--border);">
-        <div id="ent-s1" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--accent);color:#fff;">1 · Produto</div>
-        <div id="ent-s2" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--surface2);color:var(--muted);">2 · Quantidade</div>
-        <div id="ent-s3" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--surface2);color:var(--muted);">3 · Posição</div>
-      </div>
-
-      <!-- Step 1 -->
-      <div id="ent-step1" style="padding:16px;">
-        <div id="entScannerBox" class="scanner-box"><div id="entInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
-          <button class="btn btn-dark btn-sm" id="btnEntScan" onclick="toggleScan('ent')">📷 Scanner</button>
-          <span class="dot" id="entScanDot"></span>
-          <span style="font-size:11px;color:var(--muted)" id="entScanStatus">Inativo</span>
-        </div>
-        <div class="ac-wrap" style="margin-bottom:8px;">
-          <input class="input" id="ent-search" placeholder="Nome, marca, EAN, SKU..." autocomplete="off"
-            oninput="acSearch('ent-search','ent-ac')"
-            onkeydown="acKey(event,'ent-search','ent-ac',entSelectFromAc)">
-          <div class="ac-list" id="ent-ac"></div>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <input class="input mono" id="ent-sku-manual" placeholder="EAN ou SKU direto..."
-            style="flex:1;" onkeydown="if(event.key==='Enter')entManualNext()">
-          <button class="btn btn-primary" onclick="entManualNext()">→</button>
-        </div>
-      </div>
-
-      <!-- Step 2 -->
-      <div id="ent-step2" style="padding:16px;display:none;">
-        <div id="ent-sku-preview" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;"></div>
-        <label>Quantidade a dar entrada</label>
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
-          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(-1)">−</button>
-          <input class="input mono" id="ent-qty" type="number" min="1" value="1"
-            style="font-size:24px;font-weight:700;text-align:center;flex:1;padding:10px;">
-          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(1)">＋</button>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="entGoStep(1)">← Voltar</button>
-          <button class="btn btn-primary" style="flex:1;" onclick="entGoStep(3)">Confirmar quantidade →</button>
-        </div>
-      </div>
-
-      <!-- Step 3 -->
-      <div id="ent-step3" style="padding:16px;display:none;">
-        <div id="ent-pos-warning" class="alert a-warn" style="display:none;margin-bottom:10px;"></div>
-        <label>Posição no armazém</label>
-        <select class="input mono" id="ent-pos-select" style="width:100%;margin-bottom:8px;" onchange="entPosSelected()">
-          <option value="">— Selecionar da lista —</option>
-        </select>
-        <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:8px;">ou introduz manualmente</div>
-        <div style="display:flex;gap:8px;margin-bottom:6px;">
-          <input class="input mono" id="ent-pos-manual" placeholder="ex: A11, B23..."
-            oninput="entPosManualInput()" style="flex:1;font-size:15px;text-transform:uppercase;"
-            onkeydown="if(event.key==='Enter')entConfirm()">
-        </div>
-        <div id="ent-pos-info" style="font-size:12px;color:var(--muted);min-height:18px;margin-bottom:14px;"></div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="entGoStep(2)">← Voltar</button>
-          <button class="btn btn-success" style="flex:1;" onclick="entConfirm()">✓ Confirmar entrada</button>
-        </div>
-      </div>
-
-      <!-- Recap -->
-      <div id="ent-recap" style="display:none;border-top:1px solid var(--border);">
-        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-          <strong style="font-size:13px;">Entradas desta sessão</strong>
-          <button class="btn btn-ghost btn-sm" onclick="entClearRecap()">Limpar</button>
-        </div>
-        <div style="overflow-x:auto;max-height:180px;overflow-y:auto;">
-          <table class="tbl" style="font-size:12px;">
-            <thead><tr><th>SKU</th><th>Produto</th><th>Qty</th><th>Posição</th></tr></thead>
-            <tbody id="entRecapBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- EXCEL -->
-    <div id="ent-tab-excel" style="display:none;padding:16px;flex:1;overflow-y:auto;">
-      <div class="alert a-info">Colunas: <strong>SKU | Posição | Quantidade | Tipo de Caixa</strong></div>
-      <div style="margin-bottom:12px;">
-        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()">⬇ Template Excel</button>
-      </div>
-      <input type="file" id="stockFile" accept=".xlsx,.xls" onchange="importStock()" class="input" style="padding:8px;">
-    </div>
-  </div>
-</div>
-
 <!-- STOCK TEÓRICO PANEL -->
 
 
@@ -941,9 +851,13 @@ select.input{appearance:auto;cursor:pointer;}
     <div id="ent-tab-excel" style="display:none;padding:16px;flex:1;overflow-y:auto;">
       <div class="alert a-info">Colunas: <strong>SKU | Posição | Quantidade | Tipo de Caixa</strong></div>
       <div style="margin-bottom:12px;">
-        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()">⬇ Template Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()" data-i="btn_template_excel">⬇ Modelo Excel</button>
       </div>
-      <input type="file" id="stockFile" accept=".xlsx,.xls" onchange="importStock()" class="input" style="padding:8px;">
+      <div class="file-picker">
+        <label class="btn btn-ghost btn-sm" for="stockFile" data-i="btn_choose_file">Escolher ficheiro</label>
+        <span class="file-name" data-file-name-for="stockFile" data-i="file_none">Nenhum ficheiro selecionado</span>
+      </div>
+      <input type="file" id="stockFile" accept=".xlsx,.xls" onchange="fileInputChanged(this);importStock()" class="file-input">
     </div>
   </div>
 </div>
@@ -961,9 +875,13 @@ select.input{appearance:auto;cursor:pointer;}
       </div>
       <div class="alert a-info" style="font-size:12px;margin-bottom:14px;">Colunas: <strong>SKU | EAN | Quantidade</strong></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button class="btn btn-ghost btn-sm" onclick="dlTeoricoTpl()">⬇ Template</button>
+        <button class="btn btn-ghost btn-sm" onclick="dlTeoricoTpl()" data-i="btn_template">⬇ Modelo</button>
       </div>
-      <input type="file" id="teoricoFile" accept=".xlsx,.xls" onchange="importTeorico()" class="input" style="padding:8px;margin-bottom:14px;">
+      <div class="file-picker" style="margin-bottom:14px;">
+        <label class="btn btn-ghost btn-sm" for="teoricoFile" data-i="btn_choose_file">Escolher ficheiro</label>
+        <span class="file-name" data-file-name-for="teoricoFile" data-i="file_none">Nenhum ficheiro selecionado</span>
+      </div>
+      <input type="file" id="teoricoFile" accept=".xlsx,.xls" onchange="fileInputChanged(this);importTeorico()" class="file-input">
       <div id="teoricoStatus" style="display:none;background:var(--surface2);border-radius:8px;padding:12px;font-size:13px;margin-bottom:14px;"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-danger btn-sm" onclick="clearTeorico()" id="btnClearTeorico" style="display:none;">🗑 Limpar stock teórico</button>
@@ -1203,7 +1121,7 @@ function acSearch(inpId,lstId){
   if(!q){lst.classList.remove('open');return;}
   const res=skuDb.filter(d=>[d.sku,d.ean,d.name,d.brand,d.category,d.ml].some(v=>(v||'').toLowerCase().includes(q))).slice(0,12);
   if(!res.length){lst.classList.remove('open');return;}
-  lst.innerHTML=res.map((d,i)=>`<div class="ac-item" data-sku="${d.sku}" data-i="${i}"
+  lst.innerHTML=res.map((d,i)=>`<div class="ac-item" data-sku="${d.sku}" data-idx="${i}"
     onmousedown="acPick('${inpId}','${lstId}','${d.sku}')">
     <div class="ac-sku">${d.sku}${d.ean?` <span style="color:var(--muted);font-weight:400">· ${d.ean}</span>`:''}</div>
     <div class="ac-name">${d.name||'—'}</div>
@@ -1497,7 +1415,10 @@ function openEntrada(){
   setTimeout(()=>document.getElementById('ent-search').focus(),100);
 }
 
-function closeEntrada(){ stopScan('ent'); document.getElementById('entradaOverlay').classList.remove('open'); }
+function closeEntrada(){
+  try { stopScan('ent'); }
+  finally { document.getElementById('entradaOverlay').classList.remove('open'); }
+}
 function entradaClose(e){ if(e.target===document.getElementById('entradaOverlay')) closeEntrada(); }
 
 function switchEntradaMode(m){
@@ -1937,6 +1858,11 @@ function startScan(t){
     inv:['invScannerBox','#invInteractive','invScanDot','invScanStatus','btnInvScan'],
     ent:['entScannerBox','#entInteractive','entScanDot','entScanStatus','btnEntScan']};
   const [boxEl,intEl,dotEl,stEl,btnEl]=ids[t];
+  if(typeof Quagga==='undefined'){
+    toast('Scanner indisponível','err');
+    stopScan(t);
+    return;
+  }
   document.getElementById(boxEl).classList.add('visible');
   document.getElementById(dotEl).classList.add('on');
   document.getElementById(stEl).textContent='A iniciar...';
@@ -1995,15 +1921,21 @@ function startScan(t){
   });
 }
 function stopScan(t){
-  if(!scanning[t])return;try{Quagga.stop();}catch(e){}
+  if(scanning[t] && typeof Quagga!=='undefined'){
+    try{Quagga.stop();}catch(e){}
+  }
   const ids={order:['orderScannerBox','orderScanDot','orderScanStatus','btnOrderScan'],
     return:['returnScannerBox','returnScanDot','returnScanStatus','btnReturnScan'],
-    inv:['invScannerBox','invScanDot','invScanStatus','btnInvScan']};
+    inv:['invScannerBox','invScanDot','invScanStatus','btnInvScan'],
+    ent:['entScannerBox','entScanDot','entScanStatus','btnEntScan']};
+  if(!ids[t]){scanning[t]=false;return;}
   const [boxEl,dotEl,stEl,btnEl]=ids[t];
-  document.getElementById(boxEl).classList.remove('visible');
-  document.getElementById(dotEl).classList.remove('on');
-  document.getElementById(stEl).textContent='Inativo';
-  document.getElementById(btnEl).textContent='📷 '+(t==='inv'?'Scanner':'Iniciar');
+  document.getElementById(boxEl)?.classList.remove('visible');
+  document.getElementById(dotEl)?.classList.remove('on');
+  const statusEl=document.getElementById(stEl);
+  if(statusEl) statusEl.textContent='Inativo';
+  const btn=document.getElementById(btnEl);
+  if(btn) btn.textContent='📷 '+(t==='inv'||t==='ent'?'Scanner':'Iniciar');
   scanning[t]=false;
 }
 
@@ -2844,7 +2776,8 @@ const LANGS = {
     btn_finalize_pick:'✓ Finalizar e deduzir stock', btn_finalize_put:'✓ Finalizar e acrescentar ao stock',
     btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Fechar',
     btn_dar_entrada:'Dar Entrada', btn_teorico:'📊 Inserir Stock Teórico',
-    btn_export:'⬇ Excel', btn_template:'⬇ Template',
+    btn_export:'⬇ Excel', btn_template:'⬇ Modelo', btn_template_excel:'⬇ Modelo Excel',
+    btn_choose_file:'Escolher ficheiro', file_none:'Nenhum ficheiro selecionado',
     btn_login:'Entrar →', btn_outro:'Outro', btn_back:'← Voltar',
     // Status
     st_open:'Aberta', st_picked:'Concluída', st_cancelled:'Anulada',
@@ -2859,6 +2792,7 @@ const LANGS = {
     lbl_product:'Produto', lbl_status:'Estado', lbl_diff:'Diferença',
     lbl_theorical:'Teórico', lbl_real:'Real',
     lbl_lines:'linhas', lbl_units:'unid.', lbl_skus:'SKUs',
+    tab_import:'📂 Importar',
     // Tooltips
     tip_skudb:'Catálogo de produtos com EAN, nome, marca, categoria e ml. Importa via Excel.',
     tip_stock:'Mapa de stock real por posição. Usa "Dar entrada" para registar artigos recebidos.',
@@ -2909,7 +2843,8 @@ const LANGS = {
     btn_finalize_pick:'✓ Finalize & deduct stock', btn_finalize_put:'✓ Finalize & add to stock',
     btn_confirm:'✓ Confirm', btn_cancel:'✕ Cancel', btn_close:'Close',
     btn_dar_entrada:'Stock In', btn_teorico:'📊 Insert Theoretical Stock',
-    btn_export:'⬇ Excel', btn_template:'⬇ Template',
+    btn_export:'⬇ Excel', btn_template:'⬇ Template', btn_template_excel:'⬇ Excel template',
+    btn_choose_file:'Choose file', file_none:'No file selected',
     btn_login:'Enter →', btn_outro:'Other', btn_back:'← Back',
     st_open:'Open', st_picked:'Done', st_cancelled:'Cancelled',
     st_returned:'Done', st_emitted:'📋 Guide issued',
@@ -2921,6 +2856,7 @@ const LANGS = {
     lbl_product:'Product', lbl_status:'Status', lbl_diff:'Difference',
     lbl_theorical:'Theoretical', lbl_real:'Actual',
     lbl_lines:'lines', lbl_units:'units', lbl_skus:'SKUs',
+    tab_import:'📂 Import',
     tip_skudb:'Product catalogue with EAN, name, brand, category and ml. Import via Excel.',
     tip_stock:'Actual stock by position. Use "Stock in" to register received items.',
     tip_teorico:'Compare actual stock with supplier order quantities. Import the supplier file.',
@@ -2968,7 +2904,8 @@ const LANGS = {
     btn_finalize_pick:'✓ Finalizar y deducir stock', btn_finalize_put:'✓ Finalizar y añadir al stock',
     btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Cerrar',
     btn_dar_entrada:'Entrada Stock', btn_teorico:'📊 Inserir Stock Teórico',
-    btn_export:'⬇ Excel', btn_template:'⬇ Plantilla',
+    btn_export:'⬇ Excel', btn_template:'⬇ Plantilla', btn_template_excel:'⬇ Plantilla Excel',
+    btn_choose_file:'Elegir archivo', file_none:'Ningún archivo seleccionado',
     btn_login:'Entrar →', btn_outro:'Otro', btn_back:'← Volver',
     st_open:'Abierto', st_picked:'Completado', st_cancelled:'Anulado',
     st_returned:'Completado', st_emitted:'📋 Guía emitida',
@@ -2980,6 +2917,7 @@ const LANGS = {
     lbl_product:'Producto', lbl_status:'Estado', lbl_diff:'Diferencia',
     lbl_theorical:'Teórico', lbl_real:'Real',
     lbl_lines:'líneas', lbl_units:'unid.', lbl_skus:'SKUs',
+    tab_import:'📂 Importar',
     tip_skudb:'Catálogo de productos con EAN, nombre, marca, categoría y ml. Importa vía Excel.',
     tip_stock:'Mapa de stock real por posición. Usa "Entrada de stock" para registrar artículos.',
     tip_teorico:'Compara stock real con cantidades pedidas al proveedor.',
@@ -3056,6 +2994,7 @@ function setLang(lang) {
   if (sub) sub.textContent = tr('login_who');
   // Update page titles/subs
   applyStaticTranslations();
+  updateFileLabels();
 }
 
 function applyStaticTranslations() {
@@ -3083,6 +3022,19 @@ function applyStaticTranslations() {
   document.querySelectorAll('[data-page]').forEach(btn => {
     const key = navMap[btn.getAttribute('data-page')];
     if (key) btn.childNodes.forEach(n => { if (n.nodeType===3 && n.textContent.trim()) n.textContent = tr(key); });
+  });
+}
+
+function fileInputChanged(input) {
+  const label = document.querySelector('[data-file-name-for="' + input.id + '"]');
+  if (!label) return;
+  label.textContent = input.files && input.files.length ? input.files[0].name : tr('file_none');
+}
+
+function updateFileLabels() {
+  document.querySelectorAll('[data-file-name-for]').forEach(label => {
+    const input = document.getElementById(label.getAttribute('data-file-name-for'));
+    if (!input || !input.files || !input.files.length) label.textContent = tr('file_none');
   });
 }
 
@@ -3520,6 +3472,7 @@ function openSearchPanel(t) {
 }
 
 function closeSearchPanel() {
+  if (spDocType) stopScan(spDocType);
   document.getElementById('spOverlay').classList.remove('open');
   spDocType = null; spSelSku = null;
 }
