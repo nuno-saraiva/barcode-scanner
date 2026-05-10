@@ -1,6 +1,9 @@
 import { chromium } from 'playwright';
 
-const targetUrl = process.env.TARGET_URL || 'https://nuno-saraiva.github.io/ArmazemNH/';
+const targetArg = process.argv.find(arg => arg.startsWith('--target='));
+const targetUrl = targetArg
+  ? targetArg.slice('--target='.length)
+  : process.env.TARGET_URL || 'https://nuno-saraiva.github.io/ArmazemNH/';
 const viewports = [
   { name: 'desktop', width: 1366, height: 768 },
   { name: 'tablet', width: 1200, height: 2000 },
