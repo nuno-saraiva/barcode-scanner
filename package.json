@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "qa:smoke": "node qa/smoke-test.mjs"
+    "qa:smoke": "node qa/smoke-test.mjs",
+    "qa:staging": "node qa/smoke-test.mjs --target=https://nuno-saraiva.github.io/ArmazemNH/",
+    "qa:production": "node qa/smoke-test.mjs --target=https://nuno-saraiva.github.io/WarehouseNH/"
   },
   "devDependencies": {
     "playwright": "^1.52.0"
