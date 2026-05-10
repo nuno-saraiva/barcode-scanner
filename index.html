@@ -4436,12 +4436,21 @@ function importablePickedOrders() {
   return orders.filter(o => o.status === 'picked' && o.lines && o.lines.length > 0);
 }
 
+function returnForSourceOrder(orderId) {
+  return rets.find(r =>
+    r.status !== 'cancelled' &&
+    Array.isArray(r.sourceOrderIds) &&
+    r.sourceOrderIds.includes(orderId)
+  ) || null;
+}
+
 function selectedImportOrders() {
   const ids = _selectedImportOrderIds || new Set();
-  return importablePickedOrders().filter(o => ids.has(o.id));
+  return importablePickedOrders().filter(o => ids.has(o.id) && !returnForSourceOrder(o.id));
 }
 
 function updateImportOrderSelectionUI() {
+  [..._selectedImportOrderIds].forEach(id => { if(returnForSourceOrder(id)) _selectedImportOrderIds.delete(id); });
   const selected = selectedImportOrders();
   const units = selected.reduce((a,o)=>a+o.lines.reduce((x,l)=>x+(parseInt(l.qty)||0),0),0);
   const skus = new Set(selected.flatMap(o=>o.lines.map(l=>l.sku))).size;
@@ -4451,8 +4460,10 @@ function updateImportOrderSelectionUI() {
   if(btn) btn.disabled = selected.length === 0;
   document.querySelectorAll('.import-order-row').forEach(row => {
     const active = _selectedImportOrderIds.has(row.getAttribute('data-orderid'));
-    row.style.borderColor = active ? 'var(--purple)' : 'var(--border)';
-    row.style.background = active ? '#f5f3ff' : '';
+    const disabled = row.getAttribute('data-disabled') === '1';
+    row.style.borderColor = disabled ? '#e5e7eb' : active ? 'var(--purple)' : 'var(--border)';
+    row.style.background = disabled ? '#f3f4f6' : active ? '#f5f3ff' : '';
+    row.style.opacity = disabled ? '.58' : '1';
     const cb = row.querySelector('input[type="checkbox"]');
     if(cb) cb.checked = active;
   });
@@ -4461,6 +4472,7 @@ function updateImportOrderSelectionUI() {
 function toggleImportOrderSelection(btn) {
   const id = btn.getAttribute('data-orderid');
   if(!id) return;
+  if(btn.getAttribute('data-disabled') === '1' || returnForSourceOrder(id)) return;
   if(_selectedImportOrderIds.has(id)) _selectedImportOrderIds.delete(id);
   else _selectedImportOrderIds.add(id);
   updateImportOrderSelectionUI();
@@ -4486,21 +4498,24 @@ function renderImportOrderList(q) {
     const skus = o.lines.length;
     const safeId = escHtml(o.id);
     const active = _selectedImportOrderIds.has(o.id);
-    return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:background .15s;" ' +
+    const existingReturn = returnForSourceOrder(o.id);
+    const disabled = !!existingReturn;
+    return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:'+(disabled?'not-allowed':'pointer')+';transition:background .15s;" ' +
       'class="import-order-row" ' +
       '' +
-      'data-orderid="'+safeId+'" onclick="toggleImportOrderSelection(this)">' +
+      'data-orderid="'+safeId+'" data-disabled="'+(disabled?'1':'0')+'" onclick="toggleImportOrderSelection(this)">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
       '<div style="display:flex;align-items:flex-start;gap:10px;min-width:0;">' +
-      '<input type="checkbox" '+(active?'checked':'')+' tabindex="-1" style="margin-top:2px;pointer-events:none;">' +
+      '<input type="checkbox" '+(active?'checked':'')+' '+(disabled?'disabled':'')+' tabindex="-1" style="margin-top:2px;pointer-events:none;">' +
       '<div style="min-width:0;">' +
       '<div style="font-weight:700;font-size:13px;">' + safeId + '</div>' +
       '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' +
         (o.client ? '👤 ' + escHtml(o.client) + ' · ' : '') +
         skus + ' SKUs · ' + total + ' unid. · ' + escHtml(o.createdAt||'') +
       '</div>' +
+      (disabled ? '<div style="font-size:11px;color:#991b1b;margin-top:4px;">Já incluído em '+escHtml(existingReturn.id)+'</div>' : '') +
       '</div>' +
-      '<span class="badge bdg-gn">✓ Concluído</span>' +
+      '<span class="badge '+(disabled?'bdg-rd':'bdg-gn')+'">'+(disabled?'Devolução emitida':'✓ Concluído')+'</span>' +
       '</div>' +
       '</div>' +
       '</div>';
