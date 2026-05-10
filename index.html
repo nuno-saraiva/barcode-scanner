@@ -842,7 +842,10 @@ select.input{appearance:auto;cursor:pointer;}
       <span id="returnPickupProgressLabel">0 / 0 linhas confirmadas</span>
       <span id="returnPickupDiffLabel" style="color:#dc2626;display:none;"></span>
     </div>
-    <div id="returnPickupLines"></div>
+    <div class="table-scroll"><table class="tbl" id="returnPickupTable" data-resizable-cols>
+      <thead id="returnPickupThead"></thead>
+      <tbody id="returnPickupLines"></tbody>
+    </table></div>
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
       <button class="btn btn-warn" style="flex:1;padding:12px;" onclick="finalizeReturnPickup()">✓ Finalizar recolha</button>
     </div>
@@ -2844,11 +2847,13 @@ function exportGuiaExcelById(orderId) {
 // ══ RETURNS PICK UP — GUIA DE RECOLHA ══
 let returnPickupId = null;
 let returnPickupLines = [];
+let returnPickupSort = {col:'brand', dir:1};
 
 function emitReturnPickupGuide() {
   const doc = rets.find(d => d.id === activeRet);
   if (!doc || !doc.lines || !doc.lines.length) { toast('Sem linhas para recolher', 'err'); return; }
   const lines = mergeOrderLinesForReturn([{lines: doc.lines}]).map(l => ({
+    rid: 'rp_' + Date.now() + '_' + Math.random().toString(36).slice(2),
     sku: l.sku,
     qty: l.qty,
     qtyCollected: 0,
@@ -2909,6 +2914,7 @@ function startReturnPickup(retId) {
   if (!doc || !doc.pickupGuide) return;
   returnPickupId = retId;
   returnPickupLines = JSON.parse(JSON.stringify(doc.pickupGuide.lines));
+  returnPickupLines.forEach((l,i)=>{ if(!l.rid) l.rid='rp_'+i+'_'+Date.now(); });
   if (!['done','partial'].includes(doc.pickupGuide.status)) {
     doc.status = 'em-recolha';
     doc.pickupGuide.status = 'in-progress';
@@ -2950,41 +2956,92 @@ function renderReturnPickupLines() {
   const diffLabel = document.getElementById('returnPickupDiffLabel');
   diffLabel.style.display = diffs ? '' : 'none';
   diffLabel.textContent = diffs ? diffs+' diferenças' : '';
-  document.getElementById('returnPickupLines').innerHTML = returnPickupLines.map((l, idx) => {
+  function th(col,label){
+    const cls = returnPickupSort.col===col ? (returnPickupSort.dir===1?'asc':'desc') : '';
+    return '<th class="th-sort '+cls+'" onclick="sortReturnPickup(this.dataset.col)" data-col="'+col+'">'+label+'</th>';
+  }
+  document.getElementById('returnPickupThead').innerHTML = '<tr>'+
+    th('ean','EAN')+
+    th('sku','SKU')+
+    th('name','Produto')+
+    th('category','Categoria')+
+    th('brand','Marca')+
+    th('ml','ML')+
+    th('qty','Esperado')+
+    th('collected','Recolhido')+
+    th('diff','Dif.')+
+    th('status','Estado')+
+  '</tr>';
+  const sorted = [...returnPickupLines].sort((a,b)=>{
+    const va = returnPickupSortValue(a, returnPickupSort.col);
+    const vb = returnPickupSortValue(b, returnPickupSort.col);
+    if(va < vb) return -1 * returnPickupSort.dir;
+    if(va > vb) return 1 * returnPickupSort.dir;
+    return String(a.sku).localeCompare(String(b.sku));
+  });
+  document.getElementById('returnPickupLines').innerHTML = sorted.map((l) => {
     const info = skuInfo(l.sku);
     const collected = parseInt(l.qtyCollected)||0;
     const diff = collected - (parseInt(l.qty)||0);
     const isConfirmed = l.status === 'confirmed';
     const statusText = isConfirmed ? (diff===0?'OK':(diff>0?'+'+diff:diff)) : 'Pendente';
     const statusCls = !isConfirmed ? 'bdg-bl' : diff===0 ? 'bdg-gn' : 'bdg-or';
-    return '<div class="prep-line '+(isConfirmed?'confirmed':'')+'" id="retpickup-'+idx+'">'+
-      '<div class="prep-line-header" onclick="toggleReturnPickupLine('+idx+')">'+
-      '<div class="prep-check '+(isConfirmed?'done':'')+'">'+(isConfirmed?'✓':idx+1)+'</div>'+
-      '<div style="flex:1;min-width:0">'+
-      '<div class="mono" style="font-weight:700;font-size:13px">'+escHtml(info?.ean||l.sku)+'</div>'+
-      (info?'<div style="font-size:11px;color:var(--muted)">'+escHtml(l.sku)+' · '+escHtml(info.name)+(info.brand?' · '+escHtml(info.brand):'')+(info.ml?' · '+escHtml(info.ml):'')+'</div>':'')+
-      '</div>'+
-      '<div style="text-align:right"><div class="mono" style="font-weight:700">'+collected+' / '+l.qty+'</div><span class="badge '+statusCls+'">'+statusText+'</span></div>'+
-      '</div>'+
-      '<div class="prep-line-body">'+
-      '<label>Quantidade recolhida</label>'+
-      '<input class="input mono" type="number" inputmode="numeric" min="0" max="'+l.qty+'" id="retpickupqty-'+idx+'" value="'+collected+'" style="margin-bottom:10px;">'+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button class="btn btn-warn" style="flex:1" onclick="confirmReturnPickupLine('+idx+')">✓ Confirmar recolha</button>'+
-      '<button class="btn btn-ghost btn-sm" onclick="toggleReturnPickupLine('+idx+')">Fechar</button>'+
-      '</div></div></div>';
+    return '<tr>'+
+      '<td class="mono" style="font-weight:700">'+escHtml(info?.ean||'')+'</td>'+
+      '<td class="mono">'+escHtml(l.sku)+'</td>'+
+      '<td>'+escHtml(info?.name||'—')+'</td>'+
+      '<td>'+escHtml(info?.category||'—')+'</td>'+
+      '<td>'+escHtml(info?.brand||'—')+'</td>'+
+      '<td><span class="badge bdg-sk">'+escHtml(info?.ml||'—')+'</span></td>'+
+      '<td class="mono" style="font-weight:700">'+l.qty+'</td>'+
+      '<td><input class="input mono qty-in" type="number" inputmode="numeric" min="0" value="'+collected+'" onchange="setReturnPickupCollected(&quot;'+l.rid+'&quot;,this.value)" style="width:92px;padding:6px 8px;"></td>'+
+      '<td><span class="badge '+(diff===0?'bdg-gn':'bdg-or')+'">'+(diff>0?'+'+diff:diff)+'</span></td>'+
+      '<td><button class="btn '+(isConfirmed?'btn-success':'btn-warn')+' btn-sm" onclick="confirmReturnPickupLineById(&quot;'+l.rid+'&quot;)">'+(isConfirmed?'✓ OK':'Confirmar')+'</button> <span class="badge '+statusCls+'">'+statusText+'</span></td>'+
+      '</tr>';
   }).join('');
+  enableResizableTables();
 }
 
-function toggleReturnPickupLine(idx) {
-  document.getElementById('retpickup-'+idx)?.classList.toggle('active');
+function returnPickupSortValue(line,col){
+  const info = skuInfo(line.sku) || {};
+  const collected = parseInt(line.qtyCollected)||0;
+  if(col==='ean') return info.ean || '';
+  if(col==='sku') return line.sku || '';
+  if(col==='name') return info.name || '';
+  if(col==='category') return info.category || '';
+  if(col==='brand') return info.brand || '';
+  if(col==='ml') return info.ml || '';
+  if(col==='qty') return parseInt(line.qty)||0;
+  if(col==='collected') return collected;
+  if(col==='diff') return collected - (parseInt(line.qty)||0);
+  if(col==='status') return line.status || '';
+  return '';
+}
+
+function sortReturnPickup(col){
+  if(returnPickupSort.col===col) returnPickupSort.dir *= -1;
+  else { returnPickupSort.col = col; returnPickupSort.dir = ['qty','collected','diff'].includes(col) ? -1 : 1; }
+  renderReturnPickupLines();
+}
+
+function setReturnPickupCollected(rid,value){
+  const line = returnPickupLines.find(l=>l.rid===rid);
+  if(!line) return;
+  line.qtyCollected = Math.max(0, parseInt(value)||0);
+  line.diff = line.qtyCollected - (parseInt(line.qty)||0);
+}
+
+function confirmReturnPickupLineById(rid) {
+  const line = returnPickupLines.find(l=>l.rid===rid);
+  if(!line) return;
+  line.diff = line.qtyCollected - (parseInt(line.qty)||0);
+  line.status = 'confirmed';
+  renderReturnPickupLines();
 }
 
 function confirmReturnPickupLine(idx) {
   const line = returnPickupLines[idx];
-  const input = document.getElementById('retpickupqty-'+idx);
-  line.qtyCollected = Math.max(0, parseInt(input?.value)||0);
-  line.diff = line.qtyCollected - (parseInt(line.qty)||0);
+  if(!line) return;
   line.status = 'confirmed';
   renderReturnPickupLines();
 }
