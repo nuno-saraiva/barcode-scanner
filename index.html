@@ -499,6 +499,7 @@ select.input{appearance:auto;cursor:pointer;}
     <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)"><span data-i="nav_orders">🛒 Encomendas</span></button>
     <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)" data-tip-i="tip_pick_list"><span data-i="nav_pick">📦 Para Preparação</span></button>
     <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)"><span data-i="nav_ret">↩️ Devoluções</span></button>
+    <button class="nav-tab t-ret"       data-page="returnpickup" onclick="showPage('returnpickup',this)"><span data-i="nav_ret_pickup">🚚 Returns Pick Up</span></button>
     <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)"><span data-i="nav_putaway">📥 Dar Entrada</span></button>
     <button class="nav-tab t-db"        data-page="skudb" id="nav-skudb-btn"   onclick="showPage('skudb',this)" data-tip-i="tip_skudb"><span data-i="nav_skudb">🗂 Base de Dados Geral</span></button>
   </div>
@@ -534,6 +535,7 @@ select.input{appearance:auto;cursor:pointer;}
     <button class="mob-nav-btn"             data-page="orders"  onclick="showPage('orders',this);closeMobileMenu()"><span data-i="nav_orders">🛒 Encomendas</span></button>
     <button class="mob-nav-btn"             data-page="picking" onclick="showPage('picking',this);closeMobileMenu()"><span data-i="nav_pick">📦 Para Preparação</span></button>
     <button class="mob-nav-btn t-ret"       data-page="returns" onclick="showPage('returns',this);closeMobileMenu()"><span data-i="nav_ret">↩️ Devoluções</span></button>
+    <button class="mob-nav-btn t-ret"       data-page="returnpickup" onclick="showPage('returnpickup',this);closeMobileMenu()"><span data-i="nav_ret_pickup">🚚 Returns Pick Up</span></button>
     <button class="mob-nav-btn t-ret"       data-page="putaway" onclick="showPage('putaway',this);closeMobileMenu()"><span data-i="nav_putaway">📥 Dar Entrada</span></button>
     <button class="mob-nav-btn t-db"        data-page="skudb"   onclick="showPage('skudb',this);closeMobileMenu()"><span data-i="nav_skudb">🗂 Base de Dados Geral</span></button>
     <div style="height:1px;background:rgba(255,255,255,.1);margin:8px 0;"></div>
@@ -762,6 +764,7 @@ select.input{appearance:auto;cursor:pointer;}
         <span class="card-title" id="retEdTitle">Devolução</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="closeEd('return')" data-tip="Fechar o editor sem perder os dados">Fechar</button>
+          <button class="btn btn-warn btn-sm" onclick="emitReturnPickupGuide()" data-tip="Gerar guia de recolha dos artigos devolvidos">🚚 Emitir Guia Recolha</button>
           <button class="btn btn-purple btn-sm" onclick="genDoc('return')" data-tip="Gerar guia de colocação — o stock só entra após confirmação" data-tip-i="tip_emit_put" data-i="btn_emit_put">↩️ Emitir Guia Devolução</button>
         </div>
       </div>
@@ -809,6 +812,39 @@ select.input{appearance:auto;cursor:pointer;}
         </div>
         <div style="overflow-x:auto;"><table class="tbl" id="returnLinesTable" data-resizable-cols><thead><tr><th>EAN</th><th>SKU</th><th>Qty</th><th>Stock</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- RETURNS PICK UP -->
+<div class="page" id="page-returnpickup">
+  <div class="page-title">Returns Pick Up</div>
+  <div class="page-sub">Guias de recolha de devoluções</div>
+  <div class="page-desc" data-html-i="ret_pickup_desc">Acompanha as guias de recolha emitidas a partir das devoluções. O operador confirma quanto foi recolhido por SKU e, no final, a app mostra diferenças entre a quantidade esperada e a quantidade recolhida. As quantidades recolhidas alimentam a guia de entrada seguinte.</div>
+
+  <div id="returnPickupListSection">
+    <div class="card">
+      <div class="card-header"><span class="card-title" data-i="card_return_pickup_guides">Guias de recolha em aberto</span></div>
+      <div id="returnPickupGuidesList"><div class="empty"><div class="empty-icon">🚚</div><span data-i="misc_no_return_pickups">Nenhuma guia de recolha emitida. Vai a Devoluções e clica em "Emitir Guia Recolha".</span></div></div>
+    </div>
+  </div>
+
+  <div id="returnPickupContent" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="cancelReturnPickup()">← Voltar à lista</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportReturnPickupExcel()">⬇ Excel</button>
+    </div>
+    <div class="pick-hdr ph-ret" id="returnPickupHeader" style="margin-bottom:14px;"></div>
+    <div style="background:var(--surface2);border-radius:30px;height:8px;margin-bottom:6px;overflow:hidden;">
+      <div id="returnPickupProgress" style="height:100%;background:#d97706;border-radius:30px;transition:width .4s;width:0%;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:16px;">
+      <span id="returnPickupProgressLabel">0 / 0 linhas confirmadas</span>
+      <span id="returnPickupDiffLabel" style="color:#dc2626;display:none;"></span>
+    </div>
+    <div id="returnPickupLines"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+      <button class="btn btn-warn" style="flex:1;padding:12px;" onclick="finalizeReturnPickup()">✓ Finalizar recolha</button>
     </div>
   </div>
 </div>
@@ -1291,6 +1327,7 @@ function showPage(id,btn){
   if(id==='orders') renderDocs('order');
   if(id==='returns') renderDocs('return');
   if(id==='picking') renderPickingGuides();
+  if(id==='returnpickup') renderReturnPickupGuides();
   if(id==='putaway') renderPutawayGuides();
   if(id!=='orders') stopScan('order');
   if(id!=='returns') stopScan('return');
@@ -2187,11 +2224,11 @@ function renderDocs(t){
   const st=docSt(t);
   if(!st.length){el.innerHTML=`<div class="empty"><div class="empty-icon">${t==='order'?'🛒':'↩️'}</div>Sem ${t==='order'?'encomendas':'devoluções'}.</div>`;return;}
   el.innerHTML=st.map(d=>{
-    const _stMap={open:'st_open',picked:'st_picked',cancelled:'st_cancelled',returned:'st_returned','guia-emitida':'st_emitted','em-preparacao':'st_prep','em-colocacao':'st_coloc','parcial':'st_parcial'};
+    const _stMap={open:'st_open',picked:'st_picked',cancelled:'st_cancelled',returned:'st_returned','guia-emitida':'st_emitted','em-preparacao':'st_prep','em-colocacao':'st_coloc','parcial':'st_parcial','guia-recolha':'st_collect_issued','em-recolha':'st_collecting','recolha-parcial':'st_partial_collect'};
     const sl=tr(_stMap[d.status]||d.status)||d.status;
     const slSuffix = d.confirmedBy&&['picked','returned','parcial'].includes(d.status)?' · 👤 '+d.confirmedBy:d.cancelledBy&&d.status==='cancelled'?' · 👤 '+d.cancelledBy:'';
     const tq=d.lines.reduce((a,l)=>a+l.qty,0);
-    const canEdit=d.status==='open';
+    const canEdit=d.status==='open'||d.status==='recolha-parcial';
     return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
       <div><div class="mono" style="font-weight:700;font-size:13px">${d.id}${d.client?` <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· ${d.client}</span>`:''}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${d.lines.length} SKUs · ${tq} unid. · ${d.createdAt}</div></div>
@@ -2199,7 +2236,7 @@ function renderDocs(t){
         <span class="badge s-${d.status}">${sl}${slSuffix}</span>
         <button class="btn btn-ghost btn-sm" onclick="exportDocExcel('${t}','${d.id}')">⬇ Excel</button>
         ${canEdit?`<button class="btn btn-ghost btn-sm" onclick="openEd('${t}','${d.id}')">✏️</button>`:''}
-        ${(d.status==='open'||d.status==='guia-emitida')?`<button class="btn btn-danger btn-sm" onclick="cancelDocFromList('${t}','${d.id}')">✕ Cancelar</button>`:''}
+        ${(d.status==='open'||d.status==='guia-emitida'||d.status==='guia-recolha')?`<button class="btn btn-danger btn-sm" onclick="cancelDocFromList('${t}','${d.id}')">✕ Cancelar</button>`:''}
         <button class="btn btn-ghost btn-sm" onclick="delDoc('${t}','${d.id}')">🗑</button>
       </div></div>`;
   }).join('');
@@ -2804,6 +2841,207 @@ function exportGuiaExcelById(orderId) {
   toast('Excel exportado', 'win');
 }
 
+// ══ RETURNS PICK UP — GUIA DE RECOLHA ══
+let returnPickupId = null;
+let returnPickupLines = [];
+
+function emitReturnPickupGuide() {
+  const doc = rets.find(d => d.id === activeRet);
+  if (!doc || !doc.lines || !doc.lines.length) { toast('Sem linhas para recolher', 'err'); return; }
+  const lines = mergeOrderLinesForReturn([{lines: doc.lines}]).map(l => ({
+    sku: l.sku,
+    qty: l.qty,
+    qtyCollected: 0,
+    status: 'pending',
+    diff: 0
+  }));
+  doc.pickupGuide = {
+    lines,
+    sourceOrderIds: doc.sourceOrderIds || [],
+    emittedAt: new Date().toLocaleString('pt-PT'),
+    emittedBy: currentUser ? currentUser.name : '—',
+    status: 'pending'
+  };
+  doc.status = 'guia-recolha';
+  logAction('Guia recolha devolucao emitida', doc.id+' · '+lines.length+' linhas');
+  saveRet();
+  renderDocs('return');
+  renderReturnPickupGuides();
+  showPage('returnpickup', document.querySelector('[data-page="returnpickup"]'));
+  toast('Guia de recolha emitida', 'win');
+}
+
+function renderReturnPickupGuides() {
+  const el = document.getElementById('returnPickupGuidesList');
+  if (!el) return;
+  const guias = rets.filter(d => d.pickupGuide && ['guia-recolha','em-recolha','recolha-parcial','open'].includes(d.status));
+  if (!guias.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🚚</div>'+tr('misc_no_return_pickups')+'</div>';
+    return;
+  }
+  el.innerHTML = guias.map(d => {
+    const g = d.pickupGuide;
+    const total = g.lines.length;
+    const done = g.lines.filter(l => l.status === 'confirmed').length;
+    const expected = g.lines.reduce((a,l)=>a+(parseInt(l.qty)||0),0);
+    const collected = g.lines.reduce((a,l)=>a+(parseInt(l.qtyCollected)||0),0);
+    const pct = total ? Math.round(done/total*100) : 0;
+    const doneGuide = ['done','partial'].includes(g.status);
+    const stLbl = doneGuide ? (g.diffCount ? tr('st_partial_collect') : tr('st_collected')) : d.status === 'em-recolha' ? tr('st_collecting') : tr('misc_awaiting_collect');
+    const stCls = doneGuide ? (g.diffCount ? 'bdg-or' : 'bdg-gn') : d.status === 'em-recolha' ? 'bdg-bl' : 'bdg-or';
+    return '<div style="padding:14px 16px;border-bottom:1px solid var(--border);">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">'+
+      '<div><div class="mono" style="font-weight:700;font-size:14px">'+escHtml(d.id)+(d.client?' <span style="font-family:var(--sans);font-weight:400;color:var(--muted)">· '+escHtml(d.client)+'</span>':'')+'</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-top:3px">'+tr('misc_issued_by')+' '+escHtml(g.emittedBy||'—')+' · '+escHtml(g.emittedAt||'')+' · '+collected+'/'+expected+' '+tr('lbl_units')+'</div></div>'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+      '<span class="badge '+stCls+'">'+stLbl+'</span>'+
+      '<button class="btn btn-warn btn-sm" onclick="startReturnPickup(&quot;'+escHtml(d.id)+'&quot;)">'+(doneGuide?'Ver':'▶ Iniciar')+'</button>'+
+      '</div></div>'+
+      '<div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">'+
+      '<div style="height:100%;background:#d97706;border-radius:20px;width:'+pct+'%;transition:width .4s;"></div></div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+done+' / '+total+' '+tr('lbl_lines')+' · '+pct+'%</div>'+
+      '</div>';
+  }).join('');
+}
+
+function startReturnPickup(retId) {
+  const doc = rets.find(d => d.id === retId);
+  if (!doc || !doc.pickupGuide) return;
+  returnPickupId = retId;
+  returnPickupLines = JSON.parse(JSON.stringify(doc.pickupGuide.lines));
+  if (!['done','partial'].includes(doc.pickupGuide.status)) {
+    doc.status = 'em-recolha';
+    doc.pickupGuide.status = 'in-progress';
+    saveRet();
+  }
+  document.getElementById('returnPickupListSection').style.display = 'none';
+  document.getElementById('returnPickupContent').style.display = 'block';
+  renderReturnPickupContent();
+  showPage('returnpickup', document.querySelector('[data-page="returnpickup"]'));
+  logAction('Recolha devolucao iniciada', retId);
+}
+
+function renderReturnPickupContent() {
+  if (!returnPickupId) {
+    document.getElementById('returnPickupListSection').style.display='';
+    document.getElementById('returnPickupContent').style.display='none';
+    return;
+  }
+  const doc = rets.find(d => d.id === returnPickupId);
+  if (!doc) return;
+  const sources = doc.pickupGuide?.sourceOrderIds || doc.sourceOrderIds || [];
+  document.getElementById('returnPickupHeader').innerHTML =
+    '<div><div class="pick-id">'+escHtml(doc.id)+'</div>'+
+    '<div class="pick-meta">'+(doc.client?'👤 '+escHtml(doc.client)+' · ':'')+
+    (sources.length?'Pedidos: '+sources.map(escHtml).join(', ')+' · ':'')+
+    '🏷 '+escHtml(doc.pickupGuide.emittedBy||'—')+'</div></div>'+
+    '<div style="text-align:right"><div style="font-size:20px;font-weight:800">'+returnPickupLines.length+'</div>'+
+    '<div style="font-size:11px;opacity:.6">linhas</div></div>';
+  renderReturnPickupLines();
+}
+
+function renderReturnPickupLines() {
+  const total = returnPickupLines.length;
+  const done = returnPickupLines.filter(l => l.status === 'confirmed').length;
+  const diffs = returnPickupLines.filter(l => (parseInt(l.qtyCollected)||0) !== (parseInt(l.qty)||0)).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('returnPickupProgress').style.width = pct+'%';
+  document.getElementById('returnPickupProgressLabel').textContent = done+' / '+total+' '+tr('misc_lines_confirmed');
+  const diffLabel = document.getElementById('returnPickupDiffLabel');
+  diffLabel.style.display = diffs ? '' : 'none';
+  diffLabel.textContent = diffs ? diffs+' diferenças' : '';
+  document.getElementById('returnPickupLines').innerHTML = returnPickupLines.map((l, idx) => {
+    const info = skuInfo(l.sku);
+    const collected = parseInt(l.qtyCollected)||0;
+    const diff = collected - (parseInt(l.qty)||0);
+    const isConfirmed = l.status === 'confirmed';
+    const statusText = isConfirmed ? (diff===0?'OK':(diff>0?'+'+diff:diff)) : 'Pendente';
+    const statusCls = !isConfirmed ? 'bdg-bl' : diff===0 ? 'bdg-gn' : 'bdg-or';
+    return '<div class="prep-line '+(isConfirmed?'confirmed':'')+'" id="retpickup-'+idx+'">'+
+      '<div class="prep-line-header" onclick="toggleReturnPickupLine('+idx+')">'+
+      '<div class="prep-check '+(isConfirmed?'done':'')+'">'+(isConfirmed?'✓':idx+1)+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+      '<div class="mono" style="font-weight:700;font-size:13px">'+escHtml(info?.ean||l.sku)+'</div>'+
+      (info?'<div style="font-size:11px;color:var(--muted)">'+escHtml(l.sku)+' · '+escHtml(info.name)+(info.brand?' · '+escHtml(info.brand):'')+(info.ml?' · '+escHtml(info.ml):'')+'</div>':'')+
+      '</div>'+
+      '<div style="text-align:right"><div class="mono" style="font-weight:700">'+collected+' / '+l.qty+'</div><span class="badge '+statusCls+'">'+statusText+'</span></div>'+
+      '</div>'+
+      '<div class="prep-line-body">'+
+      '<label>Quantidade recolhida</label>'+
+      '<input class="input mono" type="number" inputmode="numeric" min="0" max="'+l.qty+'" id="retpickupqty-'+idx+'" value="'+collected+'" style="margin-bottom:10px;">'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn btn-warn" style="flex:1" onclick="confirmReturnPickupLine('+idx+')">✓ Confirmar recolha</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="toggleReturnPickupLine('+idx+')">Fechar</button>'+
+      '</div></div></div>';
+  }).join('');
+}
+
+function toggleReturnPickupLine(idx) {
+  document.getElementById('retpickup-'+idx)?.classList.toggle('active');
+}
+
+function confirmReturnPickupLine(idx) {
+  const line = returnPickupLines[idx];
+  const input = document.getElementById('retpickupqty-'+idx);
+  line.qtyCollected = Math.max(0, parseInt(input?.value)||0);
+  line.diff = line.qtyCollected - (parseInt(line.qty)||0);
+  line.status = 'confirmed';
+  renderReturnPickupLines();
+}
+
+function finalizeReturnPickup() {
+  const doc = rets.find(d => d.id === returnPickupId);
+  if (!doc) return;
+  const confirmed = returnPickupLines.filter(l => l.status === 'confirmed');
+  if (!confirmed.length) { toast('Confirma pelo menos uma linha', 'err'); return; }
+  const diffs = returnPickupLines.filter(l => (parseInt(l.qtyCollected)||0) !== (parseInt(l.qty)||0));
+  const msg = 'Finalizar recolha de '+doc.id+'?\n\n'+confirmed.length+' linhas confirmadas'+(diffs.length?'\n'+diffs.length+' diferenças vs esperado':'');
+  if (!confirm(msg)) return;
+  doc.pickupGuide.lines = returnPickupLines;
+  doc.pickupGuide.status = diffs.length ? 'partial' : 'done';
+  doc.pickupGuide.finishedAt = new Date().toLocaleString('pt-PT');
+  doc.pickupGuide.finishedBy = currentUser ? currentUser.name : '—';
+  doc.pickupGuide.diffCount = diffs.length;
+  doc.lines = returnPickupLines.filter(l => (parseInt(l.qtyCollected)||0) > 0).map(l => ({sku:l.sku, qty:parseInt(l.qtyCollected)||0}));
+  doc.status = diffs.length ? 'recolha-parcial' : 'open';
+  returnPickupLines.forEach(l => {
+    const qty = parseInt(l.qtyCollected)||0;
+    if (qty > 0) saveDocLine('return', doc.id, l.sku, qty);
+    else deleteDocLine('return', doc.id, l.sku);
+  });
+  saveRet();
+  logAction('Recolha devolucao finalizada', doc.id+' · '+diffs.length+' diferenças');
+  returnPickupId = null; returnPickupLines = [];
+  document.getElementById('returnPickupListSection').style.display = '';
+  document.getElementById('returnPickupContent').style.display = 'none';
+  renderReturnPickupGuides();
+  renderDocs('return');
+  toast('Recolha finalizada · '+diffs.length+' diferenças', diffs.length?'ok':'win');
+}
+
+function cancelReturnPickup() {
+  if (!returnPickupId) return;
+  const doc = rets.find(d => d.id === returnPickupId);
+  if (doc) { doc.status = 'guia-recolha'; doc.pickupGuide.status = 'pending'; saveRet(); }
+  returnPickupId = null; returnPickupLines = [];
+  document.getElementById('returnPickupListSection').style.display = '';
+  document.getElementById('returnPickupContent').style.display = 'none';
+  renderReturnPickupGuides();
+}
+
+function exportReturnPickupExcel() {
+  const doc = rets.find(d => d.id === returnPickupId);
+  if (!doc || !doc.pickupGuide) return;
+  const rows = [['Guia de Recolha: '+doc.id], ['Cliente: '+(doc.client||'')], [], ['EAN','SKU','Produto','Esperado','Recolhido','Diferença']];
+  returnPickupLines.forEach(l => {
+    const i = skuInfo(l.sku);
+    rows.push([i?.ean||'', l.sku, i?.name||'', l.qty, l.qtyCollected||0, (l.qtyCollected||0)-l.qty]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Recolha');
+  XLSX.writeFile(wb, 'Recolha_'+doc.id+'.xlsx');
+}
+
 // ── Keep putaway/return flow (unchanged) ──
 // ══ DEVOLUÇÃO — EMITIR GUIA (mirrors emitirGuia for orders) ══
 function genDoc(t) {
@@ -2811,6 +3049,10 @@ function genDoc(t) {
   // Returns — emit putaway guide
   const doc = docSt(t).find(d => d.id === actId(t));
   if (!doc || !doc.lines.length) { toast('Sem linhas', 'err'); return; }
+  if (doc.pickupGuide && !['done','partial'].includes(doc.pickupGuide.status)) {
+    toast('Finaliza primeiro a guia de recolha', 'err');
+    return;
+  }
   const pl = [], warns = [];
   doc.lines.forEach(line => {
     const originalSku = line.sku;
@@ -3228,7 +3470,7 @@ function initApp() {
       if (d.id === 'skuDb')   { skuDb = d.items||[]; renderSkuDb(); }
       if (d.id === 'stock')   { stock = d.items||[]; renderStock(); if(invPos) renderInvLines(); }
       if (d.id === 'orders')  { orders = d.items||[]; renderDocs('order'); if(activeOrd) renderDocLines('order'); renderStock(); }
-      if (d.id === 'returns') { rets = d.items||[]; renderDocs('return'); if(activeRet) renderDocLines('return'); renderStock(); }
+      if (d.id === 'returns') { rets = d.items||[]; renderDocs('return'); if(activeRet) renderDocLines('return'); renderReturnPickupGuides(); renderPutawayGuides(); renderStock(); }
       if (d.id === 'teorico') { teorico = d.items||[]; renderStock(); }
       if (d.id === 'warehouseMap') { warehouseMap = {...warehouseMap, ...(d.items||{})}; renderWarehouseMapForm(); }
     });
@@ -3286,7 +3528,7 @@ function _exportAudit(entries) {
 const LANGS = {
   pt: {
     nav_skudb:'🗂 Base de Dados Geral', nav_stock:'📦 Stock', nav_orders:'🛒 Encomendas',
-    nav_pick:'📦 Para Preparação', nav_ret:'↩️ Devoluções', nav_putaway:'📥 Dar Entrada',
+    nav_pick:'📦 Para Preparação', nav_ret:'↩️ Devoluções', nav_ret_pickup:'🚚 Returns Pick Up', nav_putaway:'📥 Dar Entrada',
     nav_activity_lbl:'Atividade',
     // Page titles & subs
     skudb_title:'Base de Dados Geral', skudb_sub:'Catálogo central de produtos — EAN, nome, marca, categoria, ml',
@@ -3294,12 +3536,14 @@ const LANGS = {
     orders_title:'Encomendas', orders_sub:'Pedidos de preparação e saída de stock',
     pick_title:'Para Preparação', pick_sub:'Guias de saída — preparação linha a linha',
     ret_title:'Devoluções', ret_sub:'Registo de artigos devolvidos',
+    ret_pickup_title:'Returns Pick Up', ret_pickup_sub:'Guias de recolha de devoluções',
     putaway_title:'Dar Entrada', putaway_sub:'Guias de entrada de stock — colocação linha a linha',
     skudb_desc:'Catálogo central de produtos. Importa ou cria SKUs com EAN, nome, marca, categoria e ml. Esta base alimenta a <strong>pesquisa inteligente</strong>, a leitura por scanner, a resolução de EAN para SKU e a identificação de produtos em stock, encomendas, picking e devoluções. Sem esta base, os SKUs continuam a funcionar, mas aparecem com menos detalhe.',
     stock_desc:'Consulta e gere o stock real por SKU, posição e tipo de caixa. A gaveta <strong>Mapa do armazém</strong> define as posições válidas a partir de estantes, prateleiras e posições por prateleira, podendo também aceitar estantes personalizadas. Usa <strong>Dar Entrada</strong> para registar stock peça a peça ou por Excel, indicando se a posição é <em>mista</em> ou <em>exclusiva</em>. Usa <strong>📊 Inserir Stock Teórico</strong> para comparar o stock recebido com o ficheiro do fornecedor. As colunas de <em>Em carteira</em>, <em>Em preparação</em>, devoluções e <em>Disponível</em> atualizam automaticamente com os movimentos em curso.',
     orders_desc:'Cria pedidos de saída de stock por cliente. Adiciona SKUs por scanner, pesquisa, inserção manual ou Excel. As quantidades entram em <em>Em carteira</em> e reduzem o <strong>stock disponível</strong> para evitar dupla reserva. Ao emitir a guia, a preparação prioriza posições em caixas mistas e segue o percurso do armazém. O stock real só é deduzido quando o picking é confirmado linha a linha; pedidos ainda não concluídos podem libertar as unidades ao serem cancelados.',
     pick_desc:'Acompanha as guias de preparação emitidas a partir das encomendas. Cada guia organiza as linhas por prioridade de caixa mista e percurso de armazém, mostrando posição, SKU, quantidade pedida e eventuais ruturas. O operador confirma linha a linha durante o picking. O stock físico só sai do sistema ao finalizar a guia, mantendo rastreabilidade entre pedido, preparação e faturação.',
     returns_desc:'Regista artigos devolvidos pelas lojas. Podes criar uma devolução manualmente, importar por Excel, adicionar por scanner/pesquisa ou gerar uma devolução a partir de um pedido concluído. Depois de validares as linhas, emite a guia de entrada para indicar onde os artigos devem ser colocados. O stock só volta a contar no armazém quando a colocação é confirmada.',
+    ret_pickup_desc:'Acompanha as guias de recolha emitidas a partir das devoluções. O operador confirma quanto foi recolhido por SKU e, no final, a app mostra diferenças entre a quantidade esperada e a quantidade recolhida. As quantidades recolhidas alimentam a guia de entrada seguinte.',
     putaway_desc:'Lista de guias de entrada geradas pelas devoluções. Ao iniciar uma guia, o operador segue as posições sugeridas para colocar cada SKU, com percurso otimizado e possibilidade de confirmar quantidades linha a linha. Apenas as linhas confirmadas acrescentam stock real, garantindo que devoluções pendentes não ficam disponíveis antes de serem arrumadas.',
     // Buttons
     btn_new_order:'＋ Nova encomenda', btn_new_ret:'＋ Nova devolução',
@@ -3318,6 +3562,7 @@ const LANGS = {
     card_returns:'Devoluções',
     card_open_guides:'Guias em aberto',
     card_open_return_guides:'Guias de devolução em aberto',
+    card_return_pickup_guides:'Guias de recolha em aberto',
     btn_view_map:'Ver mapa',
     warehouse_map_title:'Mapa do armazém',
     warehouse_map_visual_title:'Mapa visual do armazém',
@@ -3338,6 +3583,7 @@ const LANGS = {
     // Status
     st_open:'Aberta', st_picked:'Concluída', st_cancelled:'Anulada',
     st_returned:'Concluída', st_emitted:'📋 Guia emitida',
+    st_collect_issued:'🚚 Guia recolha', st_collecting:'🚚 Em recolha', st_collected:'✓ Recolhida', st_partial_collect:'⚠️ Recolha parcial',
     st_prep:'🚶 Em preparação', st_coloc:'🚶 Em colocação', st_parcial:'⚠️ Parcial',
     // Stock
     st_ok:'OK', st_low:'Baixo', st_empty:'Esgotado',
@@ -3366,11 +3612,13 @@ const LANGS = {
     login_who:'Quem és tu?',
     // Misc
     misc_no_orders:'Sem encomendas.', misc_no_rets:'Sem devoluções.',
+    misc_no_return_pickups:'Nenhuma guia de recolha emitida. Vai a Devoluções e clica em "Emitir Guia Recolha".',
     misc_no_guides_pick:'Nenhuma guia emitida. Vai a Encomendas e clica em "Emitir Guia Preparação".',
     misc_no_guides_put:'Nenhuma guia emitida. Vai a Devoluções e clica em "Emitir Guia Devolução".',
     misc_no_stock:'Sem stock. Clica em "Dar entrada" para começar.',
     misc_no_skus:'Base de dados vazia.',
     misc_awaiting_prep:'Aguarda preparação',
+    misc_awaiting_collect:'Aguarda recolha',
     misc_awaiting_put:'Aguarda colocação',
     misc_issued_by:'Emitida por',
     misc_lines_confirmed:'linhas confirmadas',
@@ -3385,19 +3633,21 @@ const LANGS = {
   },
   en: {
     nav_skudb:'🗂 General Database', nav_stock:'📦 Stock', nav_orders:'🛒 Orders',
-    nav_pick:'📦 For Preparation', nav_ret:'↩️ Returns', nav_putaway:'📥 Stock In',
+    nav_pick:'📦 For Preparation', nav_ret:'↩️ Returns', nav_ret_pickup:'🚚 Returns Pick Up', nav_putaway:'📥 Stock In',
     nav_activity_lbl:'Activity',
     skudb_title:'General Database', skudb_sub:'Product catalogue — EAN, name, brand, category, ml',
     stock_title:'Stock', stock_sub:'Stock by warehouse position',
     orders_title:'Orders', orders_sub:'Outbound stock orders',
     pick_title:'For Preparation', pick_sub:'Outbound guides — line by line picking',
     ret_title:'Returns', ret_sub:'Register returned items',
+    ret_pickup_title:'Returns Pick Up', ret_pickup_sub:'Return collection guides',
     putaway_title:'Stock In', putaway_sub:'Inbound stock guides — line by line putaway',
     skudb_desc:'Central product catalogue. Import or create SKUs with EAN, name, brand, category and ml. This database powers <strong>smart search</strong>, scanner lookup, EAN-to-SKU resolution and product identification across stock, orders, picking and returns. Without it, SKUs still work, but appear with less detail.',
     stock_desc:'View and manage real stock by SKU, position and box type. The <strong>Warehouse map</strong> drawer defines valid locations from shelves, levels and positions per level, with optional custom shelf names. Use <strong>Stock In</strong> to register stock item by item or by Excel, marking each location as <em>mixed</em> or <em>exclusive</em>. Use <strong>📊 Insert Theoretical Stock</strong> to compare received stock against the supplier file. <em>In cart</em>, <em>In preparation</em>, returns and <em>Available</em> update automatically from active movements.',
     orders_desc:'Create outbound stock orders by client. Add SKUs by scanner, search, manual entry or Excel. Quantities move to <em>In cart</em> and reduce <strong>available stock</strong> to avoid double reservation. When the guide is issued, preparation prioritizes mixed-box positions and follows the warehouse route. Real stock is deducted only when picking is confirmed line by line; unfinished orders can release their units when cancelled.',
     pick_desc:'Track preparation guides issued from orders. Each guide sorts lines by mixed-box priority and warehouse route, showing position, SKU, requested quantity and any shortages. The operator confirms each line during picking. Physical stock only leaves the system when the guide is finalized, keeping traceability between order, preparation and invoicing.',
     returns_desc:'Register items returned by stores. You can create a return manually, import by Excel, add by scanner/search or generate a return from a completed order. After validating the lines, issue the entry guide to indicate where items should be placed. Stock only counts again in the warehouse after putaway is confirmed.',
+    ret_pickup_desc:'Track collection guides issued from returns. The operator confirms how much was collected per SKU and, at the end, the app shows differences between expected and collected quantities. Collected quantities feed the next entry guide.',
     putaway_desc:'List of entry guides generated from returns. When a guide starts, the operator follows the suggested locations for each SKU, with an optimized route and line-by-line quantity confirmation. Only confirmed lines add real stock, so pending returns do not become available before being put away.',
     btn_new_order:'＋ New order', btn_new_ret:'＋ New return',
     btn_emit_pick:'📦 Issue Picking Guide', btn_emit_put:'📥 Issue Entry Guide',
@@ -3415,6 +3665,7 @@ const LANGS = {
     card_returns:'Returns',
     card_open_guides:'Open guides',
     card_open_return_guides:'Open return guides',
+    card_return_pickup_guides:'Open collection guides',
     btn_view_map:'View map',
     warehouse_map_title:'Warehouse map',
     warehouse_map_visual_title:'Visual warehouse map',
@@ -3434,6 +3685,7 @@ const LANGS = {
     wm_empty_position:'Free',
     st_open:'Open', st_picked:'Done', st_cancelled:'Cancelled',
     st_returned:'Done', st_emitted:'📋 Guide issued',
+    st_collect_issued:'🚚 Collection guide', st_collecting:'🚚 Collecting', st_collected:'✓ Collected', st_partial_collect:'⚠️ Partial collection',
     st_prep:'🚶 In preparation', st_coloc:'🚶 In putaway', st_parcial:'⚠️ Partial',
     st_ok:'OK', st_low:'Low', st_empty:'Out of stock',
     box_mixed:'📦 Mixed', box_excl:'🔹 Mono',
@@ -3457,11 +3709,13 @@ const LANGS = {
     tip_lang:'Select interface language.',
     login_who:'Who are you?',
     misc_no_orders:'No orders.', misc_no_rets:'No returns.',
+    misc_no_return_pickups:'No collection guide issued. Go to Returns and click "Issue Pick Up Guide".',
     misc_no_guides_pick:'No guide issued. Go to Orders and click "Issue Picking Guide".',
     misc_no_guides_put:'No guide issued. Go to Returns and click "Issue Return Guide".',
     misc_no_stock:'No stock. Click "Stock in" to begin.',
     misc_no_skus:'Empty database.',
     misc_awaiting_prep:'Awaiting preparation',
+    misc_awaiting_collect:'Awaiting collection',
     misc_awaiting_put:'Awaiting putaway',
     misc_issued_by:'Issued by',
     misc_lines_confirmed:'lines confirmed',
@@ -3476,19 +3730,21 @@ const LANGS = {
   },
   es: {
     nav_skudb:'🗂 Base de Dados Geral', nav_stock:'📦 Stock', nav_orders:'🛒 Pedidos',
-    nav_pick:'📦 Para Preparación', nav_ret:'↩️ Devoluciones', nav_putaway:'📥 Entrada Stock',
+    nav_pick:'📦 Para Preparación', nav_ret:'↩️ Devoluciones', nav_ret_pickup:'🚚 Returns Pick Up', nav_putaway:'📥 Entrada Stock',
     nav_activity_lbl:'Actividad',
     skudb_title:'Base de Datos General', skudb_sub:'Catálogo de productos — EAN, nombre, marca, categoría, ml',
     stock_title:'Stock', stock_sub:'Stock por posición en almacén',
     orders_title:'Pedidos', orders_sub:'Pedidos de salida de stock',
     pick_title:'Para Preparación', pick_sub:'Guías de salida — preparación línea a línea',
     ret_title:'Devoluciones', ret_sub:'Registro de artículos devueltos',
+    ret_pickup_title:'Returns Pick Up', ret_pickup_sub:'Guías de recogida de devoluciones',
     putaway_title:'Entrada Stock', putaway_sub:'Guías de entrada de stock — colocación línea a línea',
     skudb_desc:'Catálogo central de productos. Importa o crea SKUs con EAN, nombre, marca, categoría y ml. Esta base alimenta la <strong>búsqueda inteligente</strong>, la lectura por escáner, la conversión de EAN a SKU y la identificación de productos en stock, pedidos, picking y devoluciones. Sin esta base, los SKUs siguen funcionando, pero aparecen con menos detalle.',
     stock_desc:'Consulta y gestiona el stock real por SKU, posición y tipo de caja. El desplegable <strong>Mapa del almacén</strong> define posiciones válidas a partir de estanterías, niveles y posiciones por nivel, pudiendo aceptar estanterías personalizadas. Usa <strong>Entrada Stock</strong> para registrar stock artículo a artículo o por Excel, indicando si la posición es <em>mixta</em> o <em>exclusiva</em>. Usa <strong>📊 Insertar Stock Teórico</strong> para comparar el stock recibido con el archivo del proveedor. Las columnas de <em>En cartera</em>, <em>En preparación</em>, devoluciones y <em>Disponible</em> se actualizan automáticamente con los movimientos en curso.',
     orders_desc:'Crea pedidos de salida de stock por cliente. Añade SKUs por escáner, búsqueda, entrada manual o Excel. Las cantidades pasan a <em>En cartera</em> y reducen el <strong>stock disponible</strong> para evitar doble reserva. Al emitir la guía, la preparación prioriza posiciones en cajas mixtas y sigue el recorrido del almacén. El stock real solo se descuenta cuando el picking se confirma línea a línea; los pedidos no concluidos pueden liberar unidades al cancelarse.',
     pick_desc:'Controla las guías de preparación emitidas desde pedidos. Cada guía ordena las líneas por prioridad de caja mixta y recorrido de almacén, mostrando posición, SKU, cantidad pedida y posibles roturas. El operador confirma línea a línea durante el picking. El stock físico solo sale del sistema al finalizar la guía, manteniendo trazabilidad entre pedido, preparación y facturación.',
     returns_desc:'Registra artículos devueltos por las tiendas. Puedes crear una devolución manualmente, importar por Excel, añadir por escáner/búsqueda o generar una devolución desde un pedido concluido. Después de validar las líneas, emite la guía de entrada para indicar dónde deben colocarse los artículos. El stock solo vuelve a contar en el almacén cuando se confirma la colocación.',
+    ret_pickup_desc:'Controla las guías de recogida emitidas desde devoluciones. El operador confirma cuánto se recogió por SKU y, al final, la app muestra diferencias entre cantidad esperada y recogida. Las cantidades recogidas alimentan la siguiente guía de entrada.',
     putaway_desc:'Lista de guías de entrada generadas por devoluciones. Al iniciar una guía, el operador sigue las posiciones sugeridas para colocar cada SKU, con recorrido optimizado y confirmación de cantidades línea a línea. Solo las líneas confirmadas añaden stock real, evitando que devoluciones pendientes queden disponibles antes de ser colocadas.',
     btn_new_order:'＋ Nuevo pedido', btn_new_ret:'＋ Nueva devolución',
     btn_emit_pick:'📦 Emitir Guía Preparación', btn_emit_put:'📥 Emitir Guía Entrada',
@@ -3506,6 +3762,7 @@ const LANGS = {
     card_returns:'Devoluciones',
     card_open_guides:'Guías abiertas',
     card_open_return_guides:'Guías de devolución abiertas',
+    card_return_pickup_guides:'Guías de recogida abiertas',
     btn_view_map:'Ver mapa',
     warehouse_map_title:'Mapa del almacén',
     warehouse_map_visual_title:'Mapa visual del almacén',
@@ -3525,6 +3782,7 @@ const LANGS = {
     wm_empty_position:'Libre',
     st_open:'Abierto', st_picked:'Completado', st_cancelled:'Anulado',
     st_returned:'Completado', st_emitted:'📋 Guía emitida',
+    st_collect_issued:'🚚 Guía recogida', st_collecting:'🚚 En recogida', st_collected:'✓ Recogida', st_partial_collect:'⚠️ Recogida parcial',
     st_prep:'🚶 En preparación', st_coloc:'🚶 En colocación', st_parcial:'⚠️ Parcial',
     st_ok:'OK', st_low:'Bajo', st_empty:'Sin stock',
     box_mixed:'📦 Mixed', box_excl:'🔹 Mono',
@@ -3548,11 +3806,13 @@ const LANGS = {
     tip_lang:'Selecciona el idioma de la interfaz.',
     login_who:'¿Quién eres?',
     misc_no_orders:'Sin pedidos.', misc_no_rets:'Sin devoluciones.',
+    misc_no_return_pickups:'Ninguna guía de recogida emitida. Ve a Devoluciones y haz clic en "Emitir Guía Recogida".',
     misc_no_guides_pick:'Ninguna guía emitida. Ve a Pedidos y haz clic en "Emitir Guía Preparación".',
     misc_no_guides_put:'Ninguna guía emitida. Ve a Devoluciones y haz clic en "Emitir Guía Devolución".',
     misc_no_stock:'Sin stock. Haz clic en "Entrada de stock" para comenzar.',
     misc_no_skus:'Base de datos vacía.',
     misc_awaiting_prep:'Esperando preparación',
+    misc_awaiting_collect:'Esperando recogida',
     misc_awaiting_put:'Esperando colocación',
     misc_issued_by:'Emitida por',
     misc_lines_confirmed:'líneas confirmadas',
@@ -3662,6 +3922,7 @@ function applyStaticTranslations() {
     'page-orders': ['orders_title','orders_sub'],
     'page-picking': ['pick_title','pick_sub'],
     'page-returns': ['ret_title','ret_sub'],
+    'page-returnpickup': ['ret_pickup_title','ret_pickup_sub'],
     'page-putaway': ['putaway_title','putaway_sub'],
   };
   Object.entries(map).forEach(([pageId, [titleKey, subKey]]) => {
@@ -3675,7 +3936,7 @@ function applyStaticTranslations() {
   // Nav tabs
   const navMap = {
     'skudb': 'nav_skudb', 'stock': 'nav_stock', 'orders': 'nav_orders',
-    'picking': 'nav_pick', 'returns': 'nav_ret', 'putaway': 'nav_putaway'
+    'picking': 'nav_pick', 'returns': 'nav_ret', 'returnpickup': 'nav_ret_pickup', 'putaway': 'nav_putaway'
   };
   document.querySelectorAll('[data-page]').forEach(btn => {
     const key = navMap[btn.getAttribute('data-page')];
