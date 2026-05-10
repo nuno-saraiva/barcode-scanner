@@ -1356,6 +1356,18 @@ function skuPill(sku){
   if(!i) return '<span class="mono" style="font-size:11px;color:var(--muted)">—</span>';
   return `<span class="sku-pill"><span class="sku-pname">${i.name}</span><span class="sku-pbrand">${i.brand}</span>${i.ml?`<span class="badge bdg-sk" style="font-size:10px">${i.ml}</span>`:''}</span>`;
 }
+function productLineLabel(sku) {
+  const info = skuInfo(sku);
+  if (!info) {
+    return '<div class="mono" style="font-weight:700;font-size:14px">'+escHtml(sku)+'</div>';
+  }
+  return '<div style="font-weight:800;font-size:14px;line-height:1.25;">'+escHtml(info.name||sku)+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+
+    '<span class="mono">'+escHtml(info.ean||sku)+'</span> · <span class="mono">'+escHtml(sku)+'</span>'+
+    (info.brand?' · '+escHtml(info.brand):'')+
+    (info.ml?' · '+escHtml(info.ml):'')+
+    '</div>';
+}
 
 // NAV
 function showPage(id,btn){
@@ -2826,8 +2838,7 @@ function renderPrepLines() {
         <div class="prep-check ${checkCls}">${checkIcon}</div>
         <div class="prep-pos ${posClass}">${l.position}</div>
         <div style="flex:1;min-width:0">
-          <div class="mono" style="font-weight:700;font-size:13px">${info?.ean||l.sku}</div>
-          ${info ? `<div style="font-size:11px;color:var(--muted)">${l.sku} · ${info.name}${info.brand?' · '+info.brand:''}${info.ml?' · '+info.ml:''}</div>` : ''}
+          ${productLineLabel(l.sku)}
         </div>
         <div style="text-align:right;flex-shrink:0">
           ${isRuptura ? '<span class="ruptura-badge">RUTURA</span>' :
@@ -3460,8 +3471,7 @@ function renderPutawayLines() {
       '<div class="prep-check '+checkCls+'">'+checkIcon+'</div>'+
       '<div class="prep-pos '+posClass+'" style="'+(isConfirmed?'background:var(--purple)':isNoPos?'background:#d97706':'background:var(--purple)')+'">'+(l.position==='???'?triagePosition():l.position)+'</div>'+
       '<div style="flex:1;min-width:0">'+
-      '<div class="mono" style="font-weight:700;font-size:13px">'+(info?.ean||l.sku)+'</div>'+
-      (info?'<div style="font-size:11px;color:var(--muted)">'+l.sku+' · '+info.name+(info.brand?' · '+info.brand:'')+(info.ml?' · '+info.ml:'')+'</div>':'')+'</div>'+
+      productLineLabel(l.sku)+'</div>'+
       '<div style="text-align:right;flex-shrink:0">'+
       (isConfirmed?'<span class="badge bdg-gn">'+l.qtyDone+' colocados</span>':
        '<span style="font-weight:700;font-size:15px">'+l.qty+'</span><span style="font-size:11px;color:var(--muted)"> unid.</span>')+
