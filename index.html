@@ -141,23 +141,31 @@ select.input{appearance:auto;cursor:pointer;}
 .table-scroll-top{height:14px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--border);background:var(--surface2);}
 .table-scroll-spacer{height:1px;}
 .doc-list{overflow-x:auto;}
-.doc-grid{min-width:940px;}
-.doc-row{display:grid;grid-template-columns:minmax(250px,2fr) minmax(140px,1fr) 112px 130px minmax(220px,auto);gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
-.doc-row:last-child{border-bottom:none;}
-.doc-row:hover{background:var(--bg);}
-.doc-head{background:var(--surface2);padding-top:9px;padding-bottom:9px;position:sticky;top:0;z-index:2;}
-.doc-sort{width:100%;justify-content:space-between;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-size:11px;}
-.doc-sort:hover{border-color:var(--accent);color:var(--accent);}
+.doc-table{width:100%;min-width:920px;border-collapse:collapse;font-size:13px;}
+.doc-table th{background:var(--surface2);border-bottom:1px solid var(--border);padding:9px 12px;text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+.doc-table td{border-bottom:1px solid var(--border);padding:10px 12px;vertical-align:middle;}
+.doc-table tr:last-child td{border-bottom:none;}
+.doc-table tbody tr:hover td{background:var(--bg);}
+.doc-table .col-main{width:38%;}
+.doc-table .col-client{width:18%;}
+.doc-table .col-date{width:110px;}
+.doc-table .col-user{width:130px;}
+.doc-table .col-actions{width:260px;text-align:right;}
+.doc-sort{background:none;border:0;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:0;gap:3px;}
+.doc-sort:hover{color:var(--accent);}
 .doc-title{font-family:var(--mono);font-weight:700;font-size:13px;line-height:1.25;}
 .doc-meta{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.35;}
 .doc-cell-muted{font-size:12px;color:var(--muted);}
 .doc-date,.doc-user{font-size:12px;}
 .doc-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;}
 @media(max-width:768px){
-  .doc-grid{min-width:0;}
-  .doc-head{display:none;}
-  .doc-row{display:block;padding:14px 16px;}
-  .doc-cell-muted,.doc-date,.doc-user{margin-top:6px;}
+  .doc-table{min-width:0;display:block;}
+  .doc-table thead{display:none;}
+  .doc-table tbody,.doc-table tr,.doc-table td{display:block;width:100%;}
+  .doc-table tr{padding:14px 16px;border-bottom:1px solid var(--border);}
+  .doc-table td{border-bottom:0;padding:0;}
+  .doc-table td+td{margin-top:6px;}
+  .doc-table .col-actions{text-align:left;width:100%;}
   .doc-actions{justify-content:flex-start;margin-top:10px;}
 }
 @media(min-width:769px){
@@ -2217,7 +2225,16 @@ function sortDocsBy(t, col) {
 function docSortButton(t, col, label) {
   const s = docSort[t] || {};
   const mark = s.col === col ? (s.dir === 1 ? ' ↑' : ' ↓') : '';
-  return `<button class="btn btn-ghost btn-sm doc-sort" onclick="sortDocsBy('${t}','${col}')"><span>${label}</span><span>${mark}</span></button>`;
+  return `<button class="doc-sort" onclick="sortDocsBy('${t}','${col}')">${label}${mark}</button>`;
+}
+
+function docActionFromButton(action, t, btn) {
+  const id = btn?.getAttribute('data-docid');
+  if (!id) { toast('Documento não identificado','err'); return; }
+  if (action === 'export') exportDocExcel(t, id);
+  if (action === 'edit') openEd(t, id);
+  if (action === 'cancel') cancelDocFromList(t, id);
+  if (action === 'delete') delDoc(t, id);
 }
 
 const CLIENTS = ['P&C Colombo','Sephora Colombo','Primor Colombo','Douglas Colombo','Wells Garret','Primor Garret'];
@@ -2290,14 +2307,14 @@ function renderDocs(t){
   });
   const docLabel = t==='order' ? 'Pedido' : 'Devolução';
   const header =
-    '<div class="doc-head doc-row">'+
-    docSortButton(t,'id',docLabel)+
-    docSortButton(t,'client','Cliente')+
-    docSortButton(t,'createdAt','Data')+
-    docSortButton(t,'createdBy','User')+
-    docSortButton(t,'status','Estado')+
-    '</div>';
-  el.innerHTML='<div class="doc-list"><div class="doc-grid">'+header+sorted.map(d=>{
+    '<thead><tr>'+
+    '<th class="col-main">'+docSortButton(t,'id',docLabel)+'</th>'+
+    '<th class="col-client">'+docSortButton(t,'client','Cliente')+'</th>'+
+    '<th class="col-date">'+docSortButton(t,'createdAt','Data')+'</th>'+
+    '<th class="col-user">'+docSortButton(t,'createdBy','User')+'</th>'+
+    '<th class="col-actions">'+docSortButton(t,'status','Estado')+'</th>'+
+    '</tr></thead>';
+  el.innerHTML='<div class="doc-list"><table class="doc-table">'+header+'<tbody>'+sorted.map(d=>{
     const _stMap={open:'st_open',picked:'st_picked',cancelled:'st_cancelled',returned:'st_returned','guia-emitida':'st_emitted','em-preparacao':'st_prep','em-colocacao':'st_coloc','parcial':'st_parcial','guia-recolha':'st_collect_issued','em-recolha':'st_collecting','recolha-parcial':'st_partial_collect'};
     const sl=tr(_stMap[d.status]||d.status)||d.status;
     const slSuffix = d.confirmedBy&&['picked','returned','parcial'].includes(d.status)?' · 👤 '+d.confirmedBy:d.cancelledBy&&d.status==='cancelled'?' · 👤 '+d.cancelledBy:'';
@@ -2305,23 +2322,24 @@ function renderDocs(t){
     const canEdit=d.status==='open'||d.status==='recolha-parcial';
     const ownerLabel = t==='order' ? 'Pedido por' : 'Criado por';
     const meta = d.lines.length+' SKUs · '+tq+' unid. · '+ownerLabel+': '+(d.createdBy||'—');
-    return `<div class="doc-row">
-      <div style="min-width:0">
+    const safeId = escHtml(d.id);
+    return `<tr>
+      <td class="col-main">
         <div class="doc-title">${escHtml(d.id)}</div>
         <div class="doc-meta">${escHtml(meta)}</div>
-      </div>
-      <div class="doc-cell-muted">${escHtml(d.client||'—')}</div>
-      <div class="doc-date mono">${escHtml(d.createdAt||'—')}</div>
-      <div class="doc-user">${escHtml(d.createdBy||'—')}</div>
-      <div class="doc-actions">
+      </td>
+      <td class="col-client doc-cell-muted">${escHtml(d.client||'—')}</td>
+      <td class="col-date doc-date mono">${escHtml(d.createdAt||'—')}</td>
+      <td class="col-user doc-user">${escHtml(d.createdBy||'—')}</td>
+      <td class="col-actions"><div class="doc-actions">
         <span class="badge s-${d.status}">${escHtml(sl)}${slSuffix}</span>
-        <button class="btn btn-ghost btn-sm" onclick="exportDocExcel('${t}','${escHtml(d.id)}')">⬇ Excel</button>
-        ${canEdit?`<button class="btn btn-ghost btn-sm" onclick="openEd('${t}','${escHtml(d.id)}')">✏️</button>`:''}
-        ${(d.status==='open'||d.status==='guia-emitida'||d.status==='guia-recolha')?`<button class="btn btn-danger btn-sm" onclick="cancelDocFromList('${t}','${escHtml(d.id)}')">✕ Cancelar</button>`:''}
-        <button class="btn btn-ghost btn-sm" onclick="delDoc('${t}','${escHtml(d.id)}')">🗑</button>
-      </div>
-    </div>`;
-  }).join('')+'</div></div>';
+        <button class="btn btn-ghost btn-sm" data-docid="${safeId}" onclick="docActionFromButton('export','${t}',this)">⬇ Excel</button>
+        ${canEdit?`<button class="btn btn-ghost btn-sm" data-docid="${safeId}" onclick="docActionFromButton('edit','${t}',this)">✏️</button>`:''}
+        ${(d.status==='open'||d.status==='guia-emitida'||d.status==='guia-recolha')?`<button class="btn btn-danger btn-sm" data-docid="${safeId}" onclick="docActionFromButton('cancel','${t}',this)">✕ Cancelar</button>`:''}
+        <button class="btn btn-ghost btn-sm" data-docid="${safeId}" onclick="docActionFromButton('delete','${t}',this)">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('')+'</tbody></table></div>';
 }
 function delDoc(t,id){
   if(!confirm('Apagar?'))return;
