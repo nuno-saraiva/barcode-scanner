@@ -2,18 +2,30 @@
 
 Use this checklist before publishing a new version of the app.
 
+Environment roles:
+
+- `WarehouseNH` is the main/production app.
+- `ArmazemNH` is the staging/test app.
+- Run functional/destructive tests only in `ArmazemNH`.
+
 ## Automatic checks
 
 Run:
 
 ```bash
-npm run qa:smoke
+npm run qa:staging
 ```
 
-Optional target:
+Production check, read-only/smoke only:
 
 ```bash
-TARGET_URL=https://nuno-saraiva.github.io/WarehouseNH/ npm run qa:smoke
+npm run qa:production
+```
+
+Custom target:
+
+```bash
+node qa/smoke-test.mjs --target=https://nuno-saraiva.github.io/ArmazemNH/
 ```
 
 The script checks:
@@ -33,4 +45,4 @@ The script checks:
 - Orders: create an order draft, add product by search, remove line.
 - Returns: create return draft, add by EAN, issue entry guide only on test data.
 - Languages: switch PT, GB and ES and verify card titles and descriptions.
-- Reset: only test on a copied/test app, never on production data.
+- Reset: only test in `ArmazemNH`, never in `WarehouseNH`.
