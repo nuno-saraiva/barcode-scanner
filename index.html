@@ -2199,8 +2199,9 @@ function selectClient(client){
   closeClientModal();
   // If we have pending import lines, use that flow
   if (_pendingImportLines) {
-    createReturnFromOrder(client, _pendingImportLines);
+    createReturnFromOrder(client, _pendingImportLines, _pendingImportSourceOrderIds);
     _pendingImportLines = null;
+    _pendingImportSourceOrderIds = [];
     return;
   }
   const isOrder = t==='order';
@@ -4516,6 +4517,7 @@ function importOrderAsReturn(orderId) {
   // Show client modal pre-filled with same client
   _pendingDocType = 'return';
   _pendingImportLines = order.lines.map(l => ({sku: l.sku, qty: l.qty}));
+  _pendingImportSourceOrderIds = [order.id];
 
   document.getElementById('clientModalTitle').textContent = '↩️ Devolução de pedido';
   document.getElementById('clientBtnList').innerHTML = '';
@@ -4529,7 +4531,7 @@ function importOrderAsReturn(orderId) {
   if (CLIENTS.includes(order.client)) {
     // Auto-select same client
     closeClientModal();
-    createReturnFromOrder(order.client, order.lines);
+    createReturnFromOrder(order.client, order.lines, [order.id]);
     return;
   }
 
@@ -4592,10 +4594,16 @@ function createSelectedReturnFromOrders() {
 }
 
 function createReturnFromOrder(client, lines, sourceOrderIds = []) {
-  const count = docSt('return').filter(d => d.client===client).length + 1;
   const now = new Date();
   const dateStr = now.toLocaleDateString('pt-PT', {day:'2-digit',month:'2-digit',year:'numeric'});
-  const id = 'Devolução ' + client + ' ' + count;
+  let id = sourceOrderIds && sourceOrderIds.length
+    ? 'Devol ' + sourceOrderIds.join(' + ')
+    : 'Devolução ' + client + ' ' + (docSt('return').filter(d => d.client===client).length + 1);
+  const baseId = id;
+  let suffix = 2;
+  while (docSt('return').some(d => d.id === id)) {
+    id = baseId + ' #' + suffix++;
+  }
 
   rets.unshift({
     id, client, lines: lines.map(l => ({sku:l.sku, qty:l.qty})),
