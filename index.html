@@ -884,7 +884,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page" id="page-putaway">
   <div class="page-title">Dar Entrada</div>
   <div class="page-sub">Guias de entrada — colocação linha a linha</div>
-  <div class="page-desc" data-html-i="putaway_desc">Lista de guias de entrada geradas depois da recolha de devoluções. Ao iniciar uma guia, o operador indica a loja de origem e segue uma rota otimizada pelo armazém. A sugestão prioriza caixas <strong>Mono</strong> e depois <strong>Mixed</strong>; quando há mais do que uma localização possível para o SKU, pode pedir outra localização antes de confirmar. Só as linhas confirmadas acrescentam stock real.</div>
+  <div class="page-desc" data-html-i="putaway_desc">Lista de guias de entrada geradas depois da recolha de devoluções. Ao iniciar, o operador começa diretamente a recolocação em stock e segue uma rota otimizada pelo armazém. A sugestão prioriza caixas <strong>Mono</strong> e depois <strong>Mixed</strong>; quando há mais do que uma localização possível para o SKU, pode pedir outra localização antes de confirmar. Só as linhas confirmadas acrescentam stock real.</div>
 
   <!-- GUIDES LIST -->
   <div id="putawayListSection">
@@ -3369,11 +3369,7 @@ function iniciarPutaway(retId) {
   if (!doc) { toast('Guia não encontrada','err'); return; }
   if (!doc.putawayGuide) { toast('Esta devolução ainda não tem guia de entrada','err'); return; }
   if (!doc.putawayGuide.lines || !doc.putawayGuide.lines.length) { toast('Guia sem linhas para colocar','err'); return; }
-  putawayPendingId = retId;
-  document.getElementById('origemModalSub').textContent = 'Devolução '+retId+(doc.client?' · '+doc.client:'')+'. Indica a loja de origem.';
-  document.getElementById('origemInput').value = doc.putawayGuide.loja || '';
-  document.getElementById('origemModal').classList.add('visible');
-  setTimeout(()=>document.getElementById('origemInput').focus(), 80);
+  startPutawaySession(retId, doc);
 }
 
 function origemCancel() { document.getElementById('origemModal').classList.remove('visible'); putawayPendingId=null; }
@@ -3387,6 +3383,10 @@ function origemConfirm() {
   const doc = rets.find(d=>d.id===retId);
   if (!doc) return;
   doc.putawayGuide.loja = loja;
+  startPutawaySession(retId, doc);
+}
+
+function startPutawaySession(retId, doc) {
   putawayOrderId = retId;
   putawayLines = JSON.parse(JSON.stringify(doc.putawayGuide.lines)).map(l => {
     if (l.noPos && (!l.position || l.position === '???')) {
@@ -3404,7 +3404,7 @@ function origemConfirm() {
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-putaway').classList.add('active');
   document.querySelector('[data-page="putaway"]').classList.add('active');
-  logAction('Colocacao iniciada', retId+' <- '+loja);
+  logAction('Colocacao iniciada', retId);
 }
 
 function renderPutawayContent() {
@@ -3794,7 +3794,7 @@ const LANGS = {
     pick_desc:'Acompanha as guias de preparação emitidas a partir das encomendas. Cada guia organiza as linhas por prioridade de caixa mista e percurso de armazém, mostrando posição, SKU, quantidade pedida e eventuais ruturas. O operador confirma linha a linha durante o picking. O stock físico só sai do sistema ao finalizar a guia, mantendo rastreabilidade entre pedido, preparação e faturação.',
     returns_desc:'Cria pedidos de devolução a partir de um ou vários pedidos já preparados, ou adiciona artigos manualmente por scanner, pesquisa ou Excel. Ao emitir a <strong>guia de recolha</strong>, as linhas seguem para <strong>Returns Pick Up</strong>, onde a loja/armazém confirma o que foi efetivamente recolhido. Pedidos que já deram origem a devolução ficam bloqueados para evitar duplicação.',
     ret_pickup_desc:'Acompanha as guias de recolha emitidas nas devoluções. A lista soma os artigos dos pedidos incluídos e pode ser organizada por EAN, produto, categoria, marca, ml ou quantidade para facilitar a recolha por zona de loja. Todas as linhas têm de ser confirmadas, mesmo a zero; ao finalizar, a app mostra diferenças face ao esperado e gera automaticamente a guia de <strong>Stock In</strong> apenas com as quantidades recolhidas.',
-    putaway_desc:'Lista de guias de entrada geradas depois da recolha de devoluções. Ao iniciar uma guia, o operador indica a loja de origem e segue uma rota otimizada pelo armazém. A sugestão prioriza caixas <strong>Mono</strong> e depois <strong>Mixed</strong>; quando há mais do que uma localização possível para o SKU, pode pedir outra localização antes de confirmar. Só as linhas confirmadas acrescentam stock real.',
+    putaway_desc:'Lista de guias de entrada geradas depois da recolha de devoluções. Ao iniciar, o operador começa diretamente a recolocação em stock e segue uma rota otimizada pelo armazém. A sugestão prioriza caixas <strong>Mono</strong> e depois <strong>Mixed</strong>; quando há mais do que uma localização possível para o SKU, pode pedir outra localização antes de confirmar. Só as linhas confirmadas acrescentam stock real.',
     // Buttons
     btn_new_order:'＋ Nova encomenda', btn_new_ret:'＋ Nova devolução',
     btn_emit_pick:'📦 Emitir Guia Preparação', btn_emit_put:'📥 Emitir Guia Entrada',
@@ -3898,7 +3898,7 @@ const LANGS = {
     pick_desc:'Track preparation guides issued from orders. Each guide sorts lines by mixed-box priority and warehouse route, showing position, SKU, requested quantity and any shortages. The operator confirms each line during picking. Physical stock only leaves the system when the guide is finalized, keeping traceability between order, preparation and invoicing.',
     returns_desc:'Create return requests from one or more already picked orders, or add items manually by scanner, search or Excel. When the <strong>collection guide</strong> is issued, the lines move to <strong>Returns Pick Up</strong>, where the store/warehouse confirms what was actually collected. Orders that have already generated a return are blocked to avoid duplication.',
     ret_pickup_desc:'Track collection guides issued from returns. The list combines items from the included orders and can be sorted by EAN, product, category, brand, ml or quantity to support collection by store area. Every line must be confirmed, even at zero; when finalized, the app shows differences against expected quantities and automatically creates the <strong>Stock In</strong> guide only with collected quantities.',
-    putaway_desc:'List of inbound guides generated after return collection. When a guide starts, the operator enters the origin store and follows an optimized warehouse route. Suggested locations prioritize <strong>Mono</strong> boxes and then <strong>Mixed</strong>; when more than one location is available for the SKU, another location can be requested before confirmation. Only confirmed lines add real stock.',
+    putaway_desc:'List of inbound guides generated after return collection. When started, the operator begins stock putaway directly and follows an optimized warehouse route. Suggested locations prioritize <strong>Mono</strong> boxes and then <strong>Mixed</strong>; when more than one location is available for the SKU, another location can be requested before confirmation. Only confirmed lines add real stock.',
     btn_new_order:'＋ New order', btn_new_ret:'＋ New return',
     btn_emit_pick:'📦 Issue Picking Guide', btn_emit_put:'📥 Issue Entry Guide',
     btn_start_pick:'▶ Start picking', btn_start_put:'▶ Start',
@@ -3995,7 +3995,7 @@ const LANGS = {
     pick_desc:'Controla las guías de preparación emitidas desde pedidos. Cada guía ordena las líneas por prioridad de caja mixta y recorrido de almacén, mostrando posición, SKU, cantidad pedida y posibles roturas. El operador confirma línea a línea durante el picking. El stock físico solo sale del sistema al finalizar la guía, manteniendo trazabilidad entre pedido, preparación y facturación.',
     returns_desc:'Crea solicitudes de devolución a partir de uno o varios pedidos ya preparados, o añade artículos manualmente por escáner, búsqueda o Excel. Al emitir la <strong>guía de recogida</strong>, las líneas pasan a <strong>Returns Pick Up</strong>, donde la tienda/almacén confirma lo que realmente se recogió. Los pedidos que ya generaron devolución quedan bloqueados para evitar duplicados.',
     ret_pickup_desc:'Controla las guías de recogida emitidas en devoluciones. La lista suma los artículos de los pedidos incluidos y puede ordenarse por EAN, producto, categoría, marca, ml o cantidad para facilitar la recogida por zona de tienda. Todas las líneas deben confirmarse, incluso a cero; al finalizar, la app muestra diferencias frente a lo esperado y genera automáticamente la guía de <strong>Stock In</strong> solo con las cantidades recogidas.',
-    putaway_desc:'Lista de guías de entrada generadas después de la recogida de devoluciones. Al iniciar una guía, el operador indica la tienda de origen y sigue una ruta optimizada por el almacén. La sugerencia prioriza cajas <strong>Mono</strong> y después <strong>Mixed</strong>; cuando hay más de una ubicación posible para el SKU, puede pedir otra ubicación antes de confirmar. Solo las líneas confirmadas añaden stock real.',
+    putaway_desc:'Lista de guías de entrada generadas después de la recogida de devoluciones. Al iniciar, el operador empieza directamente la recolocación en stock y sigue una ruta optimizada por el almacén. La sugerencia prioriza cajas <strong>Mono</strong> y después <strong>Mixed</strong>; cuando hay más de una ubicación posible para el SKU, puede pedir otra ubicación antes de confirmar. Solo las líneas confirmadas añaden stock real.',
     btn_new_order:'＋ Nuevo pedido', btn_new_ret:'＋ Nueva devolución',
     btn_emit_pick:'📦 Emitir Guía Preparación', btn_emit_put:'📥 Emitir Guía Entrada',
     btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
