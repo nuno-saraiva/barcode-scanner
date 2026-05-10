@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -3843,8 +3843,8 @@ function confirmBackupPw() {
     document.getElementById('backupPwInput').focus();
     return;
   }
-  closeBackupPwModal();
   const file = _pendingRestoreFile;
+  document.getElementById('backupPwModal').classList.remove('visible');
   _pendingRestoreFile = null;
   if (!file) return;
   if (!confirm('Restaurar backup de "' + file.name + '"?\n\nTodos os dados atuais serão substituídos.')) return;
@@ -4118,7 +4118,7 @@ function renderImportOrderList(q) {
     const skus = o.lines.length;
     return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:background .15s;" ' +
       'class="import-order-row" ' +
-      ''
+      '' +
       'data-orderid="'+o.id.replace(/&/g,'&amp;')+'" onclick="importOrderByData(this)">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;">' +
       '<div>' +
