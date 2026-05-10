@@ -3308,9 +3308,9 @@ function renderPutawayGuides() {
       '<div style="font-size:11px;color:var(--muted);margin-top:3px">'+tr('misc_issued_by')+' '+g.emittedBy+' · '+g.emittedAt+(g.warns?.length?' · <span style="color:#d97706">⚠️ '+g.warns.length+' para TRIAGEM</span>':'')+'</div></div>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
       '<span class="badge '+stCls+'">'+stLbl+'</span>'+
-      '<button class="btn btn-purple btn-sm" onclick="iniciarPutaway(\"'+d.id+'\")">'+tr('btn_start_put')+'</button>'+
-      '<button class="btn btn-ghost btn-sm" onclick="exportPutawayExcelById(\"'+d.id+'\")">⬇ Excel</button>'+
-      '<button class="btn btn-danger btn-sm" onclick="cancelPutawayGuia(\"'+d.id+'\")">✕</button>'+
+      '<button class="btn btn-purple btn-sm" data-retid="'+escHtml(d.id)+'" onclick="iniciarPutawayFromButton(this)">'+tr('btn_start_put')+'</button>'+
+      '<button class="btn btn-ghost btn-sm" data-retid="'+escHtml(d.id)+'" onclick="exportPutawayFromButton(this)">⬇ Excel</button>'+
+      '<button class="btn btn-danger btn-sm" data-retid="'+escHtml(d.id)+'" onclick="cancelPutawayFromButton(this)">✕</button>'+
       '</div></div>'+
       '<div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">'+
       '<div style="height:100%;background:var(--purple);border-radius:20px;width:'+pct+'%;transition:width .4s;"></div></div>'+
@@ -3319,9 +3319,22 @@ function renderPutawayGuides() {
   }).join('');
 }
 
+function iniciarPutawayFromButton(btn) {
+  iniciarPutaway(btn?.getAttribute('data-retid'));
+}
+
+function exportPutawayFromButton(btn) {
+  exportPutawayExcelById(btn?.getAttribute('data-retid'));
+}
+
+function cancelPutawayFromButton(btn) {
+  cancelPutawayGuia(btn?.getAttribute('data-retid'));
+}
+
 function cancelPutawayGuia(retId) {
   const doc = rets.find(d=>d.id===retId);
-  if (!doc) return;
+  if (!retId) { toast('Guia não identificada','err'); return; }
+  if (!doc) { toast('Guia não encontrada','err'); return; }
   if (!confirm('Cancelar guia de '+retId+'? A devolução volta ao estado "Aberta".')) return;
   doc.putawayGuide = null; doc.status = 'open';
   logAction('Guia devolucao cancelada', retId);
@@ -3334,7 +3347,10 @@ let putawayOrderId = null, putawayLines = [], putawayPendingId = null;
 
 function iniciarPutaway(retId) {
   const doc = rets.find(d=>d.id===retId);
-  if (!doc || !doc.putawayGuide) return;
+  if (!retId) { toast('Guia não identificada','err'); return; }
+  if (!doc) { toast('Guia não encontrada','err'); return; }
+  if (!doc.putawayGuide) { toast('Esta devolução ainda não tem guia de entrada','err'); return; }
+  if (!doc.putawayGuide.lines || !doc.putawayGuide.lines.length) { toast('Guia sem linhas para colocar','err'); return; }
   putawayPendingId = retId;
   document.getElementById('origemModalSub').textContent = 'Devolução '+retId+(doc.client?' · '+doc.client:'')+'. Indica a loja de origem.';
   document.getElementById('origemInput').value = doc.putawayGuide.loja || '';
