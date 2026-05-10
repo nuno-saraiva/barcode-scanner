@@ -40,8 +40,9 @@ window._dbReady = true;
 <style>
 :root{--bg:#f4f3ef;--surface:#fff;--surface2:#eceae4;--border:#d8d5cc;--accent:#e8420a;--accent2:#1a1a2e;--purple:#7c3aed;--sky:#0ea5e9;--text:#1a1a1a;--muted:#888880;--success:#2d8a4e;--mono:'IBM Plex Mono',monospace;--sans:'Barlow',sans-serif;}
 *{margin:0;padding:0;box-sizing:border-box;}
+html,body{overflow-x:hidden;max-width:100%;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
-.nav{background:var(--accent2);padding:0 8px;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.15);overflow-x:hidden;}
+.nav{background:var(--accent2);padding:0 8px;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.15);overflow-x:hidden;width:100%;max-width:100vw;}
 .nav-logo{font-family:var(--mono);font-weight:700;font-size:14px;color:#fff;padding:16px 16px 16px 0;border-right:1px solid rgba(255,255,255,.1);margin-right:6px;white-space:nowrap;flex-shrink:0;}
 .nav-logo span{color:var(--accent);}
 .nav-tab{background:none;border:none;color:rgba(255,255,255,.5);font-family:var(--sans);font-weight:600;font-size:11px;padding:0 8px;cursor:pointer;transition:all .2s;border-bottom:3px solid transparent;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;flex-shrink:0;}
@@ -266,6 +267,20 @@ select.input{appearance:auto;cursor:pointer;}
 .drawer-toggle{width:28px;height:28px;border:1px solid var(--border);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);background:var(--surface2);font-size:14px;transition:transform .18s ease;}
 .drawer-card[open] .drawer-toggle{transform:rotate(180deg);}
 .drawer-card .card-body{border-top:1px solid var(--border);}
+.warehouse-map-grid{display:grid;gap:12px;max-height:70vh;overflow:auto;padding-right:4px;}
+.wm-shelf{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);}
+.wm-shelf-title{padding:8px 10px;background:var(--surface2);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;}
+.wm-level{display:grid;grid-template-columns:64px 1fr;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--border);}
+.wm-level-label{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);}
+.wm-slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:6px;}
+.wm-slot{min-height:44px;border:1px solid var(--border);border-radius:7px;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:6px;font-family:var(--mono);font-size:11px;line-height:1.2;}
+.wm-slot.empty{color:var(--muted);background:#fafafa;}
+.wm-slot.mixed{border-color:#d8b4fe;background:#faf5ff;color:#6b21a8;}
+.wm-slot.mono{border-color:#fed7aa;background:#fff7ed;color:#9a3412;}
+.wm-slot.low{border-color:#fde68a;background:#fffbeb;color:#92400e;}
+.wm-slot.zero{border-color:#fecaca;background:#fef2f2;color:#991b1b;}
+.wm-slot strong{font-size:12px;color:var(--text);}
+.wm-slot span{font-family:var(--sans);font-size:10px;color:inherit;opacity:.78;margin-top:2px;}
 
 /* RESPONSIVE NAV */
 .nav{overflow:visible!important;}
@@ -288,13 +303,13 @@ select.input{appearance:auto;cursor:pointer;}
 .mob-nav-btn:hover,.mob-nav-btn.active{background:rgba(255,255,255,.1);color:#fff;}
 .mob-nav-btn.t-ret.active{background:rgba(167,139,250,.2);}
 .mob-nav-btn.t-db.active{background:rgba(56,189,248,.15);}
-@media(max-width:768px){
+@media(max-width:1279px){
   .nav-tabs-desktop{display:none!important;}
   .nav-hamburger{display:block!important;}
   .nav-desktop-only{display:none!important;}
   [data-tip]:hover::after,[data-tip]:hover::before{display:none;}
 }
-@media(min-width:769px){
+@media(min-width:1280px){
   #mobileMenuOverlay,#mobileMenu{display:none!important;}
   .nav-hamburger{display:none!important;}
 }
@@ -584,6 +599,7 @@ select.input{appearance:auto;cursor:pointer;}
       <span class="card-title" data-i="warehouse_map_title">Mapa do armazém</span>
       <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <span id="warehouseMapSummary" style="font-size:11px;color:var(--muted);font-family:var(--mono);"></span>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="event.preventDefault();event.stopPropagation();openWarehouseMapModal()" data-i="btn_view_map">Ver mapa</button>
         <span class="drawer-toggle">⌄</span>
       </span>
     </summary>
@@ -1009,6 +1025,27 @@ select.input{appearance:auto;cursor:pointer;}
       <button class="btn btn-ghost" style="flex:1;" onclick="scanQtyCancel()">Cancelar</button>
       <button class="btn btn-primary" style="flex:1;" onclick="scanQtyConfirm()">✓ Adicionar</button>
     </div>
+  </div>
+</div>
+
+<!-- WAREHOUSE MAP VIEW MODAL -->
+<div class="overlay" id="warehouseMapModal" onclick="closeWarehouseMapModal()">
+  <div class="modal" style="max-width:980px;" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;">
+      <div>
+        <div class="modal-title" data-i="warehouse_map_visual_title">Mapa visual do armazém</div>
+        <div class="modal-sub" id="warehouseMapVisualSub" style="margin-bottom:0;"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeWarehouseMapModal()">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:11px;color:var(--muted);">
+      <span class="badge bdg-gn" data-i="wm_legend_empty">Livre</span>
+      <span class="badge" style="background:#faf5ff;color:#6b21a8;border:1px solid #d8b4fe;" data-i="wm_legend_mixed">Mixed</span>
+      <span class="badge" style="background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;" data-i="wm_legend_mono">Mono</span>
+      <span class="badge" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;" data-i="wm_legend_low">Baixo</span>
+      <span class="badge bdg-rd" data-i="wm_legend_empty_stock">Sem disponível</span>
+    </div>
+    <div class="warehouse-map-grid" id="warehouseMapVisual"></div>
   </div>
 </div>
 
@@ -1643,6 +1680,55 @@ function warehousePositions() {
 }
 function isKnownWarehousePosition(pos) {
   return warehousePositions().includes(String(pos||'').trim().toUpperCase());
+}
+function positionStockSummary(pos) {
+  const rows = stock.filter(s => String(s.position||'').toUpperCase() === pos);
+  const qty = rows.reduce((a,s)=>a+(parseInt(s.qty)||0),0);
+  const skuCount = new Set(rows.map(s=>s.sku)).size;
+  const hasMixed = rows.some(s=>normBoxType(s.boxType)==='mista') || skuCount > 1;
+  const hasMono = rows.some(s=>normBoxType(s.boxType)==='exclusiva') && !hasMixed;
+  return {qty, skuCount, boxType: hasMixed ? 'mixed' : hasMono ? 'mono' : 'empty'};
+}
+function renderWarehouseVisualMap() {
+  const el = document.getElementById('warehouseMapVisual');
+  const sub = document.getElementById('warehouseMapVisualSub');
+  if(!el) return;
+  const shelves = warehouseShelves();
+  const levels = Math.max(1, Math.min(9, parseInt(warehouseMap.levels)||5));
+  const slots = Math.max(1, Math.min(9, parseInt(warehouseMap.slots)||4));
+  const total = shelves.length * levels * slots;
+  if(sub) sub.textContent = tr('warehouse_map_summary')
+    .replace('{shelves}', shelves.length)
+    .replace('{levels}', levels)
+    .replace('{slots}', slots)
+    .replace('{positions}', total);
+  el.innerHTML = shelves.map(shelf => {
+    let shelfQty = 0;
+    const rows = [];
+    for(let level=1; level<=levels; level++){
+      const cells = [];
+      for(let slot=1; slot<=slots; slot++){
+        const pos = shelf + level + slot;
+        const sum = positionStockSummary(pos);
+        shelfQty += sum.qty;
+        const cls = sum.qty <= 0 ? 'empty' : sum.qty < 3 ? 'low' : sum.boxType;
+        const detail = sum.qty > 0
+          ? sum.qty + ' ' + tr('lbl_units') + (sum.skuCount ? ' · ' + sum.skuCount + ' ' + tr('lbl_skus') : '')
+          : tr('wm_empty_position');
+        cells.push('<div class="wm-slot '+cls+'"><strong>'+pos+'</strong><span>'+detail+'</span></div>');
+      }
+      rows.push('<div class="wm-level"><div class="wm-level-label">'+tr('warehouse_map_levels')+' '+level+'</div><div class="wm-slots">'+cells.join('')+'</div></div>');
+    }
+    return '<div class="wm-shelf"><div class="wm-shelf-title"><span>'+tr('warehouse_map_shelf')+' '+shelf+'</span><span>'+shelfQty+' '+tr('lbl_units')+'</span></div>'+rows.join('')+'</div>';
+  }).join('');
+}
+function openWarehouseMapModal() {
+  renderWarehouseVisualMap();
+  applyStaticTranslations();
+  document.getElementById('warehouseMapModal').classList.add('visible');
+}
+function closeWarehouseMapModal() {
+  document.getElementById('warehouseMapModal').classList.remove('visible');
 }
 function renderWarehouseMapForm() {
   const s=document.getElementById('wmShelves'), l=document.getElementById('wmLevels'), p=document.getElementById('wmSlots'), c=document.getElementById('wmCustomShelves');
@@ -3228,7 +3314,10 @@ const LANGS = {
     card_returns:'Devoluções',
     card_open_guides:'Guias em aberto',
     card_open_return_guides:'Guias de devolução em aberto',
+    btn_view_map:'Ver mapa',
     warehouse_map_title:'Mapa do armazém',
+    warehouse_map_visual_title:'Mapa visual do armazém',
+    warehouse_map_shelf:'Estante',
     warehouse_map_shelves:'Estantes',
     warehouse_map_levels:'Prateleiras',
     warehouse_map_slots:'Posições/prateleira',
@@ -3236,6 +3325,12 @@ const LANGS = {
     warehouse_map_custom_ph:'Opcional: A,B,C,D,E,K,N',
     warehouse_map_summary:'{shelves} est. · {levels} prat. · {slots} pos. · {positions} posições',
     warehouse_map_example:'Exemplo:',
+    wm_legend_empty:'Livre',
+    wm_legend_mixed:'Mixed',
+    wm_legend_mono:'Mono',
+    wm_legend_low:'Baixo',
+    wm_legend_empty_stock:'Sem disponível',
+    wm_empty_position:'Livre',
     // Status
     st_open:'Aberta', st_picked:'Concluída', st_cancelled:'Anulada',
     st_returned:'Concluída', st_emitted:'📋 Guia emitida',
@@ -3316,7 +3411,10 @@ const LANGS = {
     card_returns:'Returns',
     card_open_guides:'Open guides',
     card_open_return_guides:'Open return guides',
+    btn_view_map:'View map',
     warehouse_map_title:'Warehouse map',
+    warehouse_map_visual_title:'Visual warehouse map',
+    warehouse_map_shelf:'Shelf',
     warehouse_map_shelves:'Shelves',
     warehouse_map_levels:'Levels',
     warehouse_map_slots:'Positions/level',
@@ -3324,6 +3422,12 @@ const LANGS = {
     warehouse_map_custom_ph:'Optional: A,B,C,D,E,K,N',
     warehouse_map_summary:'{shelves} shelves · {levels} levels · {slots} slots · {positions} positions',
     warehouse_map_example:'Example:',
+    wm_legend_empty:'Free',
+    wm_legend_mixed:'Mixed',
+    wm_legend_mono:'Mono',
+    wm_legend_low:'Low',
+    wm_legend_empty_stock:'No available',
+    wm_empty_position:'Free',
     st_open:'Open', st_picked:'Done', st_cancelled:'Cancelled',
     st_returned:'Done', st_emitted:'📋 Guide issued',
     st_prep:'🚶 In preparation', st_coloc:'🚶 In putaway', st_parcial:'⚠️ Partial',
@@ -3398,7 +3502,10 @@ const LANGS = {
     card_returns:'Devoluciones',
     card_open_guides:'Guías abiertas',
     card_open_return_guides:'Guías de devolución abiertas',
+    btn_view_map:'Ver mapa',
     warehouse_map_title:'Mapa del almacén',
+    warehouse_map_visual_title:'Mapa visual del almacén',
+    warehouse_map_shelf:'Estantería',
     warehouse_map_shelves:'Estanterías',
     warehouse_map_levels:'Niveles',
     warehouse_map_slots:'Posiciones/nivel',
@@ -3406,6 +3513,12 @@ const LANGS = {
     warehouse_map_custom_ph:'Opcional: A,B,C,D,E,K,N',
     warehouse_map_summary:'{shelves} est. · {levels} niv. · {slots} pos. · {positions} posiciones',
     warehouse_map_example:'Ejemplo:',
+    wm_legend_empty:'Libre',
+    wm_legend_mixed:'Mixed',
+    wm_legend_mono:'Mono',
+    wm_legend_low:'Bajo',
+    wm_legend_empty_stock:'Sin disponible',
+    wm_empty_position:'Libre',
     st_open:'Abierto', st_picked:'Completado', st_cancelled:'Anulado',
     st_returned:'Completado', st_emitted:'📋 Guía emitida',
     st_prep:'🚶 En preparación', st_coloc:'🚶 En colocación', st_parcial:'⚠️ Parcial',
