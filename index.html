@@ -3051,7 +3051,11 @@ function finalizeReturnPickup() {
   const doc = rets.find(d => d.id === returnPickupId);
   if (!doc) return;
   const confirmed = returnPickupLines.filter(l => l.status === 'confirmed');
-  if (!confirmed.length) { toast('Confirma pelo menos uma linha', 'err'); return; }
+  const pending = returnPickupLines.filter(l => l.status !== 'confirmed');
+  if (pending.length) {
+    toast('Confirma todas as linhas, mesmo com recolha a zero', 'err');
+    return;
+  }
   const diffs = returnPickupLines.filter(l => (parseInt(l.qtyCollected)||0) !== (parseInt(l.qty)||0));
   const msg = 'Finalizar recolha de '+doc.id+'?\n\n'+confirmed.length+' linhas confirmadas'+(diffs.length?'\n'+diffs.length+' diferenças vs esperado':'');
   if (!confirm(msg)) return;
