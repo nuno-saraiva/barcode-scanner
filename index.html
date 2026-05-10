@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -1094,16 +1094,20 @@ select.input{appearance:auto;cursor:pointer;}
 
 <!-- IMPORT FROM ORDER MODAL -->
 <div class="overlay" id="importFromOrderModal">
-  <div class="modal" style="max-width:480px;">
+  <div class="modal" style="max-width:680px;">
     <div class="modal-title">📋 Devolução de pedido</div>
-    <div class="modal-sub">Seleciona um pedido concluído para criar a devolução com as mesmas linhas e quantidades.</div>
+    <div class="modal-sub">Seleciona um ou mais pedidos com picking concluído. A devolução soma linhas iguais numa única guia.</div>
     <div style="margin-bottom:12px;">
       <input class="input input-sans" id="importOrderSearch" placeholder="Pesquisar pedido..." 
         oninput="filterImportOrders()" style="width:100%;">
     </div>
     <div id="importOrderList" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
-    <div class="modal-actions">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap;">
+      <div id="importOrderSelectedSummary" style="font-size:12px;color:var(--muted);">0 pedidos selecionados</div>
+      <div class="modal-actions" style="margin-top:0;">
       <button class="btn btn-ghost" onclick="closeImportFromOrder()">Cancelar</button>
+        <button class="btn btn-purple" id="btnCreateMultiReturn" onclick="createSelectedReturnFromOrders()" disabled>↩️ Criar devolução</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3576,6 +3580,9 @@ function detectDeviceLang() {
 function tr(key) {
   return (LANGS[currentLang] && LANGS[currentLang][key]) || LANGS['pt'][key] || key;
 }
+function escHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 function setLang(lang) {
   currentLang = lang;
@@ -4083,15 +4090,22 @@ function stopLinesListener() {
 
 
 // ══ DEVOLUÇÃO DE PEDIDO ══
+let _selectedImportOrderIds = new Set();
+let _pendingImportSourceOrderIds = [];
+
 function openImportFromOrder() {
+  _selectedImportOrderIds = new Set();
   document.getElementById('importOrderSearch').value = '';
   renderImportOrderList('');
+  updateImportOrderSelectionUI();
   document.getElementById('importFromOrderModal').classList.add('visible');
   setTimeout(() => document.getElementById('importOrderSearch').focus(), 80);
 }
 
 function closeImportFromOrder() {
   document.getElementById('importFromOrderModal').classList.remove('visible');
+  _selectedImportOrderIds = new Set();
+  updateImportOrderSelectionUI();
 }
 
 function filterImportOrders() {
@@ -4099,9 +4113,43 @@ function filterImportOrders() {
   renderImportOrderList(q);
 }
 
+function importablePickedOrders() {
+  return orders.filter(o => o.status === 'picked' && o.lines && o.lines.length > 0);
+}
+
+function selectedImportOrders() {
+  const ids = _selectedImportOrderIds || new Set();
+  return importablePickedOrders().filter(o => ids.has(o.id));
+}
+
+function updateImportOrderSelectionUI() {
+  const selected = selectedImportOrders();
+  const units = selected.reduce((a,o)=>a+o.lines.reduce((x,l)=>x+(parseInt(l.qty)||0),0),0);
+  const skus = new Set(selected.flatMap(o=>o.lines.map(l=>l.sku))).size;
+  const summary = document.getElementById('importOrderSelectedSummary');
+  if(summary) summary.textContent = selected.length + ' pedidos selecionados' + (selected.length ? ' · ' + skus + ' SKUs · ' + units + ' unid.' : '');
+  const btn = document.getElementById('btnCreateMultiReturn');
+  if(btn) btn.disabled = selected.length === 0;
+  document.querySelectorAll('.import-order-row').forEach(row => {
+    const active = _selectedImportOrderIds.has(row.getAttribute('data-orderid'));
+    row.style.borderColor = active ? 'var(--purple)' : 'var(--border)';
+    row.style.background = active ? '#f5f3ff' : '';
+    const cb = row.querySelector('input[type="checkbox"]');
+    if(cb) cb.checked = active;
+  });
+}
+
+function toggleImportOrderSelection(btn) {
+  const id = btn.getAttribute('data-orderid');
+  if(!id) return;
+  if(_selectedImportOrderIds.has(id)) _selectedImportOrderIds.delete(id);
+  else _selectedImportOrderIds.add(id);
+  updateImportOrderSelectionUI();
+}
+
 function renderImportOrderList(q) {
   const el = document.getElementById('importOrderList');
-  const picked = orders.filter(o => o.status === 'picked' && o.lines && o.lines.length > 0);
+  const picked = importablePickedOrders();
   const nq = normSearch(q);
   const filtered = nq ? picked.filter(o => {
     const lineText = (o.lines||[]).map(l => productSearchText(skuInfo(l.sku)) + normSearch(l.sku)).join('');
@@ -4110,28 +4158,35 @@ function renderImportOrderList(q) {
 
   if (!filtered.length) {
     el.innerHTML = '<div class="empty" style="padding:20px;">Nenhum pedido concluído encontrado.</div>';
+    updateImportOrderSelectionUI();
     return;
   }
 
   el.innerHTML = filtered.map(o => {
     const total = o.lines.reduce((a,l) => a+l.qty, 0);
     const skus = o.lines.length;
+    const safeId = escHtml(o.id);
+    const active = _selectedImportOrderIds.has(o.id);
     return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:background .15s;" ' +
       'class="import-order-row" ' +
       '' +
-      'data-orderid="'+o.id.replace(/&/g,'&amp;')+'" onclick="importOrderByData(this)">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-      '<div>' +
-      '<div style="font-weight:700;font-size:13px;">' + o.id + '</div>' +
+      'data-orderid="'+safeId+'" onclick="toggleImportOrderSelection(this)">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;min-width:0;">' +
+      '<input type="checkbox" '+(active?'checked':'')+' tabindex="-1" style="margin-top:2px;pointer-events:none;">' +
+      '<div style="min-width:0;">' +
+      '<div style="font-weight:700;font-size:13px;">' + safeId + '</div>' +
       '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' +
-        (o.client ? '👤 ' + o.client + ' · ' : '') +
-        skus + ' SKUs · ' + total + ' unid. · ' + (o.createdAt||'') +
+        (o.client ? '👤 ' + escHtml(o.client) + ' · ' : '') +
+        skus + ' SKUs · ' + total + ' unid. · ' + escHtml(o.createdAt||'') +
       '</div>' +
       '</div>' +
       '<span class="badge bdg-gn">✓ Concluído</span>' +
       '</div>' +
+      '</div>' +
       '</div>';
   }).join('');
+  updateImportOrderSelectionUI();
 }
 
 function importOrderByData(btn){ importOrderAsReturn(btn.getAttribute('data-orderid')); }
@@ -4177,11 +4232,48 @@ let _pendingImportLines = null;
 function selectClientForImportByData(btn){ selectClientForImport(btn.getAttribute('data-client')); }
 function selectClientForImport(client) {
   closeClientModal();
-  createReturnFromOrder(client, _pendingImportLines);
+  createReturnFromOrder(client, _pendingImportLines, _pendingImportSourceOrderIds);
   _pendingImportLines = null;
+  _pendingImportSourceOrderIds = [];
 }
 
-function createReturnFromOrder(client, lines) {
+function mergeOrderLinesForReturn(selected) {
+  const map = {};
+  selected.forEach(o => (o.lines||[]).forEach(l => {
+    const sku = resolveSku(l.sku);
+    if(!sku) return;
+    map[sku] = (map[sku] || 0) + (parseInt(l.qty)||0);
+  }));
+  return Object.entries(map).map(([sku, qty]) => ({sku, qty}));
+}
+
+function createSelectedReturnFromOrders() {
+  const selected = selectedImportOrders();
+  if(!selected.length) { toast('Seleciona pelo menos um pedido', 'err'); return; }
+  const lines = mergeOrderLinesForReturn(selected);
+  if(!lines.length) { toast('Pedidos sem linhas válidas', 'err'); return; }
+  const sourceIds = selected.map(o=>o.id);
+  const clients = [...new Set(selected.map(o=>o.client).filter(Boolean))];
+  closeImportFromOrder();
+  if(clients.length === 1 && CLIENTS.includes(clients[0])) {
+    createReturnFromOrder(clients[0], lines, sourceIds);
+    return;
+  }
+  _pendingDocType = 'return';
+  _pendingImportLines = lines;
+  _pendingImportSourceOrderIds = sourceIds;
+  document.getElementById('clientModalTitle').textContent = '↩️ Devolução de pedidos';
+  document.getElementById('clientBtnList').innerHTML = CLIENTS.map(c => {
+    const count = docSt('return').filter(d=>d.client===c).length + 1;
+    return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" data-client="'+escHtml(c)+'" onclick="selectClientForImportByData(this)">' +
+      '<span style="font-weight:600">'+escHtml(c)+'</span>' +
+      '<span style="font-size:11px;color:var(--muted)">→ Devolução '+escHtml(c)+' '+count+'</span>' +
+      '</button>';
+  }).join('');
+  document.getElementById('clientModal').classList.add('visible');
+}
+
+function createReturnFromOrder(client, lines, sourceOrderIds = []) {
   const count = docSt('return').filter(d => d.client===client).length + 1;
   const now = new Date();
   const dateStr = now.toLocaleDateString('pt-PT', {day:'2-digit',month:'2-digit',year:'numeric'});
@@ -4191,6 +4283,7 @@ function createReturnFromOrder(client, lines) {
     id, client, lines: lines.map(l => ({sku:l.sku, qty:l.qty})),
     status:'open', createdAt:dateStr,
     createdBy: currentUser ? currentUser.name : '—',
+    sourceOrderIds,
     snapshot: null
   });
 
@@ -4199,8 +4292,8 @@ function createReturnFromOrder(client, lines) {
   saveRet();
   renderDocs('return');
   openEd('return', id);
-  toast('✓ Devolução criada com ' + lines.length + ' SKUs do pedido', 'win');
-  logAction('Devolução de pedido', id + ' ← ' + lines.length + ' linhas');
+  toast('✓ Devolução criada com ' + lines.length + ' SKUs de ' + (sourceOrderIds.length || 1) + ' pedido(s)', 'win');
+  logAction('Devolução de pedido', id + ' ← ' + (sourceOrderIds.length ? sourceOrderIds.join(', ') : lines.length + ' linhas'));
 }
 
 
