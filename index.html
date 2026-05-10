@@ -2970,7 +2970,7 @@ function renderReturnPickupGuides() {
       '<div style="font-size:11px;color:var(--muted);margin-top:3px">'+tr('misc_issued_by')+' '+escHtml(g.emittedBy||'—')+' · '+escHtml(g.emittedAt||'')+' · '+collected+'/'+expected+' '+tr('lbl_units')+'</div></div>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
       '<span class="badge '+stCls+'">'+stLbl+'</span>'+
-      '<button class="btn btn-warn btn-sm" onclick="startReturnPickup(&quot;'+escHtml(d.id)+'&quot;)">'+(doneGuide?'Ver':'▶ Iniciar')+'</button>'+
+      '<button class="btn btn-warn btn-sm" data-retid="'+escHtml(d.id)+'" onclick="startReturnPickupFromButton(this)">'+(doneGuide?'Ver':'▶ Iniciar')+'</button>'+
       '</div></div>'+
       '<div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">'+
       '<div style="height:100%;background:#d97706;border-radius:20px;width:'+pct+'%;transition:width .4s;"></div></div>'+
@@ -2979,9 +2979,16 @@ function renderReturnPickupGuides() {
   }).join('');
 }
 
+function startReturnPickupFromButton(btn) {
+  startReturnPickup(btn?.getAttribute('data-retid'));
+}
+
 function startReturnPickup(retId) {
   const doc = rets.find(d => d.id === retId);
-  if (!doc || !doc.pickupGuide) return;
+  if (!retId) { toast('Guia de recolha não identificada', 'err'); return; }
+  if (!doc) { toast('Guia de recolha não encontrada', 'err'); return; }
+  if (!doc.pickupGuide) { toast('Esta devolução ainda não tem guia de recolha', 'err'); return; }
+  if (!doc.pickupGuide.lines || !doc.pickupGuide.lines.length) { toast('Guia de recolha sem linhas', 'err'); return; }
   returnPickupId = retId;
   returnPickupLines = JSON.parse(JSON.stringify(doc.pickupGuide.lines));
   returnPickupLines.forEach((l,i)=>{ if(!l.rid) l.rid='rp_'+i+'_'+Date.now(); });
@@ -2990,10 +2997,10 @@ function startReturnPickup(retId) {
     doc.pickupGuide.status = 'in-progress';
     saveRet();
   }
+  showPage('returnpickup', document.querySelector('[data-page="returnpickup"]'));
   document.getElementById('returnPickupListSection').style.display = 'none';
   document.getElementById('returnPickupContent').style.display = 'block';
   renderReturnPickupContent();
-  showPage('returnpickup', document.querySelector('[data-page="returnpickup"]'));
   logAction('Recolha devolucao iniciada', retId);
 }
 
