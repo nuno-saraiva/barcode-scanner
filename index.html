@@ -2490,6 +2490,9 @@ function normBoxType(type) {
 function boxPriority(type) {
   return normBoxType(type) === 'mista' ? 0 : 1;
 }
+function putawayBoxPriority(type) {
+  return normBoxType(type) === 'exclusiva' ? 0 : 1;
+}
 function compareWarehousePosition(a, b) {
   const pa = parsePos(a.position), pb = parsePos(b.position);
   if (pa.shelf !== pb.shelf) return pa.shelf.localeCompare(pb.shelf);
@@ -3071,14 +3074,16 @@ function finalizeReturnPickup() {
     if (qty > 0) saveDocLine('return', doc.id, l.sku, qty);
     else deleteDocLine('return', doc.id, l.sku);
   });
+  const putawayIssued = doc.lines.length ? issuePutawayGuideForReturn(doc, {navigate:false, skipWarnConfirm:true, source:'pickup'}) : false;
   saveRet();
-  logAction('Recolha devolucao finalizada', doc.id+' · '+diffs.length+' diferenças');
+  logAction('Recolha devolucao finalizada', doc.id+' · '+diffs.length+' diferenças'+(putawayIssued?' · guia stock in emitida':''));
   returnPickupId = null; returnPickupLines = [];
   document.getElementById('returnPickupListSection').style.display = '';
   document.getElementById('returnPickupContent').style.display = 'none';
   renderReturnPickupGuides();
   renderDocs('return');
-  toast('Recolha finalizada · '+diffs.length+' diferenças', diffs.length?'ok':'win');
+  renderPutawayGuides();
+  toast('Recolha finalizada'+(putawayIssued?' · guia Stock In gerada':' · sem unidades para Stock In')+(diffs.length?' · '+diffs.length+' diferenças':''), diffs.length?'ok':'win');
 }
 
 function cancelReturnPickup() {
@@ -3106,6 +3111,85 @@ function exportReturnPickupExcel() {
 
 // ── Keep putaway/return flow (unchanged) ──
 // ══ DEVOLUÇÃO — EMITIR GUIA (mirrors emitirGuia for orders) ══
+function putawayPositionOptionsForSku(sku) {
+  const seen = new Set();
+  return stock.filter(s=>resolveSku(s.sku)===sku&&s.qty>0)
+    .sort((a,b)=>{
+      const bp = putawayBoxPriority(a.boxType) - putawayBoxPriority(b.boxType);
+      if(bp) return bp;
+      return compareWarehousePosition(a,b);
+    })
+    .filter(s=>{
+      const key = s.position+'|'+normBoxType(s.boxType);
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map(s=>({stockId:s.id,position:s.position,boxType:normBoxType(s.boxType)}));
+}
+
+function sortPutawayLines(lines) {
+  return [...lines].sort((a,b)=>{
+    if(a.noPos && !b.noPos) return 1;
+    if(!a.noPos && b.noPos) return -1;
+    const bp = putawayBoxPriority(a.boxType) - putawayBoxPriority(b.boxType);
+    if(bp) return bp;
+    return compareWarehousePosition(a,b);
+  });
+}
+
+function buildPutawayGuideLines(doc, t) {
+  const pl = [], warns = [];
+  doc.lines.forEach(line => {
+    const originalSku = line.sku;
+    const sku = resolveSku(line.sku);
+    if (sku !== originalSku) {
+      line.sku = sku;
+      if (t) {
+        deleteDocLine(t, doc.id, originalSku);
+        saveDocLine(t, doc.id, sku, line.qty);
+      }
+    }
+    const qty = parseInt(line.qty)||0;
+    if (qty <= 0) return;
+    const options = putawayPositionOptionsForSku(sku);
+    if (options.length) {
+      const pos = options[0];
+      pl.push({
+        sku, position:pos.position, qty, stockId:pos.stockId, boxType:pos.boxType,
+        status:'pending', qtyDone:qty, optionIndex:0, positionOptions:options
+      });
+    } else {
+      pl.push({sku,position:'???',qty,stockId:null,boxType:'mista',status:'pending',qtyDone:qty,noPos:true,positionOptions:[]});
+      warns.push(sku+': sem posição conhecida no stock');
+    }
+  });
+  return {lines:sortPutawayLines(pl), warns};
+}
+
+function issuePutawayGuideForReturn(doc, opts={}) {
+  if (!doc || !doc.lines?.length) return false;
+  const built = buildPutawayGuideLines(doc, 'return');
+  if (built.warns.length && !opts.skipWarnConfirm && !confirm('Aviso: ' + built.warns.join(', ') + ' -- Emitir guia mesmo assim?')) return false;
+  doc.putawayGuide = {
+    lines:built.lines, warns:built.warns, emittedAt:new Date().toLocaleString('pt-PT'),
+    emittedBy:currentUser?currentUser.name:'—', status:'pending', loja:''
+  };
+  doc.status = 'guia-emitida';
+  logAction(opts.source === 'pickup' ? 'Guia stock in auto emitida' : 'Guia devolucao emitida', doc.id+' · '+built.lines.length+' linhas');
+  saveRet();
+  renderDocs('return');
+  renderPutawayGuides();
+  if (opts.navigate !== false) {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+    document.getElementById('page-putaway').classList.add('active');
+    document.querySelector('[data-page="putaway"]').classList.add('active');
+    toast('Guia emitida! Clica em "Iniciar" para começar a colocar.', 'pur');
+  }
+  return true;
+}
+
 function genDoc(t) {
   if (t === 'order') { emitirGuia(); return; }
   // Returns — emit putaway guide
@@ -3115,52 +3199,7 @@ function genDoc(t) {
     toast('Finaliza primeiro a guia de recolha', 'err');
     return;
   }
-  const pl = [], warns = [];
-  doc.lines.forEach(line => {
-    const originalSku = line.sku;
-    const sku = resolveSku(line.sku);
-    if (sku !== originalSku) {
-      line.sku = sku;
-      deleteDocLine(t, doc.id, originalSku);
-      saveDocLine(t, doc.id, sku, line.qty);
-    }
-    let rem = line.qty;
-    // Priority: caixas mistas first, then exclusivas/mono; within each group sort by route.
-    const positions = stock.filter(s=>resolveSku(s.sku)===sku&&s.qty>0)
-      .sort((a,b)=>{
-        const bp = boxPriority(a.boxType) - boxPriority(b.boxType);
-        if(bp) return bp;
-        return compareWarehousePosition(a,b);
-    });
-    if (positions.length) {
-      positions.forEach(p=>{ if(rem<=0)return;
-        pl.push({sku:sku,position:p.position,qty:Math.min(rem,999),stockId:p.id,boxType:normBoxType(p.boxType),status:'pending',qtyDone:Math.min(rem,999)});rem=0;});
-    }
-    if (rem > 0) {
-      pl.push({sku:sku,position:'???',qty:rem,stockId:null,boxType:'mista',status:'pending',qtyDone:rem,noPos:true});
-      warns.push(sku+': sem posição conhecida no stock');
-    }
-  });
-  pl.sort((a,b)=>{
-    const bp = boxPriority(a.boxType) - boxPriority(b.boxType);
-    if(bp) return bp;
-    return compareWarehousePosition(a,b);
-  });
-
-  if (warns.length && !confirm('Aviso: ' + warns.join(', ') + ' -- Emitir guia mesmo assim?')) return;
-
-  doc.putawayGuide = { lines:pl, warns, emittedAt:new Date().toLocaleString('pt-PT'),
-    emittedBy:currentUser?currentUser.name:'—', status:'pending', loja:'' };
-  doc.status = 'guia-emitida';
-  logAction('Guia devolucao emitida', doc.id+' · '+pl.length+' linhas');
-  docSv(t); renderDocs(t); renderPutawayGuides();
-
-  // Navigate to putaway page
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-putaway').classList.add('active');
-  document.querySelector('[data-page="putaway"]').classList.add('active');
-  toast('Guia emitida! Clica em "Iniciar" para começar a colocar.', 'pur');
+  issuePutawayGuideForReturn(doc);
 }
 
 // ══ PUTAWAY GUIDES LIST ══
@@ -3272,6 +3311,7 @@ function renderPutawayLines() {
     const info = skuInfo(l.sku);
     const isConfirmed = l.status==='confirmed';
     const isNoPos = l.noPos;
+    const altCount = Array.isArray(l.positionOptions) ? l.positionOptions.length : 0;
     const posClass = isConfirmed?'confirmed':isNoPos?'ruptura':'';
     const checkIcon = isConfirmed?'✓':isNoPos?'?':idx+1;
     const checkCls = isConfirmed?'done':isNoPos?'rupt':'';
@@ -3290,11 +3330,13 @@ function renderPutawayLines() {
         '<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:10px;">'+
         (isNoPos?'<div class="alert a-warn" style="font-size:12px;margin-bottom:8px;">Sem posição no stock — define uma posição antes de confirmar.</div>':'')+
         '<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">A colocar: <strong>'+l.qty+' unid.</strong></div>'+
+        (!isNoPos?'<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Tipo de caixa: <strong>'+(normBoxType(l.boxType)==='exclusiva'?'Mono':'Mixed')+'</strong>'+(altCount>1?' · '+altCount+' localizações possíveis':'')+'</div>':'')+
         '<div style="display:flex;align-items:center;gap:10px;">'+
         '<label style="font-size:12px;margin:0;text-transform:none;">Colocado:</label>'+
         '<input class="input qty-in" type="number" min="0" max="'+l.qty+'" value="'+l.qtyDone+'" id="pwayqty-'+idx+'" style="width:80px;" onchange="putawayLines['+idx+'].qtyDone=Math.max(0,Math.min(parseInt(this.value)||0,'+l.qty+'))">'+
         '<span style="font-size:12px;color:var(--muted)">de '+l.qty+'</span></div></div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+        (altCount>1?'<button class="btn btn-ghost btn-sm" onclick="chooseNextPutawayLocation('+idx+')">Outra localização</button>':'')+
         '<button class="btn btn-purple" style="flex:1;" onclick="confirmPutawayLine('+idx+')">✓ Confirmar colocação</button>'+
         '<button class="btn btn-ghost btn-sm" onclick="togglePutawayLine('+idx+')">Fechar</button>'+
         '</div></div>':'')+'</div>';
@@ -3310,6 +3352,22 @@ function togglePutawayLine(idx) {
   const isOpen = body.style.display !== 'none';
   putawayLines.forEach((_,i)=>{ const b=document.getElementById('pwaybody-'+i); if(b)b.style.display='none'; });
   if (!isOpen) body.style.display='block';
+}
+
+function chooseNextPutawayLocation(idx) {
+  const line = putawayLines[idx];
+  const options = line?.positionOptions || [];
+  if (options.length <= 1) { toast('Sem outra localização para este SKU', 'err'); return; }
+  line.optionIndex = ((line.optionIndex || 0) + 1) % options.length;
+  const next = options[line.optionIndex];
+  line.position = next.position;
+  line.stockId = next.stockId;
+  line.boxType = next.boxType;
+  line.noPos = false;
+  renderPutawayLines();
+  const body = document.getElementById('pwaybody-'+idx);
+  if (body) body.style.display = 'block';
+  toast('Localização alterada para '+next.position, 'ok');
 }
 
 function confirmPutawayLine(idx) {
