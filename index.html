@@ -1452,6 +1452,7 @@ function productLineLabel(sku) {
 function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mob-nav-btn').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
   if(id==='skudb') renderSkuDb();
@@ -1648,6 +1649,17 @@ function dlSkuTpl(){
 
 // ══ STOCK TABLE ══
 // ══ STOCK METRICS ══
+function aggregateGuideLines(lines) {
+  const map = {};
+  (lines || []).forEach(l => {
+    const sku = resolveSku(l.sku);
+    const qty = parseInt(l.qty)||0;
+    if (!sku || qty <= 0) return;
+    map[sku] = (map[sku] || 0) + qty;
+  });
+  return Object.entries(map).map(([sku, qty]) => ({sku, qty}));
+}
+
 function calcStockMetrics() {
   // Returns {sku: {carteira, emPrep, faturado, devPedidas, devPrep, devFeitas}}
   const m = {};
@@ -1655,7 +1667,10 @@ function calcStockMetrics() {
 
   // ORDERS
   orders.forEach(o => {
-    o.lines.forEach(l => {
+    const orderLines = (['picked','parcial'].includes(o.status) && o.guide?.lines?.length)
+      ? aggregateGuideLines(o.guide.lines.filter(g => g.status === 'confirmed').map(g => ({sku:g.sku, qty:g.qtyDone || g.qty})))
+      : (o.lines || []);
+    orderLines.forEach(l => {
       ensure(l.sku);
       if (o.status === 'open')                          m[l.sku].carteira  += l.qty;
       if (o.status === 'guia-emitida')                  m[l.sku].emPrep    += l.qty;
@@ -1665,17 +1680,18 @@ function calcStockMetrics() {
 
   // RETURNS (devoluções)
   rets.forEach(r => {
-    r.lines.forEach(l => {
+    (r.lines || []).forEach(l => {
       ensure(l.sku);
       if (r.status === 'open')                                    m[l.sku].devPedidas += l.qty;
       if (['guia-emitida','em-colocacao'].includes(r.status))     m[l.sku].devPrep    += l.qty;
-      if (r.status === 'returned') {
-        // Sum actually confirmed quantities from guide
-        const confirmed = r.putawayGuide?.lines?.filter(g=>g.status==='confirmed') || [];
-        const qty = confirmed.length ? confirmed.reduce((a,g)=>a+g.qtyDone,0) : l.qty;
-        m[l.sku].devFeitas += qty;
-      }
     });
+    if (r.status === 'returned') {
+      const confirmed = r.putawayGuide?.lines?.filter(g=>g.status==='confirmed') || [];
+      const doneLines = confirmed.length
+        ? aggregateGuideLines(confirmed.map(g => ({sku:g.sku, qty:g.qtyDone || g.qty})))
+        : (r.lines || []);
+      doneLines.forEach(l => { ensure(l.sku); m[l.sku].devFeitas += parseInt(l.qty)||0; });
+    }
   });
 
   return m;
@@ -1683,7 +1699,7 @@ function calcStockMetrics() {
 
 function calcDisponivel(sku, realQty, metrics) {
   const m = metrics[sku] || {};
-  return realQty - (m.carteira||0) - (m.emPrep||0) + (m.devFeitas||0);
+  return realQty - (m.carteira||0) - (m.emPrep||0);
 }
 
 function initialStockQty(s) {
@@ -2219,9 +2235,7 @@ function entConfirm(){
     const same=stock.find(s=>s.sku===entSku&&s.position===pos);
     if(!same){toast('Este SKU não tem stock nessa posição','err');return;}
     if((parseInt(same.qty)||0)<entQty){toast('Stock insuficiente nessa posição','err');return;}
-    const initialBefore=initialStockQty(same);
     same.qty=(parseInt(same.qty)||0)-entQty;
-    same.initialTheoretical=Math.max(0, initialBefore-entQty);
     saveStk();renderStock();
     logAction('Saída manual de stock',entSku+' qty:'+entQty+' pos:'+pos);
     const info=skuInfo(entSku);
@@ -2300,9 +2314,7 @@ function importStock(){
       if(entAction==='out'){
         const prev=stock.find(s=>s.sku===sku&&s.position===pos);
         if(!prev || (parseInt(prev.qty)||0)<qty)return;
-        const initialBefore=initialStockQty(prev);
         prev.qty=(parseInt(prev.qty)||0)-qty;
-        prev.initialTheoretical=Math.max(0, initialBefore-qty);
         added++;
         return;
       }
@@ -5110,7 +5122,18 @@ function filterImportOrders() {
 }
 
 function importableReturnSourceOrders() {
-  return orders.filter(o => ['picked','parcial'].includes(o.status) && o.lines && o.lines.length > 0);
+  return orders.filter(o => ['picked','parcial'].includes(o.status) && returnableLinesForOrder(o).length > 0);
+}
+
+function returnableLinesForOrder(order) {
+  if (!order) return [];
+  if (order.guide?.lines?.length) {
+    const confirmed = order.guide.lines
+      .filter(l => l.status === 'confirmed')
+      .map(l => ({sku:l.sku, qty:parseInt(l.qtyDone)||parseInt(l.qty)||0}));
+    if (confirmed.length) return aggregateGuideLines(confirmed);
+  }
+  return aggregateGuideLines(order.lines || []);
 }
 
 function returnForSourceOrder(orderId) {
@@ -5171,8 +5194,9 @@ function renderImportOrderList(q) {
   }
 
   el.innerHTML = filtered.map(o => {
-    const total = o.lines.reduce((a,l) => a+l.qty, 0);
-    const skus = o.lines.length;
+    const returnableLines = returnableLinesForOrder(o);
+    const total = returnableLines.reduce((a,l) => a+l.qty, 0);
+    const skus = returnableLines.length;
     const safeId = escHtml(o.id);
     const active = _selectedImportOrderIds.has(o.id);
     const existingReturn = returnForSourceOrder(o.id);
@@ -5209,7 +5233,7 @@ function importOrderAsReturn(orderId) {
 
   // Show client modal pre-filled with same client
   _pendingDocType = 'return';
-  _pendingImportLines = order.lines.map(l => ({sku: l.sku, qty: l.qty}));
+  _pendingImportLines = returnableLinesForOrder(order);
   _pendingImportSourceOrderIds = [order.id];
 
   document.getElementById('clientModalTitle').textContent = '↩️ Devolução de pedido';
@@ -5224,7 +5248,7 @@ function importOrderAsReturn(orderId) {
   if (CLIENTS.includes(order.client)) {
     // Auto-select same client
     closeClientModal();
-    createReturnFromOrder(order.client, order.lines, [order.id]);
+    createReturnFromOrder(order.client, _pendingImportLines, [order.id]);
     return;
   }
 
@@ -5252,7 +5276,7 @@ function selectClientForImport(client) {
 
 function mergeOrderLinesForReturn(selected) {
   const map = {};
-  selected.forEach(o => (o.lines||[]).forEach(l => {
+  selected.forEach(o => returnableLinesForOrder(o).forEach(l => {
     const sku = resolveSku(l.sku);
     if(!sku) return;
     map[sku] = (map[sku] || 0) + (parseInt(l.qty)||0);
