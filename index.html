@@ -582,7 +582,7 @@ select.input{appearance:auto;cursor:pointer;}
     <input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">
     <button class="nav-tab nav-desktop-only" onclick="showAuditLog()" data-tip="Registo de atividade" data-tip-i="tip_activity_icon" aria-label="Registo de atividade" title="Registo de atividade" style="font-size:13px;padding:0 10px;">📋</button>
     <button class="nav-tab nav-desktop-only" onclick="exportBackup()" data-tip="Exportar backup completo" data-tip-i="tip_backup_export" aria-label="Exportar backup completo" title="Exportar backup completo" style="font-size:12px;padding:0 8px;opacity:.7;">💾</button>
-    <label class="nav-tab nav-desktop-only" data-tip="Restaurar backup" data-tip-i="tip_backup_restore" aria-label="Restaurar backup" title="Restaurar backup" style="font-size:12px;padding:0 8px;opacity:.7;cursor:pointer;"><input type="file" id="restoreFileDesktop" accept=".json" onchange="importBackupDesktop()" style="display:none;">↩</label>
+    <button class="nav-tab nav-desktop-only" onclick="openBackupManager()" data-tip="Restaurar backup" data-tip-i="tip_backup_restore" aria-label="Restaurar backup" title="Restaurar backup" style="font-size:12px;padding:0 8px;opacity:.7;">↩</button>
     <button class="nav-tab nav-desktop-only" onclick="openResetPlatformModal()" data-tip="Reset total da plataforma" data-tip-i="tip_reset_platform" aria-label="Reset total da plataforma" title="Reset total da plataforma" style="font-size:12px;padding:0 8px;opacity:.75;color:#fca5a5;">⟲</button>
     <div class="lang-sel nav-desktop-only" data-tip="Idioma">
       <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')" data-tip="Português" aria-label="Português"><span class="flag flag-pt"></span></button>
@@ -615,7 +615,7 @@ select.input{appearance:auto;cursor:pointer;}
     <div style="height:1px;background:rgba(255,255,255,.1);margin:8px 0;"></div>
     <button class="mob-nav-btn" onclick="showAuditLog();closeMobileMenu()">📋 Atividade</button>
     <button class="mob-nav-btn" onclick="exportBackup();closeMobileMenu()">💾 Exportar backup</button>
-    <label class="mob-nav-btn" style="cursor:pointer;"><input type="file" id="restoreFileMob" accept=".json" onchange="importBackupMob()" style="display:none;">↩ Restaurar backup</label>
+    <button class="mob-nav-btn" onclick="openBackupManager();closeMobileMenu()">↩ Restaurar backup</button>
     <button class="mob-nav-btn" onclick="openResetPlatformModal();closeMobileMenu()" style="color:#fca5a5;">⟲ Reset total</button>
   </div>
   <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);">
@@ -1178,6 +1178,31 @@ select.input{appearance:auto;cursor:pointer;}
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeBackupPwModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmBackupPw()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BACKUP MANAGER MODAL -->
+<div class="overlay" id="backupManagerModal">
+  <div class="modal" style="max-width:720px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;">
+      <div>
+        <div class="modal-title" style="margin:0 0 4px;">↩ Backups</div>
+        <div class="modal-sub" style="margin:0;">Backups automáticos guardados no Firebase a cada 30 minutos. Mantém os últimos 7 dias.</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeBackupManager()">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="btn btn-primary btn-sm" onclick="createManualCloudBackup()">💾 Criar backup agora</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadCloudBackups()">↻ Atualizar lista</button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer;"><input type="file" id="restoreFileManager" accept=".json" onchange="importBackupManagerFile()" style="display:none;">↩ Restaurar ficheiro JSON</label>
+    </div>
+    <div id="backupManagerStatus" class="alert a-info" style="display:none;margin-bottom:10px;"></div>
+    <div style="overflow:auto;max-height:360px;border:1px solid var(--border);border-radius:9px;">
+      <table class="tbl">
+        <thead><tr><th>Data/Hora</th><th>Utilizador</th><th>Conteúdo</th><th style="width:190px;">Ações</th></tr></thead>
+        <tbody id="backupListBody"><tr><td colspan="4"><div class="empty" style="padding:16px;">A carregar...</div></td></tr></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -3788,6 +3813,7 @@ function initApp() {
     });
   });
 
+  startAutoBackups();
   toast('Ligado · ' + currentUser.name, 'win');
 }
 
@@ -4298,29 +4324,233 @@ function updateFileLabels() {
 
 
 // ══ BACKUP & RESTORE ══
-function exportBackup() {
-  const backup = {
-    version: 1,
+async function readCollectionDocs(col) {
+  if (!window._db) return [];
+  const snap = await window._db.collection(col).get();
+  return snap.docs.map(d => ({...d.data(), id: d.id}));
+}
+
+async function createBackupPayload() {
+  return {
+    version: 2,
     exportedAt: new Date().toISOString(),
     exportedBy: currentUser ? currentUser.name : '—',
     skuDb, stock, orders, rets,
-    teorico
+    teorico,
+    warehouseMap,
+    orderLines: await readCollectionDocs('order_lines'),
+    returnLines: await readCollectionDocs('return_lines')
   };
+}
+
+function backupContentSummary(backup) {
+  return [
+    (backup.skuDb||[]).length + ' produtos',
+    (backup.stock||[]).length + ' stock',
+    (backup.orders||[]).length + ' pedidos',
+    (backup.rets||[]).length + ' devoluções'
+  ].join(' · ');
+}
+
+function downloadBackupJson(backup) {
   const json = JSON.stringify(backup, null, 2);
   const blob = new Blob([json], {type: 'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  const d = new Date();
+  const d = backup.exportedAt ? new Date(backup.exportedAt) : new Date();
   const stamp = d.toISOString().slice(0,16).replace('T','_').replace(':','h');
   a.download = 'armazem_backup_' + stamp + '.json';
   a.click();
+}
+
+async function exportBackup() {
+  const backup = await createBackupPayload();
+  downloadBackupJson(backup);
   toast('Backup exportado ✓', 'win');
-  logAction('Backup exportado', stamp);
+  logAction('Backup exportado', backup.exportedAt.slice(0,16).replace('T',' '));
+}
+
+async function pruneCloudBackups() {
+  if (!window._db) return;
+  const snap = await window._db.collection('auto_backups').orderBy('createdAt','desc').get();
+  const docs = snap.docs.slice(AUTO_BACKUP_RETENTION);
+  for (let i = 0; i < docs.length; i += 400) {
+    const batch = window._db.batch();
+    docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }
+}
+
+async function createCloudBackup(kind = 'manual') {
+  if (!window._db) return null;
+  const backup = await createBackupPayload();
+  const createdAt = Date.now();
+  const doc = {
+    kind,
+    createdAt,
+    createdAtIso: backup.exportedAt,
+    createdBy: backup.exportedBy,
+    summary: backupContentSummary(backup),
+    payload: backup,
+    _updated: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  const ref = await window._db.collection('auto_backups').add(doc);
+  pruneCloudBackups().catch(()=>{});
+  return {id: ref.id, ...doc};
+}
+
+async function createManualCloudBackup() {
+  try {
+    const status = document.getElementById('backupManagerStatus');
+    if (status) { status.style.display = 'flex'; status.textContent = 'A criar backup no Firebase...'; }
+    await createCloudBackup('manual');
+    toast('Backup cloud criado ✓', 'win');
+    logAction('Backup cloud criado', 'manual');
+    await loadCloudBackups();
+  } catch (err) {
+    toast('Erro no backup cloud: ' + err.message, 'err');
+  }
+}
+
+async function createAutoCloudBackup() {
+  if (_autoBackupBusy || !window._db || !currentUser) return;
+  _autoBackupBusy = true;
+  try {
+    const latest = await window._db.collection('auto_backups').orderBy('createdAt','desc').limit(1).get();
+    const last = latest.empty ? 0 : (latest.docs[0].data().createdAt || 0);
+    if (Date.now() - last < AUTO_BACKUP_INTERVAL_MS - 60000) return;
+    await createCloudBackup('auto');
+    logAction('Backup automático', 'Firebase');
+  } catch (err) {
+    console.warn('auto backup failed:', err.message);
+  } finally {
+    _autoBackupBusy = false;
+  }
+}
+
+function startAutoBackups() {
+  if (_autoBackupTimer) clearInterval(_autoBackupTimer);
+  createAutoCloudBackup();
+  _autoBackupTimer = setInterval(createAutoCloudBackup, AUTO_BACKUP_INTERVAL_MS);
+}
+
+function openBackupManager() {
+  document.getElementById('backupManagerModal').classList.add('visible');
+  loadCloudBackups();
+}
+
+function closeBackupManager() {
+  document.getElementById('backupManagerModal').classList.remove('visible');
+}
+
+function backupDateLabel(iso, ms) {
+  const d = iso ? new Date(iso) : new Date(ms || Date.now());
+  return d.toLocaleString('pt-PT', {dateStyle:'short', timeStyle:'short'});
+}
+
+async function loadCloudBackups() {
+  const body = document.getElementById('backupListBody');
+  const status = document.getElementById('backupManagerStatus');
+  if (!window._db) { body.innerHTML = '<tr><td colspan="4"><div class="empty">Firebase indisponível.</div></td></tr>'; return; }
+  body.innerHTML = '<tr><td colspan="4"><div class="empty" style="padding:16px;">A carregar...</div></td></tr>';
+  try {
+    const snap = await window._db.collection('auto_backups').orderBy('createdAt','desc').limit(80).get();
+    const items = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    if (status) status.style.display = 'none';
+    if (!items.length) {
+      body.innerHTML = '<tr><td colspan="4"><div class="empty" style="padding:16px;">Ainda não há backups automáticos.</div></td></tr>';
+      return;
+    }
+    body.innerHTML = items.map(b => `
+      <tr>
+        <td class="mono">${backupDateLabel(b.createdAtIso, b.createdAt)} <span class="badge ${b.kind==='auto'?'bdg-bl':'bdg-gn'}">${b.kind==='auto'?'Auto':'Manual'}</span></td>
+        <td>${escHtml(b.createdBy || '—')}</td>
+        <td style="color:var(--muted);">${escHtml(b.summary || backupContentSummary(b.payload || {}))}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-ghost btn-sm" onclick="downloadCloudBackup('${b.id}')">⬇ JSON</button>
+          <button class="btn btn-primary btn-sm" onclick="restoreCloudBackup('${b.id}')">Restaurar</button>
+        </td>
+      </tr>`).join('');
+  } catch (err) {
+    body.innerHTML = '<tr><td colspan="4"><div class="empty" style="padding:16px;">Erro ao carregar backups: '+escHtml(err.message)+'</div></td></tr>';
+  }
+}
+
+async function getCloudBackup(id) {
+  const snap = await window._db.collection('auto_backups').doc(id).get();
+  if (!snap.exists) throw new Error('Backup não encontrado');
+  const data = snap.data();
+  if (!data.payload) throw new Error('Backup sem dados');
+  return data.payload;
+}
+
+async function downloadCloudBackup(id) {
+  try {
+    const backup = await getCloudBackup(id);
+    downloadBackupJson(backup);
+  } catch (err) {
+    toast('Erro ao descarregar backup: ' + err.message, 'err');
+  }
+}
+
+async function writeLineCollection(col, lines) {
+  await clearCollection(col);
+  const cleanLines = (lines || []).filter(l => l && l.docId && l.sku);
+  for (let i = 0; i < cleanLines.length; i += 400) {
+    const batch = window._db.batch();
+    cleanLines.slice(i, i + 400).forEach(line => {
+      const id = line.id || lineDocId(line.docId, line.sku);
+      const data = {...line};
+      delete data.id;
+      batch.set(window._db.collection(col).doc(id), data);
+    });
+    await batch.commit();
+  }
+}
+
+async function restoreBackupPayload(backup, label) {
+  if (!backup || !backup.version || !backup.stock) { toast('Ficheiro inválido', 'err'); return; }
+  skuDb  = backup.skuDb  || [];
+  stock  = backup.stock  || [];
+  orders = backup.orders || [];
+  rets   = backup.rets   || [];
+  teorico = backup.teorico || {};
+  warehouseMap = {...warehouseMap, ...(backup.warehouseMap || {})};
+  await saveDb();
+  await saveStk();
+  await saveOrd();
+  await saveRet();
+  await saveTeorico();
+  await saveWarehouseMap();
+  const orderLines = backup.orderLines || (backup.orders || []).flatMap(d => (d.lines || []).map(l => ({docId:d.id, sku:l.sku, qty:l.qty, updatedAt:Date.now(), updatedBy:'restore'})));
+  const returnLines = backup.returnLines || (backup.rets || []).flatMap(d => (d.lines || []).map(l => ({docId:d.id, sku:l.sku, qty:l.qty, updatedAt:Date.now(), updatedBy:'restore'})));
+  await writeLineCollection('order_lines', orderLines);
+  await writeLineCollection('return_lines', returnLines);
+  renderSkuDb(); renderStock(); renderDocs('order'); renderDocs('return');
+  renderPickingGuides(); renderReturnPickupGuides(); renderPutawayGuides(); renderWarehouseMapForm(); updateTeoricoStatus();
+  toast('Backup restaurado ✓ — ' + label, 'win');
+  logAction('Backup restaurado', label);
+}
+
+async function restoreCloudBackup(id) {
+  if (!requireAdminPassword('restaurar backup cloud')) return;
+  if (!confirm('Restaurar este backup?\n\nTodos os dados atuais serão substituídos.')) return;
+  try {
+    const backup = await getCloudBackup(id);
+    await restoreBackupPayload(backup, backupDateLabel(backup.exportedAt));
+    closeBackupManager();
+  } catch (err) {
+    toast('Erro ao restaurar: ' + err.message, 'err');
+  }
 }
 
 const BACKUP_PASSWORD = 'loreal10';
+const AUTO_BACKUP_INTERVAL_MS = 30 * 60 * 1000;
+const AUTO_BACKUP_RETENTION = 336; // 7 dias com backups de 30 em 30 min.
 let _pendingRestoreFile = null;
 let _resetPlatformStep = 1;
+let _autoBackupTimer = null;
+let _autoBackupBusy = false;
 
 function requireAdminPassword(action) {
   const pw = prompt('Password para ' + action + ':');
@@ -4426,7 +4656,8 @@ async function resetPlatformData() {
 }
 
 function importBackup() {
-  const file = document.getElementById('restoreFile').files[0];
+  const el = document.getElementById('restoreFile');
+  const file = el?.files?.[0];
   if (!file) return;
   _pendingRestoreFile = file;
   document.getElementById('backupPwInput').value = '';
@@ -4434,7 +4665,20 @@ function importBackup() {
   document.getElementById('backupPwSub').textContent = 'Introduz a password para restaurar "' + file.name + '".';
   document.getElementById('backupPwModal').classList.add('visible');
   setTimeout(() => document.getElementById('backupPwInput').focus(), 80);
-  document.getElementById('restoreFile').value = '';
+  if (el) el.value = '';
+}
+
+function queueRestoreFile(inputId) {
+  const el = document.getElementById(inputId);
+  const file = el?.files?.[0];
+  if (!file) return;
+  _pendingRestoreFile = file;
+  document.getElementById('backupPwInput').value = '';
+  document.getElementById('backupPwError').style.display = 'none';
+  document.getElementById('backupPwSub').textContent = 'Introduz a password para restaurar "' + file.name + '".';
+  document.getElementById('backupPwModal').classList.add('visible');
+  setTimeout(() => document.getElementById('backupPwInput').focus(), 80);
+  if (el) el.value = '';
 }
 
 function closeBackupPwModal() {
@@ -4459,23 +4703,7 @@ function confirmBackupPw() {
   reader.onload = async e => {
     try {
       const backup = JSON.parse(e.target.result);
-      if (!backup.version || !backup.stock) { toast('Ficheiro inválido', 'err'); return; }
-      // Restore all collections
-      skuDb  = backup.skuDb  || [];
-      stock  = backup.stock  || [];
-      orders = backup.orders || [];
-      rets   = backup.rets   || [];
-      teorico = backup.teorico || {};
-      // Save to Firestore
-      await saveDb();
-      await saveStk();
-      await saveOrd();
-      await saveRet();
-      // Re-render
-      renderSkuDb(); renderStock(); renderDocs('order'); renderDocs('return');
-      renderPickingGuides(); renderPutawayGuides();
-      toast('Backup restaurado ✓ — ' + (backup.exportedAt||'').slice(0,16).replace('T',' '), 'win');
-      logAction('Backup restaurado', backup.exportedAt||file.name);
+      await restoreBackupPayload(backup, (backup.exportedAt||file.name).slice(0,16).replace('T',' '));
     } catch(err) {
       toast('Erro ao restaurar: ' + err.message, 'err');
     }
@@ -4498,28 +4726,16 @@ function closeMobileMenu() {
   document.getElementById('mobileMenuOverlay').style.display = 'none';
 }
 function importBackupDesktop() {
-  const file = document.getElementById('restoreFileDesktop').files[0];
-  if (!file) return;
-  _pendingRestoreFile = file;
-  document.getElementById('backupPwInput').value = '';
-  document.getElementById('backupPwError').style.display = 'none';
-  document.getElementById('backupPwSub').textContent = 'Introduz a password para restaurar "' + file.name + '".';
-  document.getElementById('backupPwModal').classList.add('visible');
-  setTimeout(() => document.getElementById('backupPwInput').focus(), 80);
-  document.getElementById('restoreFileDesktop').value = '';
+  queueRestoreFile('restoreFileDesktop');
 }
 
 function importBackupMob() {
-  const file = document.getElementById('restoreFileMob').files[0];
-  if (!file) return;
-  _pendingRestoreFile = file;
-  document.getElementById('backupPwInput').value = '';
-  document.getElementById('backupPwError').style.display = 'none';
-  document.getElementById('backupPwSub').textContent = 'Introduz a password para restaurar "' + file.name + '".';
-  document.getElementById('backupPwModal').classList.add('visible');
-  setTimeout(() => document.getElementById('backupPwInput').focus(), 80);
-  document.getElementById('restoreFileMob').value = '';
+  queueRestoreFile('restoreFileMob');
   closeMobileMenu();
+}
+
+function importBackupManagerFile() {
+  queueRestoreFile('restoreFileManager');
 }
 
 function syncMobileLang() {
