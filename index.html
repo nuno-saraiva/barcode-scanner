@@ -1388,6 +1388,8 @@ function productCodeCandidates(val){
   out.slice().forEach(c=>{
     const cc=cleanProductCode(c);
     if(cc.length>=8 && cc.length%2===0 && cc.slice(0,cc.length/2)===cc.slice(cc.length/2)) out.push(cc.slice(0,cc.length/2));
+    const digitRuns = cc.match(/\d{8,14}/g) || [];
+    digitRuns.forEach(run => out.push(run));
   });
   return [...new Set(out.filter(Boolean))];
 }
@@ -1682,6 +1684,20 @@ function initialStockQty(s) {
 }
 function triagePosition() {
   return 'TRIAGEM';
+}
+function sameProductCode(a, b) {
+  const ca = productCodeCandidates(a);
+  const cb = productCodeCandidates(b);
+  return ca.some(x => cb.includes(x));
+}
+function stockRowsForSku(sku) {
+  const resolved = resolveSku(sku);
+  return stock.filter(s => sameProductCode(s.sku, resolved) && (parseInt(s.qty)||0) > 0);
+}
+function canonicalLineSku(value) {
+  const resolved = resolveSku(value);
+  const fromStock = stock.find(s => sameProductCode(s.sku, resolved));
+  return fromStock ? resolveSku(fromStock.sku) : resolved;
 }
 
 function renderStock(){
@@ -3438,8 +3454,9 @@ function exportReturnPickupExcel() {
 // ── Keep putaway/return flow (unchanged) ──
 // ══ DEVOLUÇÃO — EMITIR GUIA (mirrors emitirGuia for orders) ══
 function putawayPositionOptionsForSku(sku) {
+  sku = canonicalLineSku(sku);
   const seen = new Set();
-  return stock.filter(s=>resolveSku(s.sku)===sku&&s.qty>0)
+  return stockRowsForSku(sku)
     .sort((a,b)=>{
       const bp = putawayBoxPriority(a.boxType) - putawayBoxPriority(b.boxType);
       if(bp) return bp;
@@ -3468,7 +3485,7 @@ function buildPutawayGuideLines(doc, t) {
   const pl = [], warns = [];
   doc.lines.forEach(line => {
     const originalSku = line.sku;
-    const sku = resolveSku(line.sku);
+    const sku = canonicalLineSku(line.sku);
     if (sku !== originalSku) {
       line.sku = sku;
       if (t) {
