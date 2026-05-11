@@ -340,6 +340,43 @@ select.input{appearance:auto;cursor:pointer;}
 .mob-nav-btn:hover,.mob-nav-btn.active{background:rgba(255,255,255,.1);color:#fff;}
 .mob-nav-btn.t-ret.active{background:rgba(167,139,250,.2);}
 .mob-nav-btn.t-db.active{background:rgba(56,189,248,.15);}
+@media(min-width:1280px){
+  [data-tip]{position:relative;}
+  [data-tip]:hover::after,[data-tip]:focus-visible::after{
+    content:attr(data-tip);
+    position:absolute;
+    top:calc(100% + 8px);
+    left:50%;
+    transform:translateX(-50%);
+    background:#111827;
+    color:#fff;
+    border-radius:6px;
+    padding:6px 9px;
+    box-shadow:0 8px 24px rgba(0,0,0,.22);
+    font-family:var(--sans);
+    font-size:11px;
+    font-weight:700;
+    line-height:1.2;
+    letter-spacing:0;
+    text-transform:none;
+    white-space:nowrap;
+    z-index:10000;
+    pointer-events:none;
+  }
+  [data-tip]:hover::before,[data-tip]:focus-visible::before{
+    content:'';
+    position:absolute;
+    top:100%;
+    left:50%;
+    transform:translateX(-50%);
+    border:5px solid transparent;
+    border-bottom-color:#111827;
+    z-index:10001;
+    pointer-events:none;
+  }
+  .nav-right [data-tip]:hover::after,.nav-right [data-tip]:focus-visible::after{right:0;left:auto;transform:none;}
+  .nav-right [data-tip]:hover::before,.nav-right [data-tip]:focus-visible::before{right:10px;left:auto;transform:none;}
+}
 @media(max-width:1279px){
   .nav-tabs-desktop{display:none!important;}
   .nav-hamburger{display:block!important;}
@@ -543,10 +580,10 @@ select.input{appearance:auto;cursor:pointer;}
   <!-- Right side: always visible -->
   <div class="nav-right">
     <input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">
-    <button class="nav-tab nav-desktop-only" onclick="showAuditLog()" data-tip="Registo de atividade" style="font-size:13px;padding:0 10px;">📋</button>
-    <button class="nav-tab nav-desktop-only" onclick="exportBackup()" data-tip="Exportar backup completo" style="font-size:12px;padding:0 8px;opacity:.7;">💾</button>
-    <label class="nav-tab nav-desktop-only" data-tip="Restaurar backup" style="font-size:12px;padding:0 8px;opacity:.7;cursor:pointer;"><input type="file" id="restoreFileDesktop" accept=".json" onchange="importBackupDesktop()" style="display:none;">↩</label>
-    <button class="nav-tab nav-desktop-only" onclick="openResetPlatformModal()" data-tip="Reset total da plataforma" style="font-size:12px;padding:0 8px;opacity:.75;color:#fca5a5;">⟲</button>
+    <button class="nav-tab nav-desktop-only" onclick="showAuditLog()" data-tip="Registo de atividade" data-tip-i="tip_activity_icon" aria-label="Registo de atividade" title="Registo de atividade" style="font-size:13px;padding:0 10px;">📋</button>
+    <button class="nav-tab nav-desktop-only" onclick="exportBackup()" data-tip="Exportar backup completo" data-tip-i="tip_backup_export" aria-label="Exportar backup completo" title="Exportar backup completo" style="font-size:12px;padding:0 8px;opacity:.7;">💾</button>
+    <label class="nav-tab nav-desktop-only" data-tip="Restaurar backup" data-tip-i="tip_backup_restore" aria-label="Restaurar backup" title="Restaurar backup" style="font-size:12px;padding:0 8px;opacity:.7;cursor:pointer;"><input type="file" id="restoreFileDesktop" accept=".json" onchange="importBackupDesktop()" style="display:none;">↩</label>
+    <button class="nav-tab nav-desktop-only" onclick="openResetPlatformModal()" data-tip="Reset total da plataforma" data-tip-i="tip_reset_platform" aria-label="Reset total da plataforma" title="Reset total da plataforma" style="font-size:12px;padding:0 8px;opacity:.75;color:#fca5a5;">⟲</button>
     <div class="lang-sel nav-desktop-only" data-tip="Idioma">
       <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')" data-tip="Português" aria-label="Português"><span class="flag flag-pt"></span></button>
       <button class="lang-btn" id="lang-en" onclick="setLang('en')" data-tip="English" aria-label="English"><span class="flag flag-gb"></span></button>
@@ -3879,6 +3916,10 @@ const LANGS = {
     tip_emit_put:'Gera a guia de colocação para arrumar os artigos devolvidos. O stock só entra após confirmação.',
     tip_pick_list:'Lista de guias emitidas à espera de preparação. Clica em "Iniciar" para começar.',
     tip_put_list:'Lista de guias de devolução à espera de colocação. Clica em "Iniciar" para começar.',
+    tip_activity_icon:'Registo de atividade',
+    tip_backup_export:'Exportar backup completo',
+    tip_backup_restore:'Restaurar backup',
+    tip_reset_platform:'Reset total da plataforma',
     tip_cancel_doc:'Cancela o documento se ainda não foi para o armazém. Documentos confirmados não podem ser cancelados.',
     tip_scanner:'Lê códigos de barras com a câmara. Após cada leitura escolhes a quantidade.',
     tip_search:'Pesquisa por nome, marca, categoria, EAN ou SKU.',
@@ -3978,6 +4019,10 @@ const LANGS = {
     tip_emit_put:'Generate putaway guide for returned items. Stock only enters after confirmation.',
     tip_pick_list:'List of issued guides waiting for preparation. Click "Start" to begin.',
     tip_put_list:'List of return guides waiting for putaway. Click "Start" to begin.',
+    tip_activity_icon:'Activity log',
+    tip_backup_export:'Export full backup',
+    tip_backup_restore:'Restore backup',
+    tip_reset_platform:'Full platform reset',
     tip_cancel_doc:'Cancel document if it has not gone to the warehouse. Confirmed documents cannot be cancelled.',
     tip_scanner:'Read barcodes with the camera. Each scan adds 1 unit.',
     tip_search:'Search by name, brand, category, EAN or SKU.',
@@ -4075,6 +4120,10 @@ const LANGS = {
     tip_emit_put:'Genera guía de colocación para artículos devueltos. El stock entra solo tras confirmación.',
     tip_pick_list:'Lista de guías emitidas pendientes de preparación.',
     tip_put_list:'Lista de guías de devolución pendientes de colocación.',
+    tip_activity_icon:'Registro de actividad',
+    tip_backup_export:'Exportar backup completo',
+    tip_backup_restore:'Restaurar backup',
+    tip_reset_platform:'Reset total de la plataforma',
     tip_cancel_doc:'Cancela el documento si no ha ido al almacén. Los confirmados no se pueden cancelar.',
     tip_scanner:'Lee códigos de barras con la cámara. Cada lectura añade 1 unidad.',
     tip_search:'Busca por nombre, marca, categoría, EAN o SKU.',
@@ -4145,7 +4194,11 @@ function setLang(lang) {
   document.querySelectorAll('[data-tip-i]').forEach(el => {
     const key = el.getAttribute('data-tip-i');
     const val = tr(key);
-    if (val) el.setAttribute('data-tip', val);
+    if (val) {
+      el.setAttribute('data-tip', val);
+      el.setAttribute('title', val);
+      el.setAttribute('aria-label', val);
+    }
   });
   document.querySelectorAll('[data-ph-i]').forEach(el => {
     const key = el.getAttribute('data-ph-i');
@@ -4189,7 +4242,18 @@ function applyStaticTranslations() {
   document.querySelectorAll('[data-tip-i]').forEach(el => {
     const key = el.getAttribute('data-tip-i');
     const val = tr(key);
-    if (val) el.setAttribute('data-tip', val);
+    if (val) {
+      el.setAttribute('data-tip', val);
+      el.setAttribute('title', val);
+      el.setAttribute('aria-label', val);
+    }
+  });
+  document.querySelectorAll('[data-tip]:not([data-tip-i])').forEach(el => {
+    const val = el.getAttribute('data-tip');
+    if (val) {
+      el.setAttribute('title', val);
+      if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', val);
+    }
   });
   const map = {
     'page-skudb': ['skudb_title','skudb_sub'],
