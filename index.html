@@ -705,6 +705,7 @@ select.input{appearance:auto;cursor:pointer;}
         <button class="btn btn-ghost btn-sm" onclick="exportStockExcel()" data-tip="Exportar toda a tabela de stock">⬇ Excel</button>
         <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()" data-tip="Descarregar modelo Excel para importar stock">⬇ Modelo</button>
         <button class="btn btn-success btn-sm" onclick="openEntrada()" data-tip="Dar entrada de mercadoria recebida — peça a peça com scanner ou por Excel" data-tip-i="tip_dar_entrada" data-i="btn_dar_entrada">Dar Entrada</button>
+        <button class="btn btn-danger btn-sm" onclick="openSaida()" data-tip="Dar saída manual de stock existente sem criar movimentos de carteira, preparação ou faturação" data-i="btn_dar_saida">Dar Saída</button>
         <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" data-tip="Comparar stock real com quantidades encomendadas ao fornecedor" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">📊 Inserir Stock Teórico</button>
         <button class="btn btn-ghost btn-sm" onclick="clearStock()" data-tip="Apagar todo o stock do armazém">🗑</button>
       </div>
@@ -976,16 +977,18 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="search-panel" style="max-width:520px;" onclick="event.stopPropagation()">
     <div class="search-panel-head" style="flex-direction:column;align-items:stretch;gap:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-weight:800;font-size:16px;">Dar Entrada de Stock</div>
+        <div style="font-weight:800;font-size:16px;" id="ent-panel-title">Dar Entrada de Stock</div>
         <button class="btn btn-ghost btn-sm" onclick="closeEntrada()">✕</button>
       </div>
       <div class="inner-tabs" style="margin:0;">
-        <button class="inner-tab active" id="ent-tab-pick-btn" onclick="switchEntradaMode('pick')">📷 Peça a peça</button>
-        <button class="inner-tab" id="ent-tab-excel-btn" onclick="switchEntradaMode('excel')">📂 Excel</button>
+        <button class="inner-tab active" id="ent-tab-scanner-btn" onclick="switchEntradaMode('scanner')">📷 Scanner</button>
+        <button class="inner-tab" id="ent-tab-search-btn" onclick="switchEntradaMode('search')">🔍 Pesquisa</button>
+        <button class="inner-tab" id="ent-tab-manual-btn" onclick="switchEntradaMode('manual')">⌨️ Manual</button>
+        <button class="inner-tab" id="ent-tab-excel-btn" onclick="switchEntradaMode('excel')">📂 Importar</button>
       </div>
     </div>
 
-    <!-- PEÇA A PEÇA -->
+    <!-- ITEM BY ITEM -->
     <div id="ent-tab-pick" style="flex:1;overflow-y:auto;">
       <div style="display:flex;border-bottom:1px solid var(--border);">
         <div id="ent-s1" style="flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;background:var(--accent);color:#fff;">1 · Produto</div>
@@ -995,19 +998,22 @@ select.input{appearance:auto;cursor:pointer;}
 
       <!-- Step 1 -->
       <div id="ent-step1" style="padding:16px;">
-        <div id="entScannerBox" class="scanner-box"><div id="entInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
-          <button class="btn btn-dark btn-sm" id="btnEntScan" onclick="toggleScan('ent')">📷 Scanner</button>
-          <span class="dot" id="entScanDot"></span>
-          <span style="font-size:11px;color:var(--muted)" id="entScanStatus">Inativo</span>
+        <div id="ent-mode-scanner">
+          <div id="entScannerBox" class="scanner-box"><div id="entInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+            <button class="btn btn-dark btn-sm" id="btnEntScan" onclick="toggleScan('ent')">📷 Scanner</button>
+            <span class="dot" id="entScanDot"></span>
+            <span style="font-size:11px;color:var(--muted)" id="entScanStatus">Inativo</span>
+          </div>
+          <div class="alert a-info" style="font-size:12px;">Após cada leitura escolhes a quantidade e a posição.</div>
         </div>
-        <div class="ac-wrap" style="margin-bottom:8px;">
+        <div id="ent-mode-search" class="ac-wrap" style="margin-bottom:8px;display:none;">
           <input class="input" id="ent-search" placeholder="Nome, marca, EAN, SKU..." autocomplete="off"
-            oninput="acSearch('ent-search','ent-ac')"
+            oninput="entAcSearch()"
             onkeydown="acKey(event,'ent-search','ent-ac',entSelectFromAc)">
           <div class="ac-list" id="ent-ac"></div>
         </div>
-        <div style="display:flex;gap:8px;">
+        <div id="ent-mode-manual" style="display:none;gap:8px;">
           <input class="input mono" id="ent-sku-manual" placeholder="EAN ou SKU direto..."
             style="flex:1;" onkeydown="if(event.key==='Enter')entManualNext()">
           <button class="btn btn-primary" onclick="entManualNext()">→</button>
@@ -1017,7 +1023,7 @@ select.input{appearance:auto;cursor:pointer;}
       <!-- Step 2 -->
       <div id="ent-step2" style="padding:16px;display:none;">
         <div id="ent-sku-preview" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;"></div>
-        <label>Quantidade a dar entrada</label>
+        <label id="ent-qty-label">Quantidade a dar entrada</label>
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
           <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(-1)">−</button>
           <input class="input mono" id="ent-qty" type="number" inputmode="numeric" min="1" placeholder=""
@@ -1054,14 +1060,14 @@ select.input{appearance:auto;cursor:pointer;}
         </div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-ghost" onclick="entGoStep(2)">← Voltar</button>
-          <button class="btn btn-success" style="flex:1;" onclick="entConfirm()">✓ Confirmar entrada</button>
+          <button class="btn btn-success" style="flex:1;" id="ent-confirm-btn" onclick="entConfirm()">✓ Confirmar entrada</button>
         </div>
       </div>
 
       <!-- Recap -->
       <div id="ent-recap" style="display:none;border-top:1px solid var(--border);">
         <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-          <strong style="font-size:13px;">Entradas desta sessão</strong>
+          <strong style="font-size:13px;" id="ent-recap-title">Entradas desta sessão</strong>
           <button class="btn btn-ghost btn-sm" onclick="entClearRecap()">Limpar</button>
         </div>
         <div style="overflow-x:auto;max-height:180px;overflow-y:auto;">
@@ -1075,7 +1081,7 @@ select.input{appearance:auto;cursor:pointer;}
 
     <!-- EXCEL -->
     <div id="ent-tab-excel" style="display:none;padding:16px;flex:1;overflow-y:auto;">
-      <div class="alert a-info">Colunas: <strong>SKU | Posição | Quantidade | Tipo de Caixa</strong></div>
+      <div class="alert a-info" id="ent-excel-help">Colunas: <strong>EAN | Posição | Quantidade | Tipo de Caixa</strong></div>
       <div style="margin-bottom:12px;">
         <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()" data-i="btn_template_excel">⬇ Modelo Excel</button>
       </div>
@@ -1489,6 +1495,7 @@ function acPick(inpId,lstId,sku){
   document.getElementById(inpId).value=info?`${info.name} (${sku})`:sku;
   const map={'o-search':'o-ac-sku','r-search':'r-ac-sku','s-search':'s-sku'};
   if(map[inpId]) document.getElementById(map[inpId]).value=sku;
+  if(inpId==='ent-search') entSelectFromAc(sku);
 }
 function acKey(ev,inpId,lstId,onEnter){
   const lst=document.getElementById(lstId);
@@ -1913,7 +1920,11 @@ function saveWarehouseMapFromForm() {
   toast('Mapa do armazém guardado','win');
 }
 function dlStockTpl(){
-  const ws=XLSX.utils.aoa_to_sheet([['EAN ou SKU','Posição','Quantidade','Tipo de Caixa'],['3600523540235','A11',10,'Mixed'],['SKU-002','B23',20,'Mono']]);
+  const mode = document.getElementById('entradaOverlay')?.classList.contains('open') ? entAction : 'in';
+  const rows = mode==='out'
+    ? [['EAN','Posição','Quantidade'],['3600523540235','A11',2]]
+    : [['EAN','Posição','Quantidade','Tipo de Caixa'],['3600523540235','A11',10,'Mono'],['3614273123456','B23',20,'Mixed']];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');XLSX.writeFile(wb,'template_stock.xlsx');
 }
 
@@ -1940,19 +1951,30 @@ function exportTeoricoExcel(){
   toast('Excel exportado','win');
 }
 
-// ══ DAR ENTRADA — FLOATING PANEL ══
-let entSku=null, entQty=1, entBoxType='mista', entRecap=[];
+// ══ DAR ENTRADA / SAÍDA — FLOATING PANEL ══
+let entSku=null, entQty=1, entBoxType='exclusiva', entRecap=[], entAction='in';
 
-function openEntrada(){
-  entSku=null; entQty=1; entSetBoxType('mista');
+function openEntrada(){ openStockMovement('in'); }
+function openSaida(){ openStockMovement('out'); }
+
+function openStockMovement(action){
+  entAction=action==='out'?'out':'in';
+  entSku=null; entQty=1; entSetBoxType('exclusiva');
   ['ent-search','ent-sku-manual','ent-pos-manual'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ent-qty').value='';
   document.getElementById('ent-pos-select').value='';
   document.getElementById('ent-pos-info').textContent='';
   document.getElementById('ent-pos-warning').style.display='none';
   const boxWrap=document.getElementById('ent-box-type-wrap'); if(boxWrap) boxWrap.style.display='';
+  document.getElementById('ent-panel-title').textContent=entAction==='out'?'Dar Saída de Stock':'Dar Entrada de Stock';
+  document.getElementById('ent-qty-label').textContent=entAction==='out'?'Quantidade a dar saída':'Quantidade a dar entrada';
+  document.getElementById('ent-confirm-btn').textContent=entAction==='out'?'✓ Confirmar saída':'✓ Confirmar entrada';
+  document.getElementById('ent-recap-title').textContent=entAction==='out'?'Saídas desta sessão':'Entradas desta sessão';
+  document.getElementById('ent-excel-help').innerHTML=entAction==='out'
+    ? 'Colunas: <strong>EAN | Posição | Quantidade</strong>'
+    : 'Colunas: <strong>EAN | Posição | Quantidade | Tipo de Caixa</strong>';
   entStepUI(1);
-  switchEntradaMode('pick');
+  switchEntradaMode('scanner');
   // Populate position list sorted by warehouse route
   const sel=document.getElementById('ent-pos-select');
   const positions=[...new Set([...warehousePositions(), ...stock.map(s=>s.position)])].sort((a,b)=>{
@@ -1968,7 +1990,7 @@ function openEntrada(){
     }).join('');
   renderEntPosList(positions);
   document.getElementById('entradaOverlay').classList.add('open');
-  setTimeout(()=>document.getElementById('ent-search').focus(),100);
+  setTimeout(()=>document.getElementById(entAction==='out'?'ent-search':'ent-search').focus(),100);
 }
 
 function renderEntPosList(positions){
@@ -1981,7 +2003,7 @@ function renderEntPosList(positions){
   }
   list.className='pos-list';
   list.innerHTML=positions.map(p=>{
-    const total=stock.filter(s=>s.position===p).reduce((a,s)=>a+s.qty,0);
+    const total=stock.filter(s=>s.position===p && (entAction!=='out'||s.sku===entSku)).reduce((a,s)=>a+s.qty,0);
     return '<button type="button" class="pos-chip" data-pos="'+p+'" onclick="entChoosePos(this.dataset.pos)">'+p+' <span style="font-family:var(--sans);font-weight:600;color:var(--muted)">('+total+')</span></button>';
   }).join('');
 }
@@ -2000,11 +2022,20 @@ function closeEntrada(){
 function entradaClose(e){ if(e.target===document.getElementById('entradaOverlay')) closeEntrada(); }
 
 function switchEntradaMode(m){
-  ['pick','excel'].forEach(x=>{
-    document.getElementById('ent-tab-'+x).style.display=x===m?'':'none';
-    document.getElementById('ent-tab-'+x+'-btn').classList.toggle('active',x===m);
+  const itemModes=['scanner','search','manual'];
+  document.getElementById('ent-tab-pick').style.display=m==='excel'?'none':'';
+  document.getElementById('ent-tab-excel').style.display=m==='excel'?'':'none';
+  ['scanner','search','manual','excel'].forEach(x=>{
+    const btn=document.getElementById('ent-tab-'+x+'-btn');
+    if(btn) btn.classList.toggle('active',x===m);
   });
-  if(m!=='pick') stopScan('ent');
+  itemModes.forEach(x=>{
+    const el=document.getElementById('ent-mode-'+x);
+    if(el) el.style.display=x===m?(x==='manual'?'flex':'block'):'none';
+  });
+  if(m!=='scanner') stopScan('ent');
+  if(m==='search') setTimeout(()=>document.getElementById('ent-search').focus(),80);
+  if(m==='manual') setTimeout(()=>document.getElementById('ent-sku-manual').focus(),80);
 }
 
 function entStepUI(n){
@@ -2020,8 +2051,31 @@ function entStepUI(n){
   if(n===3) setTimeout(()=>document.getElementById('ent-pos-manual').focus(),80);
 }
 
+function entSkuHasStock(sku){
+  return stock.some(s=>resolveSku(s.sku)===resolveSku(sku) && (parseInt(s.qty)||0)>0);
+}
+
+function entAcSearch(){
+  const q=document.getElementById('ent-search').value.trim();
+  const lst=document.getElementById('ent-ac');
+  if(!q){lst.classList.remove('open');return;}
+  const res=skuDb.filter(d=>productMatches(d,q) && (entAction!=='out' || entSkuHasStock(d.sku))).slice(0,12);
+  if(!res.length){lst.classList.remove('open');return;}
+  lst.innerHTML=res.map((d,i)=>{
+    const available=stock.filter(s=>s.sku===d.sku).reduce((a,s)=>a+(parseInt(s.qty)||0),0);
+    return `<div class="ac-item" data-sku="${d.sku}" data-idx="${i}" onmousedown="acPick('ent-search','ent-ac','${d.sku}')">
+      <div class="ac-sku">${d.sku}${d.ean?` <span style="color:var(--muted);font-weight:400">· ${d.ean}</span>`:''}${entAction==='out'?` <span style="color:var(--success);font-weight:700">· ${available} disp.</span>`:''}</div>
+      <div class="ac-name">${d.name||'—'}</div>
+      <div class="ac-meta">${[d.brand,d.category,d.ml].filter(Boolean).join(' · ')}</div>
+    </div>`;
+  }).join('');
+  lst.classList.add('open');
+}
+
 function entSelectFromAc(sku){
   if(!sku)return;
+  sku=resolveSku(sku);
+  if(entAction==='out' && !entSkuHasStock(sku)){toast('Este produto não tem stock disponível para dar saída','err');return;}
   entSku=sku;
   document.getElementById('ent-search').value='';
   acSel['ent-search']=null;
@@ -2040,7 +2094,9 @@ function entSelectFromAc(sku){
 function entManualNext(){
   const raw=document.getElementById('ent-sku-manual').value.trim();
   if(!raw){toast('Introduz um SKU ou EAN','err');return;}
-  entSelectFromAc(resolveSku(raw));
+  const sku=resolveSku(raw);
+  if(entAction==='out' && !entSkuHasStock(sku)){toast('Só podes dar saída de SKUs já existentes em stock','err');return;}
+  entSelectFromAc(sku);
   document.getElementById('ent-sku-manual').value='';
 }
 
@@ -2051,8 +2107,32 @@ function entAdjQty(delta){
 
 function entGoStep(n){
   if(n===3) entQty=parseInt(document.getElementById('ent-qty').value)||1;
+  if(n===3) refreshEntPositionsForSku();
   entStepUI(n);
   if(n===3) entUpdatePosWarning();
+}
+
+function refreshEntPositionsForSku(){
+  const sel=document.getElementById('ent-pos-select');
+  if(!sel)return;
+  let positions;
+  if(entAction==='out' && entSku){
+    positions=[...new Set(stock.filter(s=>s.sku===entSku && (parseInt(s.qty)||0)>0).map(s=>s.position))];
+  } else {
+    positions=[...new Set([...warehousePositions(), ...stock.map(s=>s.position)])];
+  }
+  positions=positions.filter(Boolean).sort((a,b)=>{
+    const pa=parsePos(a),pb=parsePos(b);
+    if(pa.shelf!==pb.shelf)return pa.shelf.localeCompare(pb.shelf);
+    if(pa.floor!==pb.floor)return pa.floor-pb.floor;
+    return pa.slot-pb.slot;
+  });
+  sel.innerHTML='<option value="">— Selecionar da lista —</option>'+
+    positions.map(p=>{
+      const total=stock.filter(s=>s.position===p && (entAction!=='out'||s.sku===entSku)).reduce((a,s)=>a+(parseInt(s.qty)||0),0);
+      return `<option value="${p}">${p} (${total} unid.)</option>`;
+    }).join('');
+  renderEntPosList(positions);
 }
 
 function entPosSelected(){
@@ -2081,6 +2161,20 @@ function entUpdatePosWarning(){
   const info=document.getElementById('ent-pos-info');
   const boxWrap=document.getElementById('ent-box-type-wrap');
   if(!pos){warn.style.display='none';info.textContent='';if(boxWrap)boxWrap.style.display='';return;}
+  if(entAction==='out'){
+    if(boxWrap)boxWrap.style.display='none';
+    const same=stock.find(s=>s.sku===entSku&&s.position===pos);
+    if(!same){
+      warn.style.display='flex';
+      warn.textContent='⚠️ Este SKU não tem stock nesta posição.';
+      info.textContent='';
+      return;
+    }
+    warn.style.display=(parseInt(same.qty)||0)<entQty?'flex':'none';
+    warn.textContent='⚠️ Stock insuficiente nesta posição: '+same.qty+' unid. disponíveis.';
+    info.textContent='Disponível nesta posição: '+same.qty+' unid.';
+    return;
+  }
   const existing=stock.filter(s=>s.sku===entSku&&s.position===pos);
   const otherSkus=stock.filter(s=>s.sku!==entSku&&s.position===pos);
   if(boxWrap)boxWrap.style.display=otherSkus.length?'none':'';
@@ -2096,6 +2190,28 @@ function entConfirm(){
   const pos=document.getElementById('ent-pos-manual').value.trim().toUpperCase();
   if(!pos){toast('Indica a posição','err');return;}
   if(!entSku){toast('Sem produto selecionado','err');return;}
+  if(entAction==='out'){
+    const same=stock.find(s=>s.sku===entSku&&s.position===pos);
+    if(!same){toast('Este SKU não tem stock nessa posição','err');return;}
+    if((parseInt(same.qty)||0)<entQty){toast('Stock insuficiente nessa posição','err');return;}
+    const initialBefore=initialStockQty(same);
+    same.qty=(parseInt(same.qty)||0)-entQty;
+    same.initialTheoretical=Math.max(0, initialBefore-entQty);
+    saveStk();renderStock();
+    logAction('Saída manual de stock',entSku+' qty:'+entQty+' pos:'+pos);
+    const info=skuInfo(entSku);
+    entRecap.unshift({sku:entSku,name:info?.name||'',qty:entQty,pos});
+    renderEntRecap();
+    toast('✓ saída '+entSku+' · '+entQty+' unid. @ '+pos,'win');
+    entSku=null;entQty=1;
+    document.getElementById('ent-qty').value='';
+    document.getElementById('ent-pos-manual').value='';
+    document.getElementById('ent-pos-select').value='';
+    document.getElementById('ent-pos-info').textContent='';
+    document.getElementById('ent-pos-warning').style.display='none';
+    entStepUI(1);
+    return;
+  }
   const posEntries=stock.filter(s=>s.position===pos);
   if(!isKnownWarehousePosition(pos) && !confirm('A posição '+pos+' não existe no mapa configurado. Queres usar esta posição mesmo assim?')) return;
   if(posEntries.length){
@@ -2109,6 +2225,7 @@ function entConfirm(){
   if(same){
     if (same.initialTheoretical === undefined) same.initialTheoretical = initialStockQty(same);
     same.qty += entQty;
+    same.initialTheoretical += entQty;
     if(hasDifferentSku) same.boxType='mista';
   } else {
     const boxType=posEntries.length?'mista':entBoxType;
@@ -2121,7 +2238,7 @@ function entConfirm(){
   entRecap.unshift({sku:entSku,name:info?.name||'',qty:entQty,pos});
   renderEntRecap();
   toast('✓ '+entSku+' · '+entQty+' unid. @ '+pos,'win');
-  entSku=null;entQty=1;entSetBoxType('mista');
+  entSku=null;entQty=1;entSetBoxType('exclusiva');
   document.getElementById('ent-qty').value='';
   document.getElementById('ent-pos-manual').value='';
   document.getElementById('ent-pos-select').value='';
@@ -2155,13 +2272,26 @@ function importStock(){
       const qty=parseInt(row[2])||0;
       const bt=normBoxType(row[3]);
       if(!sku||!pos)return;
+      if(entAction==='out'){
+        const prev=stock.find(s=>s.sku===sku&&s.position===pos);
+        if(!prev || (parseInt(prev.qty)||0)<qty)return;
+        const initialBefore=initialStockQty(prev);
+        prev.qty=(parseInt(prev.qty)||0)-qty;
+        prev.initialTheoretical=Math.max(0, initialBefore-qty);
+        added++;
+        return;
+      }
       const prev=stock.find(s=>s.sku===sku&&s.position===pos);
-      const initialTheoretical=prev?initialStockQty(prev):qty;
-      stock=stock.filter(s=>!(s.sku===sku&&s.position===pos));
-      stock.push({id:prev?.id||Date.now()+Math.random(),sku,position:pos,qty,boxType:bt,initialTheoretical});
+      if(prev){
+        prev.qty=(parseInt(prev.qty)||0)+qty;
+        prev.initialTheoretical=initialStockQty(prev)+qty;
+        prev.boxType=bt;
+      } else {
+        stock.push({id:Date.now()+Math.random(),sku,position:pos,qty,boxType:bt,initialTheoretical:qty});
+      }
       added++;
     });
-    saveStk();renderStock();toast(added+' entradas importadas','win');logAction('Stock importado',added+' entradas');
+    saveStk();renderStock();toast(added+(entAction==='out'?' saídas importadas':' entradas importadas'),'win');logAction(entAction==='out'?'Saídas stock importadas':'Stock importado',added+' linhas');
     closeEntrada();
   };r.readAsArrayBuffer(file);
 }
@@ -3889,7 +4019,7 @@ const LANGS = {
     btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
     btn_finalize_pick:'✓ Finalizar e deduzir stock', btn_finalize_put:'✓ Finalizar e acrescentar ao stock',
     btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Fechar',
-    btn_dar_entrada:'Dar Entrada', btn_teorico:'📊 Inserir Stock Teórico',
+    btn_dar_entrada:'Dar Entrada', btn_dar_saida:'Dar Saída', btn_teorico:'📊 Inserir Stock Teórico',
     btn_export:'⬇ Excel', btn_template:'⬇ Modelo', btn_template_excel:'⬇ Modelo Excel',
     btn_choose_file:'Escolher ficheiro', file_none:'Nenhum ficheiro selecionado',
     btn_login:'Entrar →', btn_outro:'Outro', btn_back:'← Voltar', btn_save:'Guardar',
@@ -3996,7 +4126,7 @@ const LANGS = {
     btn_start_pick:'▶ Start picking', btn_start_put:'▶ Start',
     btn_finalize_pick:'✓ Finalize & deduct stock', btn_finalize_put:'✓ Finalize & add to stock',
     btn_confirm:'✓ Confirm', btn_cancel:'✕ Cancel', btn_close:'Close',
-    btn_dar_entrada:'Stock In', btn_teorico:'📊 Insert Theoretical Stock',
+    btn_dar_entrada:'Stock In', btn_dar_saida:'Stock Out', btn_teorico:'📊 Insert Theoretical Stock',
     btn_export:'⬇ Excel', btn_template:'⬇ Template', btn_template_excel:'⬇ Excel template',
     btn_choose_file:'Choose file', file_none:'No file selected',
     btn_login:'Enter →', btn_outro:'Other', btn_back:'← Back', btn_save:'Save',
@@ -4097,7 +4227,7 @@ const LANGS = {
     btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
     btn_finalize_pick:'✓ Finalizar y deducir stock', btn_finalize_put:'✓ Finalizar y añadir al stock',
     btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Cerrar',
-    btn_dar_entrada:'Entrada Stock', btn_teorico:'📊 Inserir Stock Teórico',
+    btn_dar_entrada:'Entrada Stock', btn_dar_saida:'Salida Stock', btn_teorico:'📊 Inserir Stock Teórico',
     btn_export:'⬇ Excel', btn_template:'⬇ Plantilla', btn_template_excel:'⬇ Plantilla Excel',
     btn_choose_file:'Elegir archivo', file_none:'Ningún archivo seleccionado',
     btn_login:'Entrar →', btn_outro:'Otro', btn_back:'← Volver', btn_save:'Guardar',
