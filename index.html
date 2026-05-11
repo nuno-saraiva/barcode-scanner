@@ -1692,7 +1692,7 @@ function sameProductCode(a, b) {
 }
 function stockRowsForSku(sku) {
   const resolved = resolveSku(sku);
-  return stock.filter(s => sameProductCode(s.sku, resolved) && (parseInt(s.qty)||0) > 0);
+  return stock.filter(s => sameProductCode(s.sku, resolved));
 }
 function canonicalLineSku(value) {
   const resolved = resolveSku(value);
@@ -3457,6 +3457,8 @@ function putawayPositionOptionsForSku(sku) {
   sku = canonicalLineSku(sku);
   const seen = new Set();
   return stockRowsForSku(sku)
+    .map(s => ({...s, _capacity: Math.max(0, initialStockQty(s) - (parseInt(s.qty)||0))}))
+    .filter(s => s._capacity > 0)
     .sort((a,b)=>{
       const bp = putawayBoxPriority(a.boxType) - putawayBoxPriority(b.boxType);
       if(bp) return bp;
@@ -3468,7 +3470,7 @@ function putawayPositionOptionsForSku(sku) {
       seen.add(key);
       return true;
     })
-    .map(s=>({stockId:s.id,position:s.position,boxType:normBoxType(s.boxType)}));
+    .map(s=>({stockId:s.id,position:s.position,boxType:normBoxType(s.boxType),capacity:s._capacity}));
 }
 
 function sortPutawayLines(lines) {
@@ -3483,6 +3485,7 @@ function sortPutawayLines(lines) {
 
 function buildPutawayGuideLines(doc, t) {
   const pl = [], warns = [];
+  const reserved = {};
   doc.lines.forEach(line => {
     const originalSku = line.sku;
     const sku = canonicalLineSku(line.sku);
@@ -3496,15 +3499,23 @@ function buildPutawayGuideLines(doc, t) {
     const qty = parseInt(line.qty)||0;
     if (qty <= 0) return;
     const options = putawayPositionOptionsForSku(sku);
-    if (options.length) {
-      const pos = options[0];
+    let rem = qty;
+    options.forEach(pos => {
+      if (rem <= 0) return;
+      const free = Math.max(0, (parseInt(pos.capacity)||0) - (reserved[pos.stockId]||0));
+      if (free <= 0) return;
+      const take = Math.min(rem, free);
+      const optionChoices = options.filter(o => o.stockId === pos.stockId || Math.max(0, (parseInt(o.capacity)||0) - (reserved[o.stockId]||0)) >= take);
       pl.push({
-        sku, position:pos.position, qty, stockId:pos.stockId, boxType:pos.boxType,
-        status:'pending', qtyDone:qty, optionIndex:0, positionOptions:options
+        sku, position:pos.position, qty:take, stockId:pos.stockId, boxType:pos.boxType,
+        status:'pending', qtyDone:take, optionIndex:Math.max(0, optionChoices.findIndex(o=>o.stockId===pos.stockId)), positionOptions:optionChoices
       });
-    } else {
-      pl.push({sku,position:triagePosition(),qty,stockId:null,boxType:'mista',status:'pending',qtyDone:qty,noPos:true,triage:true,positionOptions:[]});
-      warns.push(sku+': sem posição conhecida no stock · colocar em TRIAGEM');
+      reserved[pos.stockId] = (reserved[pos.stockId]||0) + take;
+      rem -= take;
+    });
+    if (rem > 0) {
+      pl.push({sku,position:triagePosition(),qty:rem,stockId:null,boxType:'mista',status:'pending',qtyDone:rem,noPos:true,triage:true,positionOptions:[]});
+      warns.push(sku+': '+rem+' unid. sem capacidade nas posições conhecidas · colocar em TRIAGEM');
     }
   });
   return {lines:sortPutawayLines(pl), warns};
@@ -3743,6 +3754,19 @@ function finalizePutaway() {
   if (!doc) return;
   const confirmed = putawayLines.filter(l=>l.status==='confirmed');
   if (!confirmed.length) { toast('Confirma pelo menos uma linha','err'); return; }
+  const plannedByStock = {};
+  for (const l of confirmed) {
+    if (!l.noPos && l.stockId) plannedByStock[l.stockId] = (plannedByStock[l.stockId] || 0) + (parseInt(l.qtyDone)||0);
+  }
+  for (const [stockId, qty] of Object.entries(plannedByStock)) {
+    const entry = stock.find(s=>String(s.id)===String(stockId));
+    if (!entry) continue;
+    const free = Math.max(0, initialStockQty(entry) - (parseInt(entry.qty)||0));
+    if (qty > free) {
+      toast('Capacidade excedida em '+entry.position+' para '+entry.sku+'. Pede outra localização antes de finalizar.', 'err');
+      return;
+    }
+  }
   if (!confirm('Finalizar colocação de ' + doc.id + '? ' + confirmed.length + ' linhas. O stock será acrescido agora.')) return;
   doc.snapshot = JSON.parse(JSON.stringify(stock));
   confirmed.forEach(l=>{
@@ -5076,8 +5100,8 @@ function filterImportOrders() {
   renderImportOrderList(q);
 }
 
-function importablePickedOrders() {
-  return orders.filter(o => o.status === 'picked' && o.lines && o.lines.length > 0);
+function importableReturnSourceOrders() {
+  return orders.filter(o => ['picked','parcial'].includes(o.status) && o.lines && o.lines.length > 0);
 }
 
 function returnForSourceOrder(orderId) {
@@ -5090,7 +5114,7 @@ function returnForSourceOrder(orderId) {
 
 function selectedImportOrders() {
   const ids = _selectedImportOrderIds || new Set();
-  return importablePickedOrders().filter(o => ids.has(o.id) && !returnForSourceOrder(o.id));
+  return importableReturnSourceOrders().filter(o => ids.has(o.id) && !returnForSourceOrder(o.id));
 }
 
 function updateImportOrderSelectionUI() {
@@ -5124,7 +5148,7 @@ function toggleImportOrderSelection(btn) {
 
 function renderImportOrderList(q) {
   const el = document.getElementById('importOrderList');
-  const picked = importablePickedOrders();
+  const picked = importableReturnSourceOrders();
   const nq = normSearch(q);
   const filtered = nq ? picked.filter(o => {
     const lineText = (o.lines||[]).map(l => productSearchText(skuInfo(l.sku)) + normSearch(l.sku)).join('');
@@ -5132,7 +5156,7 @@ function renderImportOrderList(q) {
   }) : picked;
 
   if (!filtered.length) {
-    el.innerHTML = '<div class="empty" style="padding:20px;">Nenhum pedido concluído encontrado.</div>';
+    el.innerHTML = '<div class="empty" style="padding:20px;">Nenhum pedido concluído ou parcial encontrado.</div>';
     updateImportOrderSelectionUI();
     return;
   }
@@ -5144,6 +5168,7 @@ function renderImportOrderList(q) {
     const active = _selectedImportOrderIds.has(o.id);
     const existingReturn = returnForSourceOrder(o.id);
     const disabled = !!existingReturn;
+    const statusText = o.status === 'parcial' ? 'Parcial' : 'Concluído';
     return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:'+(disabled?'not-allowed':'pointer')+';transition:background .15s;" ' +
       'class="import-order-row" ' +
       '' +
@@ -5159,7 +5184,7 @@ function renderImportOrderList(q) {
       '</div>' +
       (disabled ? '<div style="font-size:11px;color:#991b1b;margin-top:4px;">Já incluído em '+escHtml(existingReturn.id)+'</div>' : '') +
       '</div>' +
-      '<span class="badge '+(disabled?'bdg-rd':'bdg-gn')+'">'+(disabled?'Devolução emitida':'✓ Concluído')+'</span>' +
+      '<span class="badge '+(disabled?'bdg-rd':o.status==='parcial'?'bdg-or':'bdg-gn')+'">'+(disabled?'Devolução emitida':'✓ '+statusText)+'</span>' +
       '</div>' +
       '</div>' +
       '</div>';
