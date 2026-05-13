@@ -1984,7 +1984,7 @@ function exportTeoricoExcel(){
   const rows=[['SKU','Nome','Marca','ML','Qty teórica','Stock real','Diferença','Estado']];
   teoricoRaw.forEach(t=>{
     const info=skuInfo(t.sku);
-    const real=stock.filter(s=>s.sku===t.sku).reduce((a,s)=>a+s.qty,0);
+    const real=stockTotalForSku(t.sku);
     const diff=real-t.qty;
     const estado=diff===0?'Conforme':diff>0?'Excesso':real===0?'Não recebido':'Em falta';
     rows.push([t.sku,info?.name||'',info?.brand||'',info?.ml||'',t.qty,real,diff,estado]);
@@ -2107,7 +2107,7 @@ function entAcSearch(){
   const res=skuDb.filter(d=>productMatches(d,q) && (entAction!=='out' || entSkuHasStock(d.sku))).slice(0,12);
   if(!res.length){lst.classList.remove('open');return;}
   lst.innerHTML=res.map((d,i)=>{
-    const available=stock.filter(s=>s.sku===d.sku).reduce((a,s)=>a+(parseInt(s.qty)||0),0);
+    const available=stockTotalForSku(d.sku);
     return `<div class="ac-item" data-sku="${d.sku}" data-idx="${i}" onmousedown="acPick('ent-search','ent-ac','${d.sku}')">
       <div class="ac-sku">${d.sku}${d.ean?` <span style="color:var(--muted);font-weight:400">· ${d.ean}</span>`:''}${entAction==='out'?` <span style="color:var(--success);font-weight:700">· ${available} disp.</span>`:''}</div>
       <div class="ac-name">${d.name||'—'}</div>
@@ -2162,7 +2162,7 @@ function refreshEntPositionsForSku(){
   if(!sel)return;
   let positions;
   if(entAction==='out' && entSku){
-    positions=[...new Set(stock.filter(s=>s.sku===entSku && (parseInt(s.qty)||0)>0).map(s=>s.position))];
+    positions=[...new Set(stock.filter(s=>sameProductCode(s.sku, entSku) && (parseInt(s.qty)||0)>0).map(s=>s.position))];
   } else {
     positions=[...new Set([...warehousePositions(), ...stock.map(s=>s.position)])];
   }
@@ -2174,7 +2174,7 @@ function refreshEntPositionsForSku(){
   });
   sel.innerHTML='<option value="">— Selecionar da lista —</option>'+
     positions.map(p=>{
-      const total=stock.filter(s=>s.position===p && (entAction!=='out'||s.sku===entSku)).reduce((a,s)=>a+(parseInt(s.qty)||0),0);
+      const total=stock.filter(s=>s.position===p && (entAction!=='out'||sameProductCode(s.sku, entSku))).reduce((a,s)=>a+(parseInt(s.qty)||0),0);
       return `<option value="${p}">${p} (${total} unid.)</option>`;
     }).join('');
   renderEntPosList(positions);
@@ -2208,7 +2208,7 @@ function entUpdatePosWarning(){
   if(!pos){warn.style.display='none';info.textContent='';if(boxWrap)boxWrap.style.display='';return;}
   if(entAction==='out'){
     if(boxWrap)boxWrap.style.display='none';
-    const same=stock.find(s=>s.sku===entSku&&s.position===pos);
+    const same=stock.find(s=>sameProductCode(s.sku, entSku)&&s.position===pos);
     if(!same){
       warn.style.display='flex';
       warn.textContent='⚠️ Este SKU não tem stock nesta posição.';
@@ -2220,8 +2220,8 @@ function entUpdatePosWarning(){
     info.textContent='Disponível nesta posição: '+same.qty+' unid.';
     return;
   }
-  const existing=stock.filter(s=>s.sku===entSku&&s.position===pos);
-  const otherSkus=stock.filter(s=>s.sku!==entSku&&s.position===pos);
+  const existing=stock.filter(s=>sameProductCode(s.sku, entSku)&&s.position===pos);
+  const otherSkus=stock.filter(s=>!sameProductCode(s.sku, entSku)&&s.position===pos);
   if(boxWrap)boxWrap.style.display=otherSkus.length?'none':'';
   if(existing.length){
     warn.style.display='flex';
@@ -2236,7 +2236,7 @@ function entConfirm(){
   if(!pos){toast('Indica a posição','err');return;}
   if(!entSku){toast('Sem produto selecionado','err');return;}
   if(entAction==='out'){
-    const same=stock.find(s=>s.sku===entSku&&s.position===pos);
+    const same=stock.find(s=>sameProductCode(s.sku, entSku)&&s.position===pos);
     if(!same){toast('Este SKU não tem stock nessa posição','err');return;}
     if((parseInt(same.qty)||0)<entQty){toast('Stock insuficiente nessa posição','err');return;}
     same.qty=(parseInt(same.qty)||0)-entQty;
@@ -2263,12 +2263,11 @@ function entConfirm(){
       '\n\nQueres adicionar '+entQty+' unid. de '+entSku+' nesta posição?';
     if(!confirm(msg)) return;
   }
-  const same=stock.find(s=>s.sku===entSku&&s.position===pos);
-  const hasDifferentSku=posEntries.some(s=>s.sku!==entSku);
+  const same=stock.find(s=>sameProductCode(s.sku, entSku)&&s.position===pos);
+  const hasDifferentSku=posEntries.some(s=>!sameProductCode(s.sku, entSku));
   if(same){
     if (same.initialTheoretical === undefined) same.initialTheoretical = initialStockQty(same);
     same.qty += entQty;
-    same.initialTheoretical += entQty;
     if(hasDifferentSku) same.boxType='mista';
   } else {
     const boxType=posEntries.length?'mista':entBoxType;
@@ -2316,16 +2315,16 @@ function importStock(){
       const bt=normBoxType(row[3]);
       if(!sku||!pos)return;
       if(entAction==='out'){
-        const prev=stock.find(s=>s.sku===sku&&s.position===pos);
+        const prev=stock.find(s=>sameProductCode(s.sku, sku)&&s.position===pos);
         if(!prev || (parseInt(prev.qty)||0)<qty)return;
         prev.qty=(parseInt(prev.qty)||0)-qty;
         added++;
         return;
       }
-      const prev=stock.find(s=>s.sku===sku&&s.position===pos);
+      const prev=stock.find(s=>sameProductCode(s.sku, sku)&&s.position===pos);
       if(prev){
+        if (prev.initialTheoretical === undefined) prev.initialTheoretical = initialStockQty(prev);
         prev.qty=(parseInt(prev.qty)||0)+qty;
-        prev.initialTheoretical=initialStockQty(prev)+qty;
         prev.boxType=bt;
       } else {
         stock.push({id:Date.now()+Math.random(),sku,position:pos,qty,boxType:bt,initialTheoretical:qty});
@@ -2856,6 +2855,18 @@ function sortPickLines(lines) {
     return compareWarehousePosition(a, b);
   });
 }
+function reservedStockById(excludeOrderId) {
+  const reserved = {};
+  orders.forEach(o => {
+    if (o.id === excludeOrderId) return;
+    if (!['guia-emitida','em-preparacao'].includes(o.status) || !o.guide?.lines) return;
+    o.guide.lines.forEach(l => {
+      if (!l.stockId || l.ruptura || l.status === 'ruptura') return;
+      reserved[l.stockId] = (reserved[l.stockId] || 0) + (parseInt(l.qty)||0);
+    });
+  });
+  return reserved;
+}
 function parsePos(pos) {
   // e.g. A11 → shelf=A, shelf level=1, slot=1 | B34 → shelf=B, level=3, slot=4
   const m = String(pos).match(/^([A-Za-z]+)([1-9])([1-9])$/);
@@ -2869,6 +2880,8 @@ function emitirGuia() {
   if (!doc || !doc.lines.length) { toast('Sem linhas na encomenda', 'err'); return; }
 
   const pl = [], warns = [], rupturas = [];
+  const reserved = reservedStockById(doc.id);
+  const planned = {};
 
   doc.lines.forEach(line => {
     const originalSku = line.sku;
@@ -2880,7 +2893,9 @@ function emitirGuia() {
     }
     let rem = line.qty;
     // Priority: caixas mistas first, then exclusivas; within each group sort by position
-    const positions = stockRowsForSku(sku).filter(s => (parseInt(s.qty)||0) > 0)
+    const positions = stockRowsForSku(sku)
+      .map(s => ({...s, _available: Math.max(0, (parseInt(s.qty)||0) - (reserved[s.id]||0) - (planned[s.id]||0))}))
+      .filter(s => s._available > 0)
       .sort((a, b) => {
         const bp = boxPriority(a.boxType) - boxPriority(b.boxType);
         if (bp) return bp;
@@ -2894,8 +2909,9 @@ function emitirGuia() {
     }
     positions.forEach(pos => {
       if (rem <= 0) return;
-      const take = Math.min(rem, parseInt(pos.qty)||0);
+      const take = Math.min(rem, parseInt(pos._available)||0);
       pl.push({sku, position: pos.position, qty: take, qtyDone: take, stockId: pos.id, boxType: normBoxType(pos.boxType), ruptura: false, status: 'pending'});
+      planned[pos.id] = (planned[pos.id]||0) + take;
       rem -= take;
     });
     if (rem > 0) {
@@ -3152,7 +3168,16 @@ function finalizePicking() {
   if (!doc) return;
   const confirmed = prepLines.filter(l => l.status === 'confirmed');
   const rupturas = prepLines.filter(l => l.status === 'ruptura' || l.ruptura);
+  const pending = prepLines.filter(l => l.status === 'pending' && !l.ruptura);
   if (!confirmed.length) { toast('Confirma pelo menos uma linha', 'err'); return; }
+  if (pending.length) { toast('Confirma ou marca rutura em todas as linhas antes de finalizar', 'err'); return; }
+  for (const l of confirmed) {
+    const entry = stock.find(s => s.id === l.stockId);
+    if (entry && (parseInt(entry.qty)||0) < (parseInt(l.qtyDone)||0)) {
+      toast('Stock insuficiente em '+entry.position+' para '+l.sku+'. Reemite a guia ou marca rutura.', 'err');
+      return;
+    }
+  }
   const msg = 'Finalizar picking de ' + doc.id + '?\n\n\u2713 ' + confirmed.length + ' linhas confirmadas\n' + (rupturas.length ? '\u26a0\ufe0f ' + rupturas.length + ' rupturas (n\u00e3o deduzidas)\n' : '') + '\nO stock ser\u00e1 deduzido agora.';
   if (!confirm(msg)) return;
 
@@ -3160,7 +3185,7 @@ function finalizePicking() {
   doc.snapshot = JSON.parse(JSON.stringify(stock));
   confirmed.forEach(l => {
     const entry = stock.find(s => s.id === l.stockId);
-    if (entry) entry.qty = Math.max(0, entry.qty - l.qtyDone);
+    if (entry) entry.qty = entry.qty - l.qtyDone;
   });
 
   doc.status = rupturas.length ? 'parcial' : 'picked';
@@ -3220,15 +3245,17 @@ let returnPickupId = null;
 let returnPickupLines = [];
 let returnPickupSort = {col:'brand', dir:1};
 let _returnPickupLinesUnsub = null;
+let _returnPickupSavePromise = Promise.resolve();
 
 function returnPickupLineDocId(returnId, rid) {
   return (returnId + '_' + rid).replace(/[^a-zA-Z0-9_\-]/g, '_');
 }
 
-async function saveReturnPickupLine(returnId, line) {
+async function saveReturnPickupLine(returnId, line, guideId) {
   if (!window._db || !returnId || !line?.rid) return;
   const data = {
     returnId,
+    guideId: guideId || line.guideId || '',
     rid: line.rid,
     sku: line.sku,
     qty: parseInt(line.qty)||0,
@@ -3241,12 +3268,29 @@ async function saveReturnPickupLine(returnId, line) {
   await window._db.collection('return_pickup_lines').doc(returnPickupLineDocId(returnId, line.rid)).set(data);
 }
 
-async function ensureReturnPickupLineDocs(returnId, lines) {
+function queueReturnPickupLineSave(line) {
+  const returnId = returnPickupId;
+  const guideId = rets.find(d=>d.id===returnId)?.pickupGuide?.guideId || line.guideId || '';
+  _returnPickupSavePromise = _returnPickupSavePromise.then(() => saveReturnPickupLine(returnId, line, guideId)).catch(()=>{});
+  return _returnPickupSavePromise;
+}
+
+async function clearReturnPickupLineDocs(returnId) {
+  if (!window._db || !returnId) return;
+  const snap = await window._db.collection('return_pickup_lines').where('returnId','==',returnId).get();
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = window._db.batch();
+    snap.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }
+}
+
+async function ensureReturnPickupLineDocs(returnId, lines, guideId) {
   if (!window._db || !returnId) return;
   for (const line of (lines || [])) {
     const ref = window._db.collection('return_pickup_lines').doc(returnPickupLineDocId(returnId, line.rid));
     const snap = await ref.get();
-    if (!snap.exists) await saveReturnPickupLine(returnId, line);
+    if (!snap.exists) await saveReturnPickupLine(returnId, line, guideId);
   }
 }
 
@@ -3260,13 +3304,14 @@ function startReturnPickupLinesListener(returnId) {
   _returnPickupLinesUnsub = window._db.collection('return_pickup_lines')
     .where('returnId','==',returnId)
     .onSnapshot(snap => {
-      const lines = snap.docs.map(d => d.data());
+      const guideId = rets.find(d=>d.id===returnId)?.pickupGuide?.guideId || '';
+      const lines = snap.docs.map(d => d.data()).filter(l => !guideId || !l.guideId || l.guideId === guideId);
       if (!lines.length) return;
       returnPickupLines = lines.map(l => ({
         rid:l.rid, sku:l.sku, qty:parseInt(l.qty)||0,
         qtyCollected:parseInt(l.qtyCollected)||0,
         diff:parseInt(l.diff)||0, status:l.status||'pending',
-        updatedBy:l.updatedBy||'', updatedAt:l.updatedAt||0
+        updatedBy:l.updatedBy||'', updatedAt:l.updatedAt||0, guideId:l.guideId||''
       }));
       renderReturnPickupContent();
     });
@@ -3275,20 +3320,23 @@ function startReturnPickupLinesListener(returnId) {
 async function readReturnPickupLines(returnId) {
   if (!window._db || !returnId) return returnPickupLines;
   const snap = await window._db.collection('return_pickup_lines').where('returnId','==',returnId).get();
-  const lines = snap.docs.map(d => d.data());
+  const guideId = rets.find(d=>d.id===returnId)?.pickupGuide?.guideId || '';
+  const lines = snap.docs.map(d => d.data()).filter(l => !guideId || !l.guideId || l.guideId === guideId);
   return lines.length ? lines.map(l => ({
     rid:l.rid, sku:l.sku, qty:parseInt(l.qty)||0,
     qtyCollected:parseInt(l.qtyCollected)||0,
     diff:parseInt(l.diff)||0, status:l.status||'pending',
-    updatedBy:l.updatedBy||'', updatedAt:l.updatedAt||0
+    updatedBy:l.updatedBy||'', updatedAt:l.updatedAt||0, guideId:l.guideId||''
   })) : returnPickupLines;
 }
 
-function emitReturnPickupGuide() {
+async function emitReturnPickupGuide() {
   const doc = rets.find(d => d.id === activeRet);
   if (!doc || !doc.lines || !doc.lines.length) { toast('Sem linhas para recolher', 'err'); return; }
+  const guideId = 'rpg_' + Date.now() + '_' + Math.random().toString(36).slice(2);
   const lines = mergeOrderLinesForReturn([{lines: doc.lines}]).map(l => ({
     rid: 'rp_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+    guideId,
     sku: l.sku,
     qty: l.qty,
     qtyCollected: 0,
@@ -3296,6 +3344,7 @@ function emitReturnPickupGuide() {
     diff: 0
   }));
   doc.pickupGuide = {
+    guideId,
     lines,
     sourceOrderIds: doc.sourceOrderIds || [],
     emittedAt: new Date().toLocaleString('pt-PT'),
@@ -3304,7 +3353,10 @@ function emitReturnPickupGuide() {
   };
   doc.status = 'guia-recolha';
   logAction('Guia recolha devolucao emitida', doc.id+' · '+lines.length+' linhas');
-  ensureReturnPickupLineDocs(doc.id, lines).catch(()=>{});
+  try {
+    await clearReturnPickupLineDocs(doc.id);
+    await ensureReturnPickupLineDocs(doc.id, lines, guideId);
+  } catch(e) {}
   saveRet();
   renderDocs('return');
   renderReturnPickupGuides();
@@ -3315,7 +3367,7 @@ function emitReturnPickupGuide() {
 function renderReturnPickupGuides() {
   const el = document.getElementById('returnPickupGuidesList');
   if (!el) return;
-  const guias = rets.filter(d => d.pickupGuide && ['guia-recolha','em-recolha','recolha-parcial','open'].includes(d.status));
+  const guias = rets.filter(d => d.pickupGuide && !['done','partial'].includes(d.pickupGuide.status) && ['guia-recolha','em-recolha'].includes(d.status));
   if (!guias.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🚚</div>'+tr('misc_no_return_pickups')+'</div>';
     return;
@@ -3356,9 +3408,13 @@ function startReturnPickup(retId) {
   if (!doc.pickupGuide) { toast('Esta devolução ainda não tem guia de recolha', 'err'); return; }
   if (!doc.pickupGuide.lines || !doc.pickupGuide.lines.length) { toast('Guia de recolha sem linhas', 'err'); return; }
   returnPickupId = retId;
+  if (!doc.pickupGuide.guideId) {
+    doc.pickupGuide.guideId = 'rpg_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    saveRet();
+  }
   returnPickupLines = JSON.parse(JSON.stringify(doc.pickupGuide.lines));
-  returnPickupLines.forEach((l,i)=>{ if(!l.rid) l.rid='rp_'+i+'_'+Date.now(); });
-  ensureReturnPickupLineDocs(retId, returnPickupLines).catch(()=>{});
+  returnPickupLines.forEach((l,i)=>{ if(!l.rid) l.rid='rp_'+i+'_'+Date.now(); l.guideId = doc.pickupGuide.guideId; });
+  ensureReturnPickupLineDocs(retId, returnPickupLines, doc.pickupGuide.guideId).catch(()=>{});
   startReturnPickupLinesListener(retId);
   try{startPresence('returnpickup',retId);}catch(e){}
   if (!['done','partial'].includes(doc.pickupGuide.status)) {
@@ -3476,7 +3532,7 @@ function setReturnPickupCollected(rid,value){
   line.qtyCollected = Math.max(0, parseInt(value)||0);
   line.diff = line.qtyCollected - (parseInt(line.qty)||0);
   line.status = line.status || 'pending';
-  saveReturnPickupLine(returnPickupId, line).catch(()=>{});
+  queueReturnPickupLineSave(line);
 }
 
 function confirmReturnPickupLineById(rid) {
@@ -3484,7 +3540,7 @@ function confirmReturnPickupLineById(rid) {
   if(!line) return;
   line.diff = line.qtyCollected - (parseInt(line.qty)||0);
   line.status = 'confirmed';
-  saveReturnPickupLine(returnPickupId, line).catch(()=>{});
+  queueReturnPickupLineSave(line);
   renderReturnPickupLines();
 }
 
@@ -3492,13 +3548,14 @@ function confirmReturnPickupLine(idx) {
   const line = returnPickupLines[idx];
   if(!line) return;
   line.status = 'confirmed';
-  saveReturnPickupLine(returnPickupId, line).catch(()=>{});
+  queueReturnPickupLineSave(line);
   renderReturnPickupLines();
 }
 
 async function finalizeReturnPickup() {
   const doc = rets.find(d => d.id === returnPickupId);
   if (!doc) return;
+  await _returnPickupSavePromise;
   returnPickupLines = await readReturnPickupLines(returnPickupId);
   const confirmed = returnPickupLines.filter(l => l.status === 'confirmed');
   const pending = returnPickupLines.filter(l => l.status !== 'confirmed');
@@ -3880,7 +3937,7 @@ function finalizePutaway() {
     if (l.noPos && (!l.position || l.position === '???')) l.position = triagePosition();
     const entry = l.stockId
       ? stock.find(s=>s.id===l.stockId)
-      : stock.find(s=>s.sku===l.sku && String(s.position||'').toUpperCase()===String(l.position||triagePosition()).toUpperCase());
+      : stock.find(s=>sameProductCode(s.sku, l.sku) && String(s.position||'').toUpperCase()===String(l.position||triagePosition()).toUpperCase());
     if (entry) {
       if (entry.initialTheoretical === undefined) entry.initialTheoretical = initialStockQty(entry);
       entry.qty = entry.qty + l.qtyDone;
