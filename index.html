@@ -111,7 +111,7 @@ select.input{appearance:auto;cursor:pointer;}
 .sp-qty-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface2);}
 .sp-selected-info{flex:1;}
 .sp-selected-sku{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;color:var(--accent);}
-.search-panel-results{flex:1;overflow-y:auto;max-height:350px;}
+.search-panel-results{flex:1;overflow-y:auto;max-height:min(350px,52vh);overscroll-behavior:contain;}
 
 .search-panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:60px 16px 20px;}
 .search-panel-overlay.open{display:flex;}
@@ -119,12 +119,13 @@ select.input{appearance:auto;cursor:pointer;}
 .search-panel-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
 .search-panel-head input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--sans);font-size:14px;color:var(--text);outline:none;}
 .search-panel-head input:focus{border-color:var(--accent);}
-.search-panel-results{overflow-y:auto;flex:1;}
-#entradaOverlay .search-panel{max-width:760px!important;max-height:88vh;}
-#entradaOverlay #ent-step1{min-height:300px;}
+.search-panel-results{overflow-y:auto;flex:1;overscroll-behavior:contain;}
+#entradaOverlay .search-panel{max-width:760px!important;max-height:92vh;}
+#entradaOverlay #ent-tab-pick{min-height:0;}
+#entradaOverlay #ent-step1{min-height:min(300px,42vh);}
 #entradaOverlay #ent-mode-search{margin-bottom:18px!important;}
 #entradaOverlay #ent-mode-search .input{font-size:17px;padding:14px 16px;}
-#entradaOverlay #ent-ac{position:static;display:none;max-height:360px;margin-top:10px;border-radius:10px;box-shadow:none;}
+#entradaOverlay #ent-ac{position:static;display:none;max-height:min(360px,46vh);overflow-y:auto;margin-top:10px;border-radius:10px;box-shadow:none;overscroll-behavior:contain;}
 #entradaOverlay #ent-ac.open{display:block;}
 #entradaOverlay #ent-ac .ac-item{padding:13px 16px;}
 #entradaOverlay #ent-ac .ac-sku{font-size:14px;}
@@ -303,7 +304,7 @@ select.input{appearance:auto;cursor:pointer;}
 .si-active{background:var(--accent);color:#fff;}
 .si-done{background:var(--success);color:#fff;}
 .si-idle{background:var(--surface2);color:var(--muted);}
-.pos-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:7px;margin:8px 0 10px;}
+.pos-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:7px;margin:8px 0 10px;max-height:min(260px,34vh);overflow-y:auto;padding-right:3px;overscroll-behavior:contain;}
 .pos-chip{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:8px 6px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;color:var(--text);}
 .pos-chip:hover,.pos-chip.active{border-color:var(--accent);color:var(--accent);background:#fff7ed;}
 .pos-list-empty{font-size:12px;color:var(--muted);margin:6px 0 10px;line-height:1.4;}
@@ -1806,6 +1807,12 @@ function initialStockQty(s) {
   if (s.initialTeorico !== undefined) return s.initialTeorico;
   return s.qty;
 }
+function stockMapEntryQty(s) {
+  return parseInt(s?.stockMapEntries)||0;
+}
+function stockCapacityQty(s) {
+  return initialStockQty(s) + stockMapEntryQty(s);
+}
 function triagePosition() {
   return 'TRIAGEM';
 }
@@ -1857,7 +1864,7 @@ function renderStock(){
       if(col==='devPrep') return m.devPrep||0;
       if(col==='devFeitas')return m.devFeitas||0;
       if(col==='disponivel')return disp;
-      if(col==='stockInicial') return initialStockQty(s);
+      if(col==='stockInicial') return stockCapacityQty(s);
       if(col==='teorico') return teorico[s.sku]!==undefined?teorico[s.sku]:-1;
       if(col==='diff')    return teorico[s.sku]!==undefined?s.qty-teorico[s.sku]:0;
       return 0;
@@ -1888,7 +1895,7 @@ function renderStock(){
     th('name','Produto')+
     th('position','Posição')+
     th('qty','Real','Stock físico contado no armazém');
-  thCols += th('stockInicial','Inicial','Stock registado na primeira inserção desta linha');
+  thCols += th('stockInicial','Inicial','Stock inicial mais entradas adicionais feitas no mapa de stock');
   thCols += th('teorico','Teórico','Stock teórico carregado por Excel; fica em branco até ser importado');
   thCols += th('diff','Diferença','Real − teórico atual');
   thCols += th('disponivel','Disponível','Nesta posição/EAN: stock real − carteira alocada − preparação alocada','background:#e8f4f0;color:#065f46;font-weight:800;');
@@ -1921,7 +1928,7 @@ function renderStock(){
       movCols=cell(m.carteira||0)+cell(m.emPrep||0)+cell(m.faturado||0)+cell(m.devPedidas||0)+cell(m.devPrep||0)+cell(m.devFeitas||0);
     }
 
-    const ti=initialStockQty(s);
+    const ti=stockCapacityQty(s);
     const tq=teorico[s.sku]!==undefined?teorico[s.sku]:null;
     const diff=tq!==null?s.qty-tq:null;
     let tCols='<td class="mono">'+ti+'</td>';
@@ -1955,7 +1962,7 @@ function exportStockExcel(){
     const m=metrics[stockMetricKey(s)]||emptyStockMetric();
     const disp=calcDisponivelPos(s,metrics);
     const tq=teorico[s.sku]!==undefined?teorico[s.sku]:'';
-    const row=[info?.ean||'',info?.name||'',info?.brand||'',info?.ml||'',s.position,s.qty,initialStockQty(s),tq,tq===''?'':s.qty-tq];
+    const row=[info?.ean||'',info?.name||'',info?.brand||'',info?.ml||'',s.position,s.qty,stockCapacityQty(s),tq,tq===''?'':s.qty-tq];
     row.push(disp,m.carteira||0,m.emPrep||0,m.faturado||0,m.devPedidas||0,m.devPrep||0,m.devFeitas||0,normBoxType(s.boxType)==='mista'?'Mixed':'Mono',s.sku);
     rows.push(row);
   });
@@ -2140,7 +2147,7 @@ function renderEntPosList(positions){
   }
   list.className='pos-list';
   list.innerHTML=positions.map(p=>{
-    const total=stock.filter(s=>s.position===p && (entAction!=='out'||s.sku===entSku)).reduce((a,s)=>a+s.qty,0);
+    const total=stock.filter(s=>s.position===p && (entAction!=='out'||sameProductCode(s.sku, entSku))).reduce((a,s)=>a+s.qty,0);
     return '<button type="button" class="pos-chip" data-pos="'+p+'" onclick="entChoosePos(this.dataset.pos)">'+p+' <span style="font-family:var(--sans);font-weight:600;color:var(--muted)">('+total+')</span></button>';
   }).join('');
 }
@@ -2360,6 +2367,7 @@ function entConfirm(){
   if(same){
     if (same.initialTheoretical === undefined) same.initialTheoretical = initialStockQty(same);
     same.qty += entQty;
+    same.stockMapEntries = stockMapEntryQty(same) + entQty;
     if(hasDifferentSku) same.boxType='mista';
   } else {
     const boxType=posEntries.length?'mista':entBoxType;
@@ -2417,6 +2425,7 @@ function importStock(){
       if(prev){
         if (prev.initialTheoretical === undefined) prev.initialTheoretical = initialStockQty(prev);
         prev.qty=(parseInt(prev.qty)||0)+qty;
+        prev.stockMapEntries=stockMapEntryQty(prev)+qty;
         prev.boxType=bt;
       } else {
         stock.push({id:Date.now()+Math.random(),sku,position:pos,qty,boxType:bt,initialTheoretical:qty});
@@ -3713,7 +3722,7 @@ function putawayPositionOptionsForSku(sku) {
   sku = canonicalLineSku(sku);
   const seen = new Set();
   return stockRowsForSku(sku)
-    .map(s => ({...s, _capacity: Math.max(0, initialStockQty(s) - (parseInt(s.qty)||0))}))
+    .map(s => ({...s, _capacity: Math.max(0, stockCapacityQty(s) - (parseInt(s.qty)||0))}))
     .filter(s => s._capacity > 0)
     .sort((a,b)=>{
       const bp = putawayBoxPriority(a.boxType) - putawayBoxPriority(b.boxType);
@@ -4017,7 +4026,7 @@ function finalizePutaway() {
   for (const [stockId, qty] of Object.entries(plannedByStock)) {
     const entry = stock.find(s=>String(s.id)===String(stockId));
     if (!entry) continue;
-    const free = Math.max(0, initialStockQty(entry) - (parseInt(entry.qty)||0));
+    const free = Math.max(0, stockCapacityQty(entry) - (parseInt(entry.qty)||0));
     if (qty > free) {
       toast('Capacidade excedida em '+entry.position+' para '+entry.sku+'. Pede outra localização antes de finalizar.', 'err');
       return;
