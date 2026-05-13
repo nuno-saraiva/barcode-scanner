@@ -144,14 +144,14 @@ select.input{appearance:auto;cursor:pointer;}
 .sp-selected-sku{font-family:var(--mono);font-weight:700;color:var(--accent);}
 
 .tbl{width:100%;border-collapse:collapse;font-size:13px;}
-.stock-table{min-width:1380px;table-layout:auto;}
+.stock-table{min-width:1180px;table-layout:auto;}
 .stock-table th,.stock-table td{white-space:nowrap;}
-.stock-table .stock-col-ean{min-width:128px;}
-.stock-table .stock-col-product{min-width:330px;white-space:normal;}
-.stock-table .stock-col-pos{min-width:78px;}
-.stock-table .stock-col-num{min-width:72px;text-align:left;}
-.stock-table .stock-col-wide{min-width:104px;}
-.stock-table .stock-col-type{min-width:105px;}
+.stock-table .stock-col-ean{min-width:116px;}
+.stock-table .stock-col-product{min-width:250px;white-space:normal;}
+.stock-table .stock-col-pos{min-width:62px;}
+.stock-table .stock-col-num{min-width:58px;text-align:left;}
+.stock-table .stock-col-wide{min-width:76px;}
+.stock-table .stock-col-type{min-width:88px;}
 .stock-table .stock-product-cell{white-space:normal;line-height:1.25;}
 .stock-total-cell{font-weight:700;}
 .stock-total-muted{font-size:10px;color:var(--muted);font-family:var(--sans);font-weight:600;margin-left:4px;}
@@ -191,8 +191,19 @@ select.input{appearance:auto;cursor:pointer;}
   .doc-actions{justify-content:flex-start;margin-top:10px;}
 }
 @media(min-width:769px){
+  #page-stock{max-width:min(1920px, calc(100vw - 24px));padding-left:12px;padding-right:12px;}
   .panel:has(#stockTable){max-width:none;}
   #stockTableScroll{max-height:calc(100vh - 360px);overflow:auto;}
+  #stockTable{min-width:100%;}
+  #stockTable th{padding:6px 7px;font-size:10px;letter-spacing:.25px;}
+  #stockTable td{padding:8px 7px;font-size:12px;}
+  #stockTable th:nth-child(1),#stockTable td:nth-child(1){min-width:116px;width:116px;}
+  #stockTable th:nth-child(2),#stockTable td:nth-child(2){min-width:250px;}
+  #stockTable th:nth-child(3),#stockTable td:nth-child(3){min-width:62px;width:62px;}
+  #stockTable th:nth-child(n+4):nth-child(-n+10),#stockTable td:nth-child(n+4):nth-child(-n+10){min-width:58px;width:58px;}
+  #stockTable th:nth-child(n+11):nth-child(-n+16),#stockTable td:nth-child(n+11):nth-child(-n+16){min-width:66px;width:66px;}
+  #stockTable th:nth-last-child(2),#stockTable td:nth-last-child(2){min-width:88px;width:88px;}
+  #stockTable th:last-child,#stockTable td:last-child{min-width:42px;width:42px;}
   #stockTable thead th{position:sticky;top:0;z-index:4;}
   #stockTable th:nth-child(1),#stockTable td:nth-child(1){position:sticky;left:0;z-index:3;background:var(--surface);}
   #stockTable th:nth-child(1){z-index:5;background:var(--surface2);}
@@ -1564,7 +1575,7 @@ function setTableColWidth(table, index, width) {
 function enableResizableTables() {
   if (window.innerWidth < 769) return;
   document.querySelectorAll('table[data-resizable-cols]').forEach((table, tableIndex) => {
-    const key = 'wms_col_widths_' + (table.id || tableIndex);
+    const key = 'wms_col_widths_v3_' + (table.id || tableIndex);
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) { saved = {}; }
     table.querySelectorAll('thead th').forEach((th, index) => {
@@ -1907,8 +1918,8 @@ function renderStock(){
     thCols += th('emPrep','Prep.','Quantidade deste EAN nesta localização com guia emitida/em preparação');
     thCols += th('faturado','Fact.','Quantidade deste EAN já confirmada a partir desta localização');
     thCols += th('devPedidas','Dev. Ped.','Reservado para futuras devoluções quando existir localização definida');
-    thCols += th('devPrep','Dev. a colocar','Quantidade deste EAN prevista para recolocar nesta localização');
-    thCols += th('devFeitas','Dev. Feitas','Quantidade deste EAN já recolocada nesta localização');
+    thCols += th('devPrep','Dev. Col.','Quantidade deste EAN prevista para recolocar nesta localização');
+    thCols += th('devFeitas','Dev. OK','Quantidade deste EAN já recolocada nesta localização');
   }
   thCols += '<th>Tipo</th><th></th></tr>';
   thead.innerHTML = thCols;
