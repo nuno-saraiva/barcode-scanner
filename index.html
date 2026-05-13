@@ -1810,8 +1810,11 @@ function initialStockQty(s) {
 function stockMapEntryQty(s) {
   return parseInt(s?.stockMapEntries)||0;
 }
+function stockMapExitQty(s) {
+  return parseInt(s?.stockMapExits)||0;
+}
 function stockCapacityQty(s) {
-  return initialStockQty(s) + stockMapEntryQty(s);
+  return Math.max(0, initialStockQty(s) + stockMapEntryQty(s) - stockMapExitQty(s));
 }
 function triagePosition() {
   return 'TRIAGEM';
@@ -2338,7 +2341,9 @@ function entConfirm(){
     const same=stock.find(s=>sameProductCode(s.sku, entSku)&&s.position===pos);
     if(!same){toast('Este SKU não tem stock nessa posição','err');return;}
     if((parseInt(same.qty)||0)<entQty){toast('Stock insuficiente nessa posição','err');return;}
+    if (same.initialTheoretical === undefined) same.initialTheoretical = initialStockQty(same);
     same.qty=(parseInt(same.qty)||0)-entQty;
+    same.stockMapExits = stockMapExitQty(same) + entQty;
     saveStk();renderStock();
     logAction('Saída manual de stock',entSku+' qty:'+entQty+' pos:'+pos);
     const info=skuInfo(entSku);
@@ -2417,7 +2422,9 @@ function importStock(){
       if(entAction==='out'){
         const prev=stock.find(s=>sameProductCode(s.sku, sku)&&s.position===pos);
         if(!prev || (parseInt(prev.qty)||0)<qty)return;
+        if (prev.initialTheoretical === undefined) prev.initialTheoretical = initialStockQty(prev);
         prev.qty=(parseInt(prev.qty)||0)-qty;
+        prev.stockMapExits=stockMapExitQty(prev)+qty;
         added++;
         return;
       }
