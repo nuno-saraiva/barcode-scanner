@@ -2162,7 +2162,11 @@ function renderEntPosList(positions){
   list.className='pos-list';
   list.innerHTML=positions.map(p=>{
     const total=stock.filter(s=>s.position===p && (entAction!=='out'||sameProductCode(s.sku, entSku))).reduce((a,s)=>a+s.qty,0);
-    return '<button type="button" class="pos-chip" data-pos="'+p+'" onclick="entChoosePos(this.dataset.pos)">'+p+' <span style="font-family:var(--sans);font-weight:600;color:var(--muted)">('+total+')</span></button>';
+    const same=entSku?stock.find(s=>sameProductCode(s.sku, entSku)&&s.position===p):null;
+    const detail=same
+      ? same.qty+' · '+(normBoxType(same.boxType)==='mista'?'Mixed':'Mono')
+      : total;
+    return '<button type="button" class="pos-chip" data-pos="'+p+'" onclick="entChoosePos(this.dataset.pos)">'+p+' <span style="font-family:var(--sans);font-weight:600;color:var(--muted)">('+detail+')</span></button>';
   }).join('');
 }
 
@@ -2276,6 +2280,9 @@ function refreshEntPositionsForSku(){
   let positions;
   if(entAction==='out' && entSku){
     positions=[...new Set(stock.filter(s=>sameProductCode(s.sku, entSku) && (parseInt(s.qty)||0)>0).map(s=>s.position))];
+  } else if(entAction==='in' && entSku && stockRowsForSku(entSku).length) {
+    const existing = stockRowsForSku(entSku).map(s=>s.position).filter(Boolean);
+    positions=[...new Set([...existing, ...warehousePositions(), ...stock.map(s=>s.position)])];
   } else {
     positions=[...new Set([...warehousePositions(), ...stock.map(s=>s.position)])];
   }
@@ -2288,7 +2295,11 @@ function refreshEntPositionsForSku(){
   sel.innerHTML='<option value="">— Selecionar da lista —</option>'+
     positions.map(p=>{
       const total=stock.filter(s=>s.position===p && (entAction!=='out'||sameProductCode(s.sku, entSku))).reduce((a,s)=>a+(parseInt(s.qty)||0),0);
-      return `<option value="${p}">${p} (${total} unid.)</option>`;
+      const same=entSku?stock.find(s=>sameProductCode(s.sku, entSku)&&s.position===p):null;
+      const suffix=same
+        ? ` · este EAN: ${same.qty} ${normBoxType(same.boxType)==='mista'?'Mixed':'Mono'}`
+        : ` · total: ${total} unid.`;
+      return `<option value="${p}">${p}${suffix}</option>`;
     }).join('');
   renderEntPosList(positions);
 }
@@ -2335,13 +2346,15 @@ function entUpdatePosWarning(){
   }
   const existing=stock.filter(s=>sameProductCode(s.sku, entSku)&&s.position===pos);
   const otherSkus=stock.filter(s=>!sameProductCode(s.sku, entSku)&&s.position===pos);
-  if(boxWrap)boxWrap.style.display=otherSkus.length?'none':'';
+  if(boxWrap)boxWrap.style.display=(otherSkus.length||existing.length)?'none':'';
   if(existing.length){
+    const existingType = normBoxType(existing[0].boxType)==='mista'?'Mixed':'Mono';
+    entSetBoxType(normBoxType(existing[0].boxType));
     warn.style.display='flex';
-    warn.textContent='⚠️ Esta posição já tem '+existing[0].qty+' unid. de '+entSku+'. Ao confirmar serão adicionadas '+entQty+' unid.';
+    warn.textContent='⚠️ Esta posição já tem '+existing[0].qty+' unid. deste EAN como '+existingType+'. A entrada será somada a essa linha; não é possível criar Mixed e Mono para o mesmo EAN na mesma posição. Para usar outro tipo de caixa, escolhe outra localização.';
   } else warn.style.display='none';
   if(otherSkus.length) info.innerHTML='<span style="color:var(--muted)">Outros SKUs aqui: '+otherSkus.map(s=>s.sku+' ('+s.qty+')').join(', ')+'. A posição ficará como caixa mista.</span>';
-  else info.textContent=existing.length?'':(isKnownWarehousePosition(pos)?'✓ Posição livre no mapa':'⚠️ Posição fora do mapa configurado');
+  else info.textContent=existing.length?'A localização existente será reutilizada para este EAN.':(isKnownWarehousePosition(pos)?'✓ Posição livre no mapa':'⚠️ Posição fora do mapa configurado');
 }
 
 function entConfirm(){
@@ -2382,6 +2395,11 @@ function entConfirm(){
   const hasDifferentSku=posEntries.some(s=>!sameProductCode(s.sku, entSku));
   if(same){
     if (same.initialTheoretical === undefined) same.initialTheoretical = initialStockQty(same);
+    const existingType = normBoxType(same.boxType)==='mista'?'Mixed':'Mono';
+    const chosenType = normBoxType(entBoxType)==='mista'?'Mixed':'Mono';
+    if(existingType!==chosenType){
+      toast('Esta posição já usa '+existingType+' para este EAN. A entrada será somada nessa linha.','ok');
+    }
     same.qty += entQty;
     same.stockMapEntries = stockMapEntryQty(same) + entQty;
     if(hasDifferentSku) same.boxType='mista';
@@ -2444,7 +2462,7 @@ function importStock(){
         if (prev.initialTheoretical === undefined) prev.initialTheoretical = initialStockQty(prev);
         prev.qty=(parseInt(prev.qty)||0)+qty;
         prev.stockMapEntries=stockMapEntryQty(prev)+qty;
-        prev.boxType=bt;
+        if(stock.some(s=>s.position===pos && !sameProductCode(s.sku, sku))) prev.boxType='mista';
       } else {
         stock.push({id:Date.now()+Math.random(),sku,position:pos,qty,boxType:bt,initialTheoretical:qty});
       }
