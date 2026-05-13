@@ -1899,7 +1899,7 @@ function renderStock(){
   function th(col, label, tip, style) {
     const cls = stockSort.col===col ? (stockSort.dir===1?'asc':'desc') : '';
     let h = '<th class="th-sort '+cls+'" onclick="sortStock(this.dataset.col)" data-col="'+col+'"';
-    if(tip) h += ' data-tip="'+tip+'"';
+    if(tip) h += ' data-tip="'+escHtml(tip)+'"';
     if(style) h += ' style="'+style+'"';
     h += '>'+label+'</th>';
     return h;
@@ -1909,7 +1909,7 @@ function renderStock(){
     th('name','Produto')+
     th('position','Posição')+
     th('qty','Real','Stock físico contado no armazém');
-  thCols += th('stockInicial','Inicial','Stock inicial mais entradas adicionais feitas no mapa de stock');
+  thCols += th('stockInicial','Inicial',tr('tip_stock_initial_adjusted'));
   thCols += th('teorico','Teórico','Stock teórico carregado por Excel; fica em branco até ser importado');
   thCols += th('diff','Diferença','Real − teórico atual');
   thCols += th('disponivel','Disponível','Nesta posição/EAN: stock real − carteira alocada − preparação alocada','background:#e8f4f0;color:#065f46;font-weight:800;');
@@ -4390,6 +4390,7 @@ const LANGS = {
     // Tooltips
     tip_skudb:'Catálogo de produtos com EAN, nome, marca, categoria e ml. Importa via Excel.',
     tip_stock:'Mapa de stock real por posição. Usa "Dar entrada" para registar artigos recebidos.',
+    tip_stock_initial_adjusted:'Stock inicial ajustado desta posição/EAN: stock inicial original + entradas feitas pelo mapa de stock - saídas feitas pelo mapa de stock.',
     tip_teorico:'Compara stock real com quantidades encomendadas ao fornecedor. Importa o ficheiro do fornecedor.',
     tip_dar_entrada:'Dá entrada de stock: peça a peça com scanner ou em lote por Excel.',
     tip_emit_pick:'Gera a guia de picking com percurso otimizado pelo armazém. O stock só sai após confirmação.',
@@ -4493,6 +4494,7 @@ const LANGS = {
     tab_import:'📂 Import',
     tip_skudb:'Product catalogue with EAN, name, brand, category and ml. Import via Excel.',
     tip_stock:'Actual stock by position. Use "Stock in" to register received items.',
+    tip_stock_initial_adjusted:'Adjusted initial stock for this position/EAN: original initial stock + stock entries made from the stock map - stock exits made from the stock map.',
     tip_teorico:'Compare actual stock with supplier order quantities. Import the supplier file.',
     tip_dar_entrada:'Record incoming stock: item by item with scanner or batch by Excel.',
     tip_emit_pick:'Generate picking guide with optimized warehouse route. Stock only leaves after confirmation.',
@@ -4594,6 +4596,7 @@ const LANGS = {
     tab_import:'📂 Importar',
     tip_skudb:'Catálogo de productos con EAN, nombre, marca, categoría y ml. Importa vía Excel.',
     tip_stock:'Mapa de stock real por posición. Usa "Entrada de stock" para registrar artículos.',
+    tip_stock_initial_adjusted:'Stock inicial ajustado de esta posición/EAN: stock inicial original + entradas hechas desde el mapa de stock - salidas hechas desde el mapa de stock.',
     tip_teorico:'Compara stock real con cantidades pedidas al proveedor.',
     tip_dar_entrada:'Registra stock entrante: artículo a artículo con escáner o en lote por Excel.',
     tip_emit_pick:'Genera guía de picking con ruta optimizada. El stock sale solo tras confirmación.',
