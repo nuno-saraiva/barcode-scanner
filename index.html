@@ -1720,6 +1720,9 @@ function stockRowsForSku(sku) {
   const resolved = resolveSku(sku);
   return stock.filter(s => sameProductCode(s.sku, resolved));
 }
+function stockTotalForSku(sku) {
+  return stockRowsForSku(sku).reduce((a,s)=>a+(parseInt(s.qty)||0),0);
+}
 function canonicalLineSku(value) {
   const resolved = resolveSku(value);
   const fromStock = stock.find(s => sameProductCode(s.sku, resolved));
@@ -2606,7 +2609,7 @@ function exportDocExcel(t,id){
   const rows=[[title],['Estado: '+(doc.status||'—')+' · Criado por: '+(doc.createdBy||'—')+' · '+(doc.createdAt||'—')],[],['EAN','SKU','Nome','Marca','ML','Quantidade','Stock real']];
   doc.lines.forEach(l=>{
     const i=skuInfo(l.sku);
-    const real=stock.filter(s=>s.sku===l.sku).reduce((a,s)=>a+s.qty,0);
+    const real=stockTotalForSku(l.sku);
     rows.push([i?.ean||'',l.sku,i?.name||'',i?.brand||'',i?.ml||'',l.qty,real]);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
@@ -2689,7 +2692,7 @@ function renderDocLines(t){
   if(!doc.lines.length){body.innerHTML=`<tr><td colspan="5"><div class="empty" style="padding:12px;">Sem linhas.</div></td></tr>`;enableResizableTables();return;}
   body.innerHTML=doc.lines.map(l=>{
     const info=skuInfo(l.sku);
-    const av=stock.filter(s=>s.sku===l.sku).reduce((a,s)=>a+s.qty,0);
+    const av=stockTotalForSku(l.sku);
     const ab=t==='order'?(av===0?`<span class="badge bdg-rd">0</span>`:av<l.qty?`<span class="badge bdg-or">${av}</span>`:`<span class="badge bdg-gn">${av}</span>`):`<span class="badge bdg-bl">${av}</span>`;
     return `<tr><td class="mono" style="color:var(--muted)">${info?.ean||'—'}</td><td class="mono" style="font-weight:700">${l.sku}</td>
       <td><input class="input qty-in" type="number" min="1" value="${l.qty}" onchange="updDocQty('${t}','${l.sku}',this.value)"></td>
@@ -2868,9 +2871,16 @@ function emitirGuia() {
   const pl = [], warns = [], rupturas = [];
 
   doc.lines.forEach(line => {
+    const originalSku = line.sku;
+    const sku = canonicalLineSku(line.sku);
+    if (sku !== originalSku) {
+      line.sku = sku;
+      deleteDocLine('order', doc.id, originalSku);
+      saveDocLine('order', doc.id, sku, line.qty);
+    }
     let rem = line.qty;
     // Priority: caixas mistas first, then exclusivas; within each group sort by position
-    const positions = stock.filter(s => s.sku === line.sku && s.qty > 0)
+    const positions = stockRowsForSku(sku).filter(s => (parseInt(s.qty)||0) > 0)
       .sort((a, b) => {
         const bp = boxPriority(a.boxType) - boxPriority(b.boxType);
         if (bp) return bp;
@@ -2878,19 +2888,19 @@ function emitirGuia() {
       });
 
     if (!positions.length) {
-      rupturas.push(`${line.sku}: sem stock`);
-      pl.push({sku: line.sku, position: '---', qty: line.qty, qtyDone: 0, stockId: null, boxType: 'mista', ruptura: true, status: 'pending'});
+      rupturas.push(`${sku}: sem stock`);
+      pl.push({sku, position: '---', qty: line.qty, qtyDone: 0, stockId: null, boxType: 'mista', ruptura: true, status: 'pending'});
       return;
     }
     positions.forEach(pos => {
       if (rem <= 0) return;
-      const take = Math.min(rem, pos.qty);
-      pl.push({sku: line.sku, position: pos.position, qty: take, qtyDone: take, stockId: pos.id, boxType: normBoxType(pos.boxType), ruptura: false, status: 'pending'});
+      const take = Math.min(rem, parseInt(pos.qty)||0);
+      pl.push({sku, position: pos.position, qty: take, qtyDone: take, stockId: pos.id, boxType: normBoxType(pos.boxType), ruptura: false, status: 'pending'});
       rem -= take;
     });
     if (rem > 0) {
-      rupturas.push(`${line.sku}: faltam ${rem} unid.`);
-      pl.push({sku: line.sku, position: '---', qty: rem, qtyDone: 0, stockId: null, boxType: 'mista', ruptura: true, status: 'pending'});
+      rupturas.push(`${sku}: faltam ${rem} unid.`);
+      pl.push({sku, position: '---', qty: rem, qtyDone: 0, stockId: null, boxType: 'mista', ruptura: true, status: 'pending'});
     }
   });
 
