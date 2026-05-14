@@ -1931,6 +1931,39 @@ function renderStock(){
   const body=document.getElementById('stockBody');
   if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+tr('misc_no_stock')+'</div></td></tr>';enableResizableTables();setTimeout(setupStockScrollSync,0);return;}
 
+  const totalSeenTeorico = new Set();
+  const totals = filtered.reduce((acc, s) => {
+    const m = metrics[stockMetricKey(s)] || emptyStockMetric();
+    acc.real += parseInt(s.qty) || 0;
+    acc.inicial += stockCapacityQty(s);
+    acc.disponivel += calcDisponivelPos(s, metrics);
+    acc.carteira += m.carteira || 0;
+    acc.emPrep += m.emPrep || 0;
+    acc.faturado += m.faturado || 0;
+    acc.devPedidas += m.devPedidas || 0;
+    acc.devPrep += m.devPrep || 0;
+    acc.devFeitas += m.devFeitas || 0;
+    const sku = canonicalLineSku(s.sku);
+    if (teorico[sku] !== undefined && !totalSeenTeorico.has(sku)) {
+      totalSeenTeorico.add(sku);
+      acc.teorico += parseInt(teorico[sku]) || 0;
+      acc.hasTeorico = true;
+    }
+    return acc;
+  }, {real:0, inicial:0, teorico:0, hasTeorico:false, disponivel:0, carteira:0, emPrep:0, faturado:0, devPedidas:0, devPrep:0, devFeitas:0});
+  const totalCell = v => v>0?'<td class="mono" style="font-weight:800;color:#fff">'+v+'</td>':'<td class="mono" style="color:#9ca3af">&mdash;</td>';
+  const totalDiff = totals.hasTeorico ? totals.real - totals.teorico : null;
+  const totalDiffCell = totalDiff===null?'<td style="color:var(--muted)">&mdash;</td>':totalDiff===0?'<td><span class="badge bdg-gy">=</span></td>':totalDiff>0?'<td><span class="badge bdg-gn">+'+totalDiff+'</span></td>':'<td><span class="badge bdg-rd">'+totalDiff+'</span></td>';
+  const totalRow = '<tr class="stock-total-row" style="background:#111827;color:#fff;font-weight:800;border-top:2px solid #111827;">'+
+    '<td class="mono" style="color:#fff">TOTAL</td><td style="color:#fff">'+filtered.length+' linhas</td><td></td>'+
+    '<td class="mono" style="color:#fff">'+totals.real+'</td>'+
+    '<td class="mono" style="color:#fff">'+totals.inicial+'</td>'+
+    (totals.hasTeorico?'<td class="mono" style="color:#fff">'+totals.teorico+'</td>':'<td style="color:#9ca3af">&mdash;</td>')+
+    totalDiffCell+
+    '<td class="mono" style="color:#fff;background:#065f46">'+totals.disponivel+'</td>'+
+    totalCell(totals.carteira)+totalCell(totals.emPrep)+totalCell(totals.faturado)+totalCell(totals.devPedidas)+totalCell(totals.devPrep)+totalCell(totals.devFeitas)+
+    '<td></td><td></td></tr>';
+
   body.innerHTML=filtered.map(s=>{
     const bb=normBoxType(s.boxType)==='mista'?'<span class="badge bdg-mx">'+tr('box_mixed')+'</span>':'<span class="badge bdg-ex">'+tr('box_excl')+'</span>';
 
@@ -1954,7 +1987,7 @@ function renderStock(){
       '<td class="mono" style="font-weight:700">'+s.qty+'</td>'+tCols+dispCol+movCols+
       '<td>'+bb+'</td>'+
       '<td><button class="btn btn-ghost btn-sm" onclick="delStk('+JSON.stringify(s.id)+')">✕</button></td></tr>';
-  }).join('');
+  }).join('') + totalRow;
   enableResizableTables();
   setTimeout(setupStockScrollSync,0);
 }
