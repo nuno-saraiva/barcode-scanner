@@ -155,6 +155,11 @@ select.input{appearance:auto;cursor:pointer;}
 .stock-table .stock-product-cell{white-space:normal;line-height:1.25;}
 .stock-total-cell{font-weight:700;}
 .stock-total-muted{font-size:10px;color:var(--muted);font-family:var(--sans);font-weight:600;margin-left:4px;}
+#stockTable .stock-total-row td{background:#111827!important;color:#f9fafb!important;border-top:2px solid #020617!important;border-bottom:0!important;font-weight:800;}
+#stockTable .stock-total-row:hover td{background:#111827!important;color:#f9fafb!important;}
+#stockTable .stock-total-row td:first-child{background:#0f172a!important;color:#fff!important;z-index:7;}
+#stockTable .stock-total-row td:nth-child(8){background:#047857!important;color:#fff!important;}
+#stockTable .stock-total-row .stock-total-muted{color:#cbd5e1!important;font-size:11px;margin-left:8px;}
 .tbl th{background:var(--surface2);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;position:relative;}
 .tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .tbl tr:last-child td{border-bottom:none;}
@@ -1955,7 +1960,7 @@ function renderStock(){
   const totalDiff = totals.hasTeorico ? totals.real - totals.teorico : null;
   const totalDiffCell = totalDiff===null?'<td style="color:var(--muted)">&mdash;</td>':totalDiff===0?'<td><span class="badge bdg-gy">=</span></td>':totalDiff>0?'<td><span class="badge bdg-gn">+'+totalDiff+'</span></td>':'<td><span class="badge bdg-rd">'+totalDiff+'</span></td>';
   const totalRow = '<tr class="stock-total-row" style="background:#111827;color:#fff;font-weight:800;border-top:2px solid #111827;">'+
-    '<td class="mono" style="color:#fff">TOTAL</td><td style="color:#fff">'+filtered.length+' linhas</td><td></td>'+
+    '<td class="mono" style="color:#fff">Total</td><td style="color:#fff">Total <span class="stock-total-muted">'+filtered.length+' linhas</span></td><td></td>'+
     '<td class="mono" style="color:#fff">'+totals.real+'</td>'+
     '<td class="mono" style="color:#fff">'+totals.inicial+'</td>'+
     (totals.hasTeorico?'<td class="mono" style="color:#fff">'+totals.teorico+'</td>':'<td style="color:#9ca3af">&mdash;</td>')+
