@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -330,9 +330,9 @@ select.input{appearance:auto;cursor:pointer;}
 
 .th-sort{cursor:pointer;user-select:none;white-space:nowrap;}
 .th-sort:hover{background:var(--border);}
-.th-sort::after{content:' ?';opacity:.35;font-size:10px;}
-.th-sort.asc::after{content:' ?';opacity:1;}
-.th-sort.desc::after{content:' ?';opacity:1;}
+.th-sort::after{content:' ⇅';opacity:.35;font-size:10px;}
+.th-sort.asc::after{content:' ↑';opacity:1;}
+.th-sort.desc::after{content:' ↓';opacity:1;}
 
 .page-desc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--muted);line-height:1.7;}
 .page-desc strong{color:var(--text);font-weight:700;}
@@ -457,8 +457,8 @@ select.input{appearance:auto;cursor:pointer;}
         <input id="loginName" placeholder="O teu nome..."
           style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:11px 14px;font-size:15px;color:#fff;outline:none;margin-bottom:10px;font-family:'Barlow',sans-serif;box-sizing:border-box;">
         <div style="display:flex;gap:8px;">
-          <button onclick="hideOutro()" data-tip="Voltar à lista de utilizadores" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,255,255,.2);border-radius:7px;color:rgba(255,255,255,.7);cursor:pointer;font-size:13px;font-family:'Barlow',sans-serif;">? Voltar</button>
-          <button onclick="doLoginName()" data-tip="Entrar na aplicação com este nome" style="flex:1;padding:10px;background:#e8420a;border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;font-family:'Barlow',sans-serif;">Entrar ?</button>
+          <button onclick="hideOutro()" data-tip="Voltar à lista de utilizadores" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,255,255,.2);border-radius:7px;color:rgba(255,255,255,.7);cursor:pointer;font-size:13px;font-family:'Barlow',sans-serif;">← Voltar</button>
+          <button onclick="doLoginName()" data-tip="Entrar na aplicação com este nome" style="flex:1;padding:10px;background:#e8420a;border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;font-family:'Barlow',sans-serif;">Entrar →</button>
         </div>
       </div>
     </div>
@@ -507,7 +507,7 @@ select.input{appearance:auto;cursor:pointer;}
       var label = u.label||u.name;
       var click = isOutro ? 'window._showOutro()' : 'window._loginPreset('+JSON.stringify(u.name)+')';
       var removeBtn = u.isExtra
-        ? '<button data-remove-user="'+u.name+'" style="position:absolute;top:-3px;right:-3px;width:20px;height:20px;border-radius:50%;background:#dc2626;border:2px solid #1a1a2e;color:#fff;font-size:11px;cursor:pointer;line-height:16px;text-align:center;padding:0;z-index:20;font-weight:700;">?</button>'
+        ? '<button data-remove-user="'+u.name+'" style="position:absolute;top:-3px;right:-3px;width:20px;height:20px;border-radius:50%;background:#dc2626;border:2px solid #1a1a2e;color:#fff;font-size:11px;cursor:pointer;line-height:16px;text-align:center;padding:0;z-index:20;font-weight:700;">✕</button>'
         : '';
       var div = document.createElement('div');
       div.setAttribute('onclick', click);
@@ -589,7 +589,7 @@ select.input{appearance:auto;cursor:pointer;}
 <!-- AUDIT LOG PANEL -->
 <div class="overlay" id="auditOverlay">
   <div class="modal" style="max-width:580px;">
-    <div class="modal-title">?? Registo de atividade</div>
+    <div class="modal-title">📋 Registo de atividade</div>
     <div style="max-height:420px;overflow-y:auto;margin:0 -24px;padding:0 24px;">
       <table class="tbl" style="font-size:12px;">
         <thead><tr><th>Hora</th><th>Utilizador</th><th>Ação</th><th>Detalhe</th></tr></thead>
@@ -597,7 +597,7 @@ select.input{appearance:auto;cursor:pointer;}
       </table>
     </div>
     <div class="modal-actions" style="margin-top:16px;">
-      <button class="btn btn-ghost btn-sm" onclick="exportAuditExcel()">? Exportar</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportAuditExcel()">⬇ Exportar</button>
       <button class="btn btn-ghost" onclick="closeAuditLog()">Fechar</button>
     </div>
   </div>
@@ -607,21 +607,21 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="nav-logo">NH<span>·</span>Warehouse</div>
   <!-- Desktop nav tabs -->
   <div class="nav-tabs-desktop">
-    <button class="nav-tab"             data-page="stock"   onclick="showPage('stock',this)" data-tip-i="tip_stock"><span data-i="nav_stock">?? Stock</span></button>
-    <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)"><span data-i="nav_orders">?? Encomendas</span></button>
-    <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)" data-tip-i="tip_pick_list"><span data-i="nav_pick">?? Para Preparação</span></button>
-    <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)"><span data-i="nav_ret">?? Devoluções</span></button>
-    <button class="nav-tab t-ret"       data-page="returnpickup" onclick="showPage('returnpickup',this)"><span data-i="nav_ret_pickup">?? Returns Pick Up</span></button>
-    <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)"><span data-i="nav_putaway">?? Dar Entrada</span></button>
-    <button class="nav-tab t-db"        data-page="skudb" id="nav-skudb-btn"   onclick="showPage('skudb',this)" data-tip-i="tip_skudb"><span data-i="nav_skudb">?? Base de Dados Geral</span></button>
+    <button class="nav-tab"             data-page="stock"   onclick="showPage('stock',this)" data-tip-i="tip_stock"><span data-i="nav_stock">📦 Stock</span></button>
+    <button class="nav-tab"             data-page="orders"  onclick="showPage('orders',this)"><span data-i="nav_orders">🛒 Encomendas</span></button>
+    <button class="nav-tab"             data-page="picking" onclick="showPage('picking',this)" data-tip-i="tip_pick_list"><span data-i="nav_pick">📦 Para Preparação</span></button>
+    <button class="nav-tab t-ret"       data-page="returns" onclick="showPage('returns',this)"><span data-i="nav_ret">↩️ Devoluções</span></button>
+    <button class="nav-tab t-ret"       data-page="returnpickup" onclick="showPage('returnpickup',this)"><span data-i="nav_ret_pickup">🚚 Returns Pick Up</span></button>
+    <button class="nav-tab t-ret"       data-page="putaway" onclick="showPage('putaway',this)"><span data-i="nav_putaway">📥 Dar Entrada</span></button>
+    <button class="nav-tab t-db"        data-page="skudb" id="nav-skudb-btn"   onclick="showPage('skudb',this)" data-tip-i="tip_skudb"><span data-i="nav_skudb">🗂 Base de Dados Geral</span></button>
   </div>
   <!-- Right side: always visible -->
   <div class="nav-right">
     <input type="file" id="restoreFile" accept=".json" onchange="importBackup()" style="display:none;">
-    <button class="nav-tab nav-desktop-only" onclick="showAuditLog()" data-tip="Registo de atividade" data-tip-i="tip_activity_icon" aria-label="Registo de atividade" title="Registo de atividade" style="font-size:13px;padding:0 10px;">??</button>
-    <button class="nav-tab nav-desktop-only" onclick="exportBackup()" data-tip="Exportar backup completo" data-tip-i="tip_backup_export" aria-label="Exportar backup completo" title="Exportar backup completo" style="font-size:12px;padding:0 8px;opacity:.7;">??</button>
-    <button class="nav-tab nav-desktop-only" onclick="openBackupManager()" data-tip="Restaurar backup" data-tip-i="tip_backup_restore" aria-label="Restaurar backup" title="Restaurar backup" style="font-size:12px;padding:0 8px;opacity:.7;">?</button>
-    <button class="nav-tab nav-desktop-only" onclick="openResetPlatformModal()" data-tip="Reset total da plataforma" data-tip-i="tip_reset_platform" aria-label="Reset total da plataforma" title="Reset total da plataforma" style="font-size:12px;padding:0 8px;opacity:.75;color:#fca5a5;">?</button>
+    <button class="nav-tab nav-desktop-only" onclick="showAuditLog()" data-tip="Registo de atividade" data-tip-i="tip_activity_icon" aria-label="Registo de atividade" title="Registo de atividade" style="font-size:13px;padding:0 10px;">📋</button>
+    <button class="nav-tab nav-desktop-only" onclick="exportBackup()" data-tip="Exportar backup completo" data-tip-i="tip_backup_export" aria-label="Exportar backup completo" title="Exportar backup completo" style="font-size:12px;padding:0 8px;opacity:.7;">💾</button>
+    <button class="nav-tab nav-desktop-only" onclick="openBackupManager()" data-tip="Restaurar backup" data-tip-i="tip_backup_restore" aria-label="Restaurar backup" title="Restaurar backup" style="font-size:12px;padding:0 8px;opacity:.7;">↩</button>
+    <button class="nav-tab nav-desktop-only" onclick="openResetPlatformModal()" data-tip="Reset total da plataforma" data-tip-i="tip_reset_platform" aria-label="Reset total da plataforma" title="Reset total da plataforma" style="font-size:12px;padding:0 8px;opacity:.75;color:#fca5a5;">⟲</button>
     <div class="lang-sel nav-desktop-only" data-tip="Idioma">
       <button class="lang-btn active" id="lang-pt" onclick="setLang('pt')" data-tip="Português" aria-label="Português"><span class="flag flag-pt"></span></button>
       <button class="lang-btn" id="lang-en" onclick="setLang('en')" data-tip="English" aria-label="English"><span class="flag flag-gb"></span></button>
@@ -631,7 +631,7 @@ select.input{appearance:auto;cursor:pointer;}
       <span id="userBadgeName" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;"></span>
       <button class="btn btn-ghost btn-sm nav-desktop-only" onclick="doLogout()" style="color:rgba(255,255,255,.6);font-size:11px;padding:3px 8px;">Sair</button>
     </div>
-    <button class="nav-hamburger" onclick="toggleMobileMenu()" id="navHamburger" aria-label="Menu">?</button>
+    <button class="nav-hamburger" onclick="toggleMobileMenu()" id="navHamburger" aria-label="Menu">☰</button>
   </div>
 </nav>
 
@@ -640,24 +640,24 @@ select.input{appearance:auto;cursor:pointer;}
 <div id="mobileMenu" style="display:none;position:fixed;top:0;left:0;bottom:0;width:280px;background:var(--accent2);z-index:201;flex-direction:column;box-shadow:4px 0 20px rgba(0,0,0,.3);overflow-y:auto;">
   <div style="padding:20px 16px 12px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;">
     <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:18px;color:#fff;">NH<span style="color:#e8420a;">·</span>Warehouse</div>
-    <button onclick="closeMobileMenu()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:22px;cursor:pointer;">?</button>
+    <button onclick="closeMobileMenu()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:22px;cursor:pointer;">✕</button>
   </div>
   <div style="padding:12px 8px;flex:1;">
-    <button class="mob-nav-btn"             data-page="stock"   onclick="showPage('stock',this);closeMobileMenu()"><span data-i="nav_stock">?? Stock</span></button>
-    <button class="mob-nav-btn"             data-page="orders"  onclick="showPage('orders',this);closeMobileMenu()"><span data-i="nav_orders">?? Encomendas</span></button>
-    <button class="mob-nav-btn"             data-page="picking" onclick="showPage('picking',this);closeMobileMenu()"><span data-i="nav_pick">?? Para Preparação</span></button>
-    <button class="mob-nav-btn t-ret"       data-page="returns" onclick="showPage('returns',this);closeMobileMenu()"><span data-i="nav_ret">?? Devoluções</span></button>
-    <button class="mob-nav-btn t-ret"       data-page="returnpickup" onclick="showPage('returnpickup',this);closeMobileMenu()"><span data-i="nav_ret_pickup">?? Returns Pick Up</span></button>
-    <button class="mob-nav-btn t-ret"       data-page="putaway" onclick="showPage('putaway',this);closeMobileMenu()"><span data-i="nav_putaway">?? Dar Entrada</span></button>
-    <button class="mob-nav-btn t-db"        data-page="skudb"   onclick="showPage('skudb',this);closeMobileMenu()"><span data-i="nav_skudb">?? Base de Dados Geral</span></button>
+    <button class="mob-nav-btn"             data-page="stock"   onclick="showPage('stock',this);closeMobileMenu()"><span data-i="nav_stock">📦 Stock</span></button>
+    <button class="mob-nav-btn"             data-page="orders"  onclick="showPage('orders',this);closeMobileMenu()"><span data-i="nav_orders">🛒 Encomendas</span></button>
+    <button class="mob-nav-btn"             data-page="picking" onclick="showPage('picking',this);closeMobileMenu()"><span data-i="nav_pick">📦 Para Preparação</span></button>
+    <button class="mob-nav-btn t-ret"       data-page="returns" onclick="showPage('returns',this);closeMobileMenu()"><span data-i="nav_ret">↩️ Devoluções</span></button>
+    <button class="mob-nav-btn t-ret"       data-page="returnpickup" onclick="showPage('returnpickup',this);closeMobileMenu()"><span data-i="nav_ret_pickup">🚚 Returns Pick Up</span></button>
+    <button class="mob-nav-btn t-ret"       data-page="putaway" onclick="showPage('putaway',this);closeMobileMenu()"><span data-i="nav_putaway">📥 Dar Entrada</span></button>
+    <button class="mob-nav-btn t-db"        data-page="skudb"   onclick="showPage('skudb',this);closeMobileMenu()"><span data-i="nav_skudb">🗂 Base de Dados Geral</span></button>
     <div style="height:1px;background:rgba(255,255,255,.1);margin:8px 0;"></div>
-    <button class="mob-nav-btn" onclick="showAuditLog();closeMobileMenu()">?? Atividade</button>
-    <button class="mob-nav-btn" onclick="exportBackup();closeMobileMenu()">?? Exportar backup</button>
-    <button class="mob-nav-btn" onclick="openBackupManager();closeMobileMenu()">? Restaurar backup</button>
-    <button class="mob-nav-btn" onclick="openResetPlatformModal();closeMobileMenu()" style="color:#fca5a5;">? Reset total</button>
+    <button class="mob-nav-btn" onclick="showAuditLog();closeMobileMenu()">📋 Atividade</button>
+    <button class="mob-nav-btn" onclick="exportBackup();closeMobileMenu()">💾 Exportar backup</button>
+    <button class="mob-nav-btn" onclick="openBackupManager();closeMobileMenu()">↩ Restaurar backup</button>
+    <button class="mob-nav-btn" onclick="openResetPlatformModal();closeMobileMenu()" style="color:#fca5a5;">⟲ Reset total</button>
   </div>
   <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);">
-    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">?? Idioma</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">🌐 Idioma</div>
     <div style="display:flex;gap:6px;margin-bottom:12px;">
       <button class="lang-btn active" id="lang-pt-mob" onclick="setLang('pt')" aria-label="Português"><span class="flag flag-pt"></span></button>
       <button class="lang-btn" id="lang-en-mob" onclick="setLang('en')" aria-label="English"><span class="flag flag-gb"></span></button>
@@ -676,9 +676,9 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-sub">Catálogo central — EAN, nome, marca, categoria, ml</div>
   <div class="page-desc" data-html-i="skudb_desc">Catálogo central de produtos. Importa ou cria SKUs com EAN, nome, marca, categoria e ml. Esta base alimenta a <strong>pesquisa inteligente</strong>, a leitura por scanner, a resolução de EAN para SKU e a identificação de produtos em stock, encomendas, picking e devoluções. Sem esta base, os SKUs continuam a funcionar, mas aparecem com menos detalhe.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title" data-i="card_import_catalog">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()" data-tip="Descarregar template Excel para importar produtos" data-i="btn_template">? Modelo</button></div>
+    <div class="card-header"><span class="card-title" data-i="card_import_catalog">Importar catálogo</span><button class="btn btn-ghost btn-sm" onclick="dlSkuTpl()" data-tip="Descarregar template Excel para importar produtos" data-i="btn_template">⬇ Modelo</button></div>
     <div class="card-body">
-      <div class="alert a-sky">?? Colunas: <strong>SKU | EAN | Nome | Marca | Categoria | ML</strong></div>
+      <div class="alert a-sky">ℹ️ Colunas: <strong>SKU | EAN | Nome | Marca | Categoria | ML</strong></div>
       <div class="file-picker">
         <label class="btn btn-ghost btn-sm" for="skuFile" data-i="btn_choose_file">Escolher ficheiro</label>
         <span class="file-name" data-file-name-for="skuFile" data-i="file_none">Nenhum ficheiro selecionado</span>
@@ -691,7 +691,7 @@ select.input{appearance:auto;cursor:pointer;}
     <div class="card-header"><span class="card-title" data-i="card_catalog">Catálogo</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <input class="input input-sans" id="dbSearch" placeholder="Pesquisar..." style="width:180px;padding:5px 10px;font-size:12px;" oninput="renderSkuDb()">
-        <button class="btn btn-ghost btn-sm" onclick="clearSkuDb()" data-tip="Apagar todo o catálogo de produtos">?? Limpar</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSkuDb()" data-tip="Apagar todo o catálogo de produtos">🗑 Limpar</button>
       </div>
     </div>
     <div style="overflow-x:auto;"><table class="tbl" id="skuDbTable" data-resizable-cols>
@@ -705,7 +705,7 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="page active" id="page-stock">
   <div class="page-title">Stock</div>
   <div class="page-sub">Consulta de stock por posição</div>
-  <div class="page-desc" data-html-i="stock_desc">Consulta e gere o stock real por SKU, posição e tipo de caixa. A gaveta <strong>Mapa do armazém</strong> define as posições válidas a partir de estantes, prateleiras e posições por prateleira, podendo também aceitar estantes personalizadas. Usa <strong>Dar Entrada</strong> para registar stock peça a peça ou por Excel, indicando se a posição é <em>mista</em> ou <em>exclusiva</em>. Usa <strong>?? Inserir Stock Teórico</strong> para comparar o stock recebido com o ficheiro do fornecedor. As colunas de <em>Em carteira</em>, <em>Em preparação</em>, devoluções e <em>Disponível</em> atualizam automaticamente com os movimentos em curso.</div>
+  <div class="page-desc" data-html-i="stock_desc">Consulta e gere o stock real por SKU, posição e tipo de caixa. A gaveta <strong>Mapa do armazém</strong> define as posições válidas a partir de estantes, prateleiras e posições por prateleira, podendo também aceitar estantes personalizadas. Usa <strong>Dar Entrada</strong> para registar stock peça a peça ou por Excel, indicando se a posição é <em>mista</em> ou <em>exclusiva</em>. Usa <strong>📊 Inserir Stock Teórico</strong> para comparar o stock recebido com o ficheiro do fornecedor. As colunas de <em>Em carteira</em>, <em>Em preparação</em>, devoluções e <em>Disponível</em> atualizam automaticamente com os movimentos em curso.</div>
 
   <!-- STOCK TABLE -->
   <details class="card drawer-card" id="warehouseMapDrawer">
@@ -714,7 +714,7 @@ select.input{appearance:auto;cursor:pointer;}
       <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <span id="warehouseMapSummary" style="font-size:11px;color:var(--muted);font-family:var(--mono);"></span>
         <button type="button" class="btn btn-ghost btn-sm" onclick="event.preventDefault();event.stopPropagation();openWarehouseMapModal()" data-i="btn_view_map">Ver mapa</button>
-        <span class="drawer-toggle">?</span>
+        <span class="drawer-toggle">⌄</span>
       </span>
     </summary>
     <div class="card-body">
@@ -740,12 +740,12 @@ select.input{appearance:auto;cursor:pointer;}
         <select class="input input-sans" id="stockFilter" style="width:95px;padding:5px 8px;font-size:12px;" onchange="renderStock()">
           <option value="">Todos</option><option value="mista">Mixed</option><option value="exclusiva">Mono</option>
         </select>
-        <button class="btn btn-ghost btn-sm" onclick="exportStockExcel()" data-tip="Exportar toda a tabela de stock">? Excel</button>
-        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()" data-tip="Descarregar modelo Excel para importar stock">? Modelo</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportStockExcel()" data-tip="Exportar toda a tabela de stock">⬇ Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()" data-tip="Descarregar modelo Excel para importar stock">⬇ Modelo</button>
         <button class="btn btn-success btn-sm" onclick="openEntrada()" data-tip="Dar entrada de mercadoria recebida — peça a peça com scanner ou por Excel" data-tip-i="tip_dar_entrada" data-i="btn_dar_entrada">Dar Entrada</button>
         <button class="btn btn-danger btn-sm" onclick="openSaida()" data-tip="Dar saída manual de stock existente sem criar movimentos de carteira, preparação ou faturação" data-i="btn_dar_saida">Dar Saída</button>
-        <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" data-tip="Comparar stock real com quantidades encomendadas ao fornecedor" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">?? Inserir Stock Teórico</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearStock()" data-tip="Apagar todo o stock do armazém">??</button>
+        <button class="btn btn-sky btn-sm" onclick="openTeoricoPanel()" data-tip="Comparar stock real com quantidades encomendadas ao fornecedor" id="btnTeorico" data-tip-i="tip_teorico" data-i="btn_teorico">📊 Inserir Stock Teórico</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearStock()" data-tip="Apagar todo o stock do armazém">🗑</button>
       </div>
     </div>
     
@@ -764,8 +764,8 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-sub">Pedidos de preparação e saída</div>
   <div class="page-desc" data-html-i="orders_desc">Cria pedidos de saída de stock por cliente. Adiciona SKUs por scanner, pesquisa, inserção manual ou Excel. As quantidades entram em <em>Em carteira</em> e reduzem o <strong>stock disponível</strong> para evitar dupla reserva. Ao emitir a guia, a preparação prioriza posições em caixas mistas e segue o percurso do armazém. O stock real só é deduzido quando o picking é confirmado linha a linha; pedidos ainda não concluídos podem libertar as unidades ao serem cancelados.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title" data-i="card_orders">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')" data-tip="Criar novo pedido de saída de stock">+ Nova</button></div>
-    <div id="ordersList"><div class="empty"><div class="empty-icon">??</div><span data-i="misc_no_orders">Sem encomendas.</span></div></div>
+    <div class="card-header"><span class="card-title" data-i="card_orders">Encomendas</span><button class="btn btn-primary btn-sm" onclick="newDoc('order')" data-tip="Criar novo pedido de saída de stock">＋ Nova</button></div>
+    <div id="ordersList"><div class="empty"><div class="empty-icon">🛒</div><span data-i="misc_no_orders">Sem encomendas.</span></div></div>
   </div>
   <div id="orderEditor" style="display:none;">
     <div class="card">
@@ -773,29 +773,29 @@ select.input{appearance:auto;cursor:pointer;}
         <span class="card-title" id="editorTitle">Encomenda</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="closeEd('order')" data-tip="Fechar o editor sem perder os dados">Fechar</button>
-          <button class="btn btn-success btn-sm" onclick="emitirGuia()" data-tip="Gerar guia de picking com percurso otimizado — o stock só sai após confirmação" data-tip-i="tip_emit_pick" data-i="btn_emit_pick">?? Emitir Guia Preparação</button>
+          <button class="btn btn-success btn-sm" onclick="emitirGuia()" data-tip="Gerar guia de picking com percurso otimizado — o stock só sai após confirmação" data-tip-i="tip_emit_pick" data-i="btn_emit_pick">📦 Emitir Guia Preparação</button>
         </div>
       </div>
       <div class="card-body">
         <div class="presence-bar" id="presence-order"></div>
         <div class="field"><label>Cliente</label><div class="input input-sans" id="o-client" style="background:var(--surface2);color:var(--text);font-weight:600;cursor:default;"></div></div>
         <div class="inner-tabs">
-          <button class="inner-tab active" onclick="switchTab('order','scanner')">?? Scanner</button>
-          <button class="inner-tab" onclick="switchTab('order','search')">?? Pesquisa</button>
-          <button class="inner-tab" onclick="switchTab('order','manual')">?? Manual</button>
-          <button class="inner-tab" onclick="switchTab('order','import')" data-i="tab_import">?? Importar</button>
+          <button class="inner-tab active" onclick="switchTab('order','scanner')">📷 Scanner</button>
+          <button class="inner-tab" onclick="switchTab('order','search')">🔍 Pesquisa</button>
+          <button class="inner-tab" onclick="switchTab('order','manual')">⌨️ Manual</button>
+          <button class="inner-tab" onclick="switchTab('order','import')" data-i="tab_import">📂 Importar</button>
         </div>
         <div id="otab-scanner">
           <div id="orderScannerBox" class="scanner-box"><div id="orderInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
           <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:10px;align-items:center;">
-            <button class="btn btn-dark btn-sm" id="btnOrderScan" onclick="toggleScan('order')">?? Iniciar</button>
+            <button class="btn btn-dark btn-sm" id="btnOrderScan" onclick="toggleScan('order')">📷 Iniciar</button>
             <span class="dot" id="orderScanDot"></span><span style="font-size:11px;color:var(--muted)" id="orderScanStatus">Inativo</span>
           </div>
           <div class="alert a-info" style="font-size:12px;">Após cada leitura escolhes a quantidade.</div>
         </div>
         <div id="otab-search" style="display:none;">
           <div style="padding:20px 0;text-align:center;">
-            <button class="btn btn-primary" style="padding:12px 28px;font-size:14px;" onclick="openSearchPanel('order')">?? Abrir pesquisa de produtos</button>
+            <button class="btn btn-primary" style="padding:12px 28px;font-size:14px;" onclick="openSearchPanel('order')">🔍 Abrir pesquisa de produtos</button>
             <div style="font-size:12px;color:var(--muted);margin-top:10px;">Pesquisa por nome, marca, categoria, EAN ou SKU.<br>Seleciona o produto e indica a quantidade.</div>
           </div>
         </div>
@@ -803,11 +803,11 @@ select.input{appearance:auto;cursor:pointer;}
           <div class="g-add manual-add">
             <div class="field" style="margin:0"><label>SKU / EAN</label><input class="input mono" id="o-sku" placeholder="Código..."></div>
             <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="o-qty" type="number" inputmode="numeric" min="1" placeholder="" style="width:100%;"></div>
-            <button class="btn btn-primary" onclick="addDocLine('order')">+</button>
+            <button class="btn btn-primary" onclick="addDocLine('order')">＋</button>
           </div>
         </div>
         <div id="otab-import" style="display:none;">
-          <div class="alert a-info" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('order')" data-i="btn_template">? Modelo</button></div>
+          <div class="alert a-info" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('order')" data-i="btn_template">⬇ Modelo</button></div>
           <div class="file-picker">
             <label class="btn btn-ghost btn-sm" for="orderFile" data-i="btn_choose_file">Escolher ficheiro</label>
             <span class="file-name" data-file-name-for="orderFile" data-i="file_none">Nenhum ficheiro selecionado</span>
@@ -834,17 +834,17 @@ select.input{appearance:auto;cursor:pointer;}
   <div id="pickingListSection">
     <div class="card">
       <div class="card-header"><span class="card-title" data-i="card_open_guides">Guias em aberto</span></div>
-      <div id="pickingGuidesList"><div class="empty"><div class="empty-icon">??</div><span data-i="misc_no_guides_pick">Nenhuma guia emitida. Vai a Encomendas e clica em "Emitir Guia Preparação".</span></div></div>
+      <div id="pickingGuidesList"><div class="empty"><div class="empty-icon">📋</div><span data-i="misc_no_guides_pick">Nenhuma guia emitida. Vai a Encomendas e clica em "Emitir Guia Preparação".</span></div></div>
     </div>
   </div>
 
   <!-- ACTIVE PICKING SESSION (inline, hidden until started) -->
   <div id="prepContent" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <button class="btn btn-ghost btn-sm" onclick="cancelPrep()" data-tip="Suspender o picking — a guia fica disponível para retomar">? Voltar à lista</button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelPrep()" data-tip="Suspender o picking — a guia fica disponível para retomar">← Voltar à lista</button>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcel()" data-tip="Exportar guia de picking em Excel">? Excel</button>
-        <button class="btn btn-danger btn-sm" onclick="cancelPrep()">? Cancelar</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportGuiaExcel()" data-tip="Exportar guia de picking em Excel">⬇ Excel</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelPrep()">✕ Cancelar</button>
       </div>
     </div>
     <div class="pick-hdr ph-ord" id="prepHeader" style="margin-bottom:14px;"></div>
@@ -857,7 +857,7 @@ select.input{appearance:auto;cursor:pointer;}
     </div>
     <div id="prepLines"></div>
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-      <button class="btn btn-success" style="flex:1;padding:12px;" onclick="finalizePicking()" data-tip="Confirmar todas as recolhas e deduzir o stock — ação irreversível">? Finalizar e deduzir stock</button>
+      <button class="btn btn-success" style="flex:1;padding:12px;" onclick="finalizePicking()" data-tip="Confirmar todas as recolhas e deduzir o stock — ação irreversível">✓ Finalizar e deduzir stock</button>
     </div>
   </div>
 </div>
@@ -868,8 +868,8 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="page-sub">Artigos devolvidos</div>
   <div class="page-desc" data-html-i="returns_desc">Cria pedidos de devolução a partir de um ou vários pedidos já preparados, ou adiciona artigos manualmente por scanner, pesquisa ou Excel. Ao emitir a <strong>guia de recolha</strong>, as linhas seguem para <strong>Returns Pick Up</strong>, onde a loja/armazém confirma o que foi efetivamente recolhido. Pedidos que já deram origem a devolução ficam bloqueados para evitar duplicação.</div>
   <div class="card">
-    <div class="card-header"><span class="card-title" data-i="card_returns">Devoluções</span><div style="display:flex;gap:6px;"><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução manualmente">+ Nova</button><button class="btn btn-ghost btn-sm" onclick="openImportFromOrder()" data-tip="Criar devolução a partir de um pedido concluído">?? Criar devolução a partir de pedido</button></div></div>
-    <div id="returnsList"><div class="empty"><div class="empty-icon">??</div><span data-i="misc_no_rets">Sem devoluções.</span></div></div>
+    <div class="card-header"><span class="card-title" data-i="card_returns">Devoluções</span><div style="display:flex;gap:6px;"><button class="btn btn-purple btn-sm" onclick="newDoc('return')" data-tip="Criar nova devolução manualmente">＋ Nova</button><button class="btn btn-ghost btn-sm" onclick="openImportFromOrder()" data-tip="Criar devolução a partir de um pedido concluído">📋 Criar devolução a partir de pedido</button></div></div>
+    <div id="returnsList"><div class="empty"><div class="empty-icon">↩️</div><span data-i="misc_no_rets">Sem devoluções.</span></div></div>
   </div>
   <div id="returnEditor" style="display:none;">
     <div class="card">
@@ -877,29 +877,29 @@ select.input{appearance:auto;cursor:pointer;}
         <span class="card-title" id="retEdTitle">Devolução</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="closeEd('return')" data-tip="Fechar o editor sem perder os dados">Fechar</button>
-          <button class="btn btn-warn btn-sm" onclick="emitReturnPickupGuide()" data-tip="Gerar guia de recolha dos artigos devolvidos">?? Emitir Guia Recolha</button>
+          <button class="btn btn-warn btn-sm" onclick="emitReturnPickupGuide()" data-tip="Gerar guia de recolha dos artigos devolvidos">🚚 Emitir Guia Recolha</button>
         </div>
       </div>
       <div class="card-body">
         <div class="presence-bar" id="presence-return"></div>
         <div class="field"><label>Cliente</label><div class="input input-sans" id="r-client" style="background:var(--surface2);color:var(--text);font-weight:600;cursor:default;"></div></div>
         <div class="inner-tabs">
-          <button class="inner-tab active" onclick="switchTab('return','scanner')">?? Scanner</button>
-          <button class="inner-tab" onclick="switchTab('return','search')">?? Pesquisa</button>
-          <button class="inner-tab" onclick="switchTab('return','manual')">?? Manual</button>
-          <button class="inner-tab" onclick="switchTab('return','import')" data-i="tab_import">?? Importar</button>
+          <button class="inner-tab active" onclick="switchTab('return','scanner')">📷 Scanner</button>
+          <button class="inner-tab" onclick="switchTab('return','search')">🔍 Pesquisa</button>
+          <button class="inner-tab" onclick="switchTab('return','manual')">⌨️ Manual</button>
+          <button class="inner-tab" onclick="switchTab('return','import')" data-i="tab_import">📂 Importar</button>
         </div>
         <div id="rtab-scanner">
           <div id="returnScannerBox" class="scanner-box"><div id="returnInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
           <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:10px;align-items:center;">
-            <button class="btn btn-dark btn-sm" id="btnReturnScan" onclick="toggleScan('return')">?? Iniciar</button>
+            <button class="btn btn-dark btn-sm" id="btnReturnScan" onclick="toggleScan('return')">📷 Iniciar</button>
             <span class="dot" id="returnScanDot"></span><span style="font-size:11px;color:var(--muted)" id="returnScanStatus">Inativo</span>
           </div>
           <div class="alert a-pur" style="font-size:12px;">Lê o código de cada artigo devolvido.</div>
         </div>
         <div id="rtab-search" style="display:none;">
           <div style="padding:20px 0;text-align:center;">
-            <button class="btn btn-purple" style="padding:12px 28px;font-size:14px;" onclick="openSearchPanel('return')">?? Abrir pesquisa de produtos</button>
+            <button class="btn btn-purple" style="padding:12px 28px;font-size:14px;" onclick="openSearchPanel('return')">🔍 Abrir pesquisa de produtos</button>
             <div style="font-size:12px;color:var(--muted);margin-top:10px;">Pesquisa por nome, marca, categoria, EAN ou SKU.<br>Seleciona o produto e indica a quantidade.</div>
           </div>
         </div>
@@ -907,11 +907,11 @@ select.input{appearance:auto;cursor:pointer;}
           <div class="g-add manual-add">
             <div class="field" style="margin:0"><label>SKU / EAN</label><input class="input mono" id="r-sku" placeholder="Código..."></div>
             <div class="field" style="margin:0"><label>Qty</label><input class="input mono qty-in" id="r-qty" type="number" inputmode="numeric" min="1" placeholder="" style="width:100%;"></div>
-            <button class="btn btn-purple" onclick="addDocLine('return')">+</button>
+            <button class="btn btn-purple" onclick="addDocLine('return')">＋</button>
           </div>
         </div>
         <div id="rtab-import" style="display:none;">
-          <div class="alert a-pur" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('return')" data-i="btn_template">? Modelo</button></div>
+          <div class="alert a-pur" style="font-size:12px;">Excel: <strong>SKU | Quantidade</strong> &nbsp;·&nbsp; <button class="btn btn-ghost btn-sm" onclick="dlDocTpl('return')" data-i="btn_template">⬇ Modelo</button></div>
           <div class="file-picker">
             <label class="btn btn-ghost btn-sm" for="returnFile" data-i="btn_choose_file">Escolher ficheiro</label>
             <span class="file-name" data-file-name-for="returnFile" data-i="file_none">Nenhum ficheiro selecionado</span>
@@ -937,14 +937,14 @@ select.input{appearance:auto;cursor:pointer;}
   <div id="returnPickupListSection">
     <div class="card">
       <div class="card-header"><span class="card-title" data-i="card_return_pickup_guides">Guias de recolha em aberto</span></div>
-      <div id="returnPickupGuidesList"><div class="empty"><div class="empty-icon">??</div><span data-i="misc_no_return_pickups">Nenhuma guia de recolha emitida. Vai a Devoluções e clica em "Emitir Guia Recolha".</span></div></div>
+      <div id="returnPickupGuidesList"><div class="empty"><div class="empty-icon">🚚</div><span data-i="misc_no_return_pickups">Nenhuma guia de recolha emitida. Vai a Devoluções e clica em "Emitir Guia Recolha".</span></div></div>
     </div>
   </div>
 
   <div id="returnPickupContent" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <button class="btn btn-ghost btn-sm" onclick="cancelReturnPickup()">? Voltar à lista</button>
-      <button class="btn btn-ghost btn-sm" onclick="exportReturnPickupExcel()">? Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelReturnPickup()">← Voltar à lista</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportReturnPickupExcel()">⬇ Excel</button>
     </div>
     <div class="pick-hdr ph-ret" id="returnPickupHeader" style="margin-bottom:14px;"></div>
     <div style="background:var(--surface2);border-radius:30px;height:8px;margin-bottom:6px;overflow:hidden;">
@@ -960,7 +960,7 @@ select.input{appearance:auto;cursor:pointer;}
       <tbody id="returnPickupLines"></tbody>
     </table></div>
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-      <button class="btn btn-warn" style="flex:1;padding:12px;" onclick="finalizeReturnPickup()">? Finalizar recolha</button>
+      <button class="btn btn-warn" style="flex:1;padding:12px;" onclick="finalizeReturnPickup()">✓ Finalizar recolha</button>
     </div>
   </div>
 </div>
@@ -975,17 +975,17 @@ select.input{appearance:auto;cursor:pointer;}
   <div id="putawayListSection">
     <div class="card">
       <div class="card-header"><span class="card-title" data-i="card_open_return_guides">Guias de devolução em aberto</span></div>
-      <div id="putawayGuidesList"><div class="empty"><div class="empty-icon">??</div><span data-i="misc_no_guides_put">Nenhuma guia emitida. Vai a Devoluções e clica em "Emitir Guia Devolução".</span></div></div>
+      <div id="putawayGuidesList"><div class="empty"><div class="empty-icon">↩️</div><span data-i="misc_no_guides_put">Nenhuma guia emitida. Vai a Devoluções e clica em "Emitir Guia Devolução".</span></div></div>
     </div>
   </div>
 
   <!-- ACTIVE PUTAWAY SESSION -->
   <div id="putawayPrepContent" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <button class="btn btn-ghost btn-sm" onclick="cancelPutawayPrep()" data-tip="Suspender a colocação — a guia fica disponível para retomar">? Voltar à lista</button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelPutawayPrep()" data-tip="Suspender a colocação — a guia fica disponível para retomar">← Voltar à lista</button>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost btn-sm" onclick="exportPutawayExcel()">? Excel</button>
-        <button class="btn btn-danger btn-sm" onclick="cancelPutawayPrep()">? Cancelar</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportPutawayExcel()">⬇ Excel</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelPutawayPrep()">✕ Cancelar</button>
       </div>
     </div>
     <div class="pick-hdr ph-ret" id="putawayPrepHeader" style="margin-bottom:14px;"></div>
@@ -997,7 +997,7 @@ select.input{appearance:auto;cursor:pointer;}
     </div>
     <div id="putawayPrepLines"></div>
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-      <button class="btn btn-purple" style="flex:1;padding:12px;" onclick="finalizePutaway()" data-tip="Confirmar todas as colocações e acrescentar ao stock — ação irreversível">? Finalizar e acrescentar ao stock</button>
+      <button class="btn btn-purple" style="flex:1;padding:12px;" onclick="finalizePutaway()" data-tip="Confirmar todas as colocações e acrescentar ao stock — ação irreversível">✓ Finalizar e acrescentar ao stock</button>
     </div>
   </div>
 </div>
@@ -1016,13 +1016,13 @@ select.input{appearance:auto;cursor:pointer;}
     <div class="search-panel-head" style="flex-direction:column;align-items:stretch;gap:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div style="font-weight:800;font-size:16px;" id="ent-panel-title">Dar Entrada de Stock</div>
-        <button class="btn btn-ghost btn-sm" onclick="closeEntrada()">?</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeEntrada()">✕</button>
       </div>
       <div class="inner-tabs" style="margin:0;">
-        <button class="inner-tab active" id="ent-tab-scanner-btn" onclick="switchEntradaMode('scanner')">?? Scanner</button>
-        <button class="inner-tab" id="ent-tab-search-btn" onclick="switchEntradaMode('search')">?? Pesquisa</button>
-        <button class="inner-tab" id="ent-tab-manual-btn" onclick="switchEntradaMode('manual')">?? Manual</button>
-        <button class="inner-tab" id="ent-tab-excel-btn" onclick="switchEntradaMode('excel')">?? Importar</button>
+        <button class="inner-tab active" id="ent-tab-scanner-btn" onclick="switchEntradaMode('scanner')">📷 Scanner</button>
+        <button class="inner-tab" id="ent-tab-search-btn" onclick="switchEntradaMode('search')">🔍 Pesquisa</button>
+        <button class="inner-tab" id="ent-tab-manual-btn" onclick="switchEntradaMode('manual')">⌨️ Manual</button>
+        <button class="inner-tab" id="ent-tab-excel-btn" onclick="switchEntradaMode('excel')">📂 Importar</button>
       </div>
     </div>
 
@@ -1039,7 +1039,7 @@ select.input{appearance:auto;cursor:pointer;}
         <div id="ent-mode-scanner">
           <div id="entScannerBox" class="scanner-box"><div id="entInteractive"></div><div class="scan-aim"><div class="aim-rect"><div class="aim-line"></div></div></div></div>
           <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
-            <button class="btn btn-dark btn-sm" id="btnEntScan" onclick="toggleScan('ent')">?? Scanner</button>
+            <button class="btn btn-dark btn-sm" id="btnEntScan" onclick="toggleScan('ent')">📷 Scanner</button>
             <span class="dot" id="entScanDot"></span>
             <span style="font-size:11px;color:var(--muted)" id="entScanStatus">Inativo</span>
           </div>
@@ -1054,7 +1054,7 @@ select.input{appearance:auto;cursor:pointer;}
         <div id="ent-mode-manual" style="display:none;gap:8px;">
           <input class="input mono" id="ent-sku-manual" placeholder="EAN ou SKU direto..."
             style="flex:1;" onkeydown="if(event.key==='Enter')entManualNext()">
-          <button class="btn btn-primary" onclick="entManualNext()">?</button>
+          <button class="btn btn-primary" onclick="entManualNext()">→</button>
         </div>
       </div>
 
@@ -1063,14 +1063,14 @@ select.input{appearance:auto;cursor:pointer;}
         <div id="ent-sku-preview" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;"></div>
         <label id="ent-qty-label">Quantidade a dar entrada</label>
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
-          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(-1)">-</button>
+          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(-1)">−</button>
           <input class="input mono" id="ent-qty" type="number" inputmode="numeric" min="1" placeholder=""
             style="font-size:24px;font-weight:700;text-align:center;flex:1;padding:10px;">
-          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(1)">+</button>
+          <button class="btn btn-ghost" style="font-size:20px;padding:8px 14px;" onclick="entAdjQty(1)">＋</button>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="entGoStep(1)">? Voltar</button>
-          <button class="btn btn-primary" style="flex:1;" onclick="entGoStep(3)">Confirmar quantidade ?</button>
+          <button class="btn btn-ghost" onclick="entGoStep(1)">← Voltar</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="entGoStep(3)">Confirmar quantidade →</button>
         </div>
       </div>
 
@@ -1092,13 +1092,13 @@ select.input{appearance:auto;cursor:pointer;}
         <div id="ent-box-type-wrap" style="margin-bottom:14px;">
           <label>Tipo de caixa</label>
           <div class="inner-tabs" style="margin:0;">
-            <button type="button" class="inner-tab active" id="ent-box-mista-btn" onclick="entSetBoxType('mista')">?? Mixed</button>
-            <button type="button" class="inner-tab" id="ent-box-exclusiva-btn" onclick="entSetBoxType('exclusiva')">?? Mono</button>
+            <button type="button" class="inner-tab active" id="ent-box-mista-btn" onclick="entSetBoxType('mista')">📦 Mixed</button>
+            <button type="button" class="inner-tab" id="ent-box-exclusiva-btn" onclick="entSetBoxType('exclusiva')">🔹 Mono</button>
           </div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="entGoStep(2)">? Voltar</button>
-          <button class="btn btn-success" style="flex:1;" id="ent-confirm-btn" onclick="entConfirm()">? Confirmar entrada</button>
+          <button class="btn btn-ghost" onclick="entGoStep(2)">← Voltar</button>
+          <button class="btn btn-success" style="flex:1;" id="ent-confirm-btn" onclick="entConfirm()">✓ Confirmar entrada</button>
         </div>
       </div>
 
@@ -1121,7 +1121,7 @@ select.input{appearance:auto;cursor:pointer;}
     <div id="ent-tab-excel" style="display:none;padding:16px;flex:1;overflow-y:auto;">
       <div class="alert a-info" id="ent-excel-help">Colunas: <strong>EAN | Posição | Quantidade | Tipo de Caixa</strong></div>
       <div style="margin-bottom:12px;">
-        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()" data-i="btn_template_excel">? Modelo Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="dlStockTpl()" data-i="btn_template_excel">⬇ Modelo Excel</button>
       </div>
       <div class="file-picker">
         <label class="btn btn-ghost btn-sm" for="stockFile" data-i="btn_choose_file">Escolher ficheiro</label>
@@ -1136,8 +1136,8 @@ select.input{appearance:auto;cursor:pointer;}
 <div class="search-panel-overlay" id="teoricoOverlay" onclick="teoricoClose(event)">
   <div class="search-panel" style="max-width:480px;" onclick="event.stopPropagation()">
     <div class="search-panel-head">
-      <div style="font-weight:800;font-size:15px;flex:1;">?? Inserir Stock Teórico</div>
-      <button class="btn btn-ghost btn-sm" onclick="closeTeoricoPanel()">?</button>
+      <div style="font-weight:800;font-size:15px;flex:1;">📊 Inserir Stock Teórico</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeTeoricoPanel()">✕</button>
     </div>
     <div style="padding:16px;flex:1;overflow-y:auto;">
       <div class="alert a-sky" style="margin-bottom:14px;">
@@ -1145,7 +1145,7 @@ select.input{appearance:auto;cursor:pointer;}
       </div>
       <div class="alert a-info" style="font-size:12px;margin-bottom:14px;">Colunas: <strong>SKU | EAN | Quantidade</strong></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button class="btn btn-ghost btn-sm" onclick="dlTeoricoTpl()" data-i="btn_template">? Modelo</button>
+        <button class="btn btn-ghost btn-sm" onclick="dlTeoricoTpl()" data-i="btn_template">⬇ Modelo</button>
       </div>
       <div class="file-picker" style="margin-bottom:14px;">
         <label class="btn btn-ghost btn-sm" for="teoricoFile" data-i="btn_choose_file">Escolher ficheiro</label>
@@ -1154,8 +1154,8 @@ select.input{appearance:auto;cursor:pointer;}
       <input type="file" id="teoricoFile" accept=".xlsx,.xls" onchange="fileInputChanged(this);importTeorico()" class="file-input">
       <div id="teoricoStatus" style="display:none;background:var(--surface2);border-radius:8px;padding:12px;font-size:13px;margin-bottom:14px;"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-danger btn-sm" onclick="clearTeorico()" id="btnClearTeorico" style="display:none;">?? Limpar stock teórico</button>
-        <button class="btn btn-ghost btn-sm" onclick="exportDiffExcel()">? Exportar diferenças Excel</button>
+        <button class="btn btn-danger btn-sm" onclick="clearTeorico()" id="btnClearTeorico" style="display:none;">🗑 Limpar stock teórico</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportDiffExcel()">⬇ Exportar diferenças Excel</button>
       </div>
     </div>
   </div>
@@ -1167,20 +1167,20 @@ select.input{appearance:auto;cursor:pointer;}
 <!-- SCAN QTY MODAL -->
 <div class="overlay" id="scanQtyModal">
   <div class="modal" style="max-width:320px;text-align:center;">
-    <div class="modal-title">?? Artigo lido</div>
+    <div class="modal-title">📷 Artigo lido</div>
     <div id="scanQtySkuLabel" style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);margin:8px 0;"></div>
     <div id="scanQtyNameLabel" style="font-size:13px;color:var(--muted);margin-bottom:16px;"></div>
     <label style="font-size:12px;margin-bottom:6px;display:block;">Quantidade</label>
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;">
-      <button onclick="scanQtyAdj(-1)" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:20px;cursor:pointer;line-height:1;">-</button>
+      <button onclick="scanQtyAdj(-1)" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:20px;cursor:pointer;line-height:1;">−</button>
       <input type="number" id="scanQtyInput" inputmode="numeric" min="1" placeholder=""
         style="width:80px;text-align:center;font-size:24px;font-weight:700;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:'IBM Plex Mono',monospace;"
         onkeydown="if(event.key==='Enter')scanQtyConfirm()">
-      <button onclick="scanQtyAdj(1)" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:20px;cursor:pointer;line-height:1;">+</button>
+      <button onclick="scanQtyAdj(1)" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:20px;cursor:pointer;line-height:1;">＋</button>
     </div>
     <div style="display:flex;gap:8px;">
       <button class="btn btn-ghost" style="flex:1;" onclick="scanQtyCancel()">Cancelar</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="scanQtyConfirm()">? Adicionar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="scanQtyConfirm()">✓ Adicionar</button>
     </div>
   </div>
 </div>
@@ -1193,7 +1193,7 @@ select.input{appearance:auto;cursor:pointer;}
         <div class="modal-title" data-i="warehouse_map_visual_title">Mapa visual do armazém</div>
         <div class="modal-sub" id="warehouseMapVisualSub" style="margin-bottom:0;"></div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="closeWarehouseMapModal()">?</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeWarehouseMapModal()">✕</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:11px;color:var(--muted);">
       <span class="badge bdg-gn" data-i="wm_legend_empty">Livre</span>
@@ -1209,7 +1209,7 @@ select.input{appearance:auto;cursor:pointer;}
 <!-- BACKUP PASSWORD MODAL -->
 <div class="overlay" id="backupPwModal">
   <div class="modal" style="max-width:360px;">
-    <div class="modal-title">?? Restaurar Backup</div>
+    <div class="modal-title">🔐 Restaurar Backup</div>
     <div class="modal-sub" id="backupPwSub">Introduz a password para continuar.</div>
     <div class="field">
       <label>Password</label>
@@ -1231,15 +1231,15 @@ select.input{appearance:auto;cursor:pointer;}
   <div class="modal" style="max-width:720px;">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;">
       <div>
-        <div class="modal-title" style="margin:0 0 4px;">? Backups</div>
+        <div class="modal-title" style="margin:0 0 4px;">↩ Backups</div>
         <div class="modal-sub" style="margin:0;">Backups automáticos guardados no Firebase a cada 30 minutos. Mantém os últimos 7 dias.</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="closeBackupManager()">?</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeBackupManager()">✕</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <button class="btn btn-primary btn-sm" onclick="createManualCloudBackup()">?? Criar backup agora</button>
-      <button class="btn btn-ghost btn-sm" onclick="loadCloudBackups()">? Atualizar lista</button>
-      <label class="btn btn-ghost btn-sm" style="cursor:pointer;"><input type="file" id="restoreFileManager" accept=".json" onchange="importBackupManagerFile()" style="display:none;">? Restaurar ficheiro JSON</label>
+      <button class="btn btn-primary btn-sm" onclick="createManualCloudBackup()">💾 Criar backup agora</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadCloudBackups()">↻ Atualizar lista</button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer;"><input type="file" id="restoreFileManager" accept=".json" onchange="importBackupManagerFile()" style="display:none;">↩ Restaurar ficheiro JSON</label>
     </div>
     <div id="backupManagerStatus" class="alert a-info" style="display:none;margin-bottom:10px;"></div>
     <div style="overflow:auto;max-height:360px;border:1px solid var(--border);border-radius:9px;">
@@ -1254,7 +1254,7 @@ select.input{appearance:auto;cursor:pointer;}
 <!-- RESET PLATFORM MODAL -->
 <div class="overlay" id="resetPlatformModal">
   <div class="modal reset-modal reset-pos-1" id="resetPlatformBox">
-    <div class="modal-title">? Reset total</div>
+    <div class="modal-title">⟲ Reset total</div>
     <div class="modal-sub" id="resetPlatformSub">
       Esta ação deixa a plataforma sem dados operacionais, mantendo as funcionalidades ativas. Introduz a password 3 vezes para confirmar.
     </div>
@@ -1277,7 +1277,7 @@ select.input{appearance:auto;cursor:pointer;}
 <!-- IMPORT FROM ORDER MODAL -->
 <div class="overlay" id="importFromOrderModal">
   <div class="modal" style="max-width:680px;">
-    <div class="modal-title">?? Devolução de pedido</div>
+    <div class="modal-title">📋 Devolução de pedido</div>
     <div class="modal-sub">Seleciona um ou mais pedidos com picking concluído. A devolução soma linhas iguais numa única guia.</div>
     <div style="margin-bottom:12px;">
       <input class="input input-sans" id="importOrderSearch" placeholder="Pesquisar pedido..." 
@@ -1288,7 +1288,7 @@ select.input{appearance:auto;cursor:pointer;}
       <div id="importOrderSelectedSummary" style="font-size:12px;color:var(--muted);">0 pedidos selecionados</div>
       <div class="modal-actions" style="margin-top:0;">
       <button class="btn btn-ghost" onclick="closeImportFromOrder()">Cancelar</button>
-        <button class="btn btn-purple" id="btnCreateMultiReturn" onclick="createSelectedReturnFromOrders()" disabled>?? Criar devolução</button>
+        <button class="btn btn-purple" id="btnCreateMultiReturn" onclick="createSelectedReturnFromOrders()" disabled>↩️ Criar devolução</button>
       </div>
     </div>
   </div>
@@ -1312,7 +1312,7 @@ select.input{appearance:auto;cursor:pointer;}
 <!-- ORIGEM MODAL (devolução) -->
 <div class="overlay" id="origemModal">
   <div class="modal" style="max-width:380px;">
-    <div class="modal-title" style="color:var(--purple);">?? Para Devolução</div>
+    <div class="modal-title" style="color:var(--purple);">↩️ Para Devolução</div>
     <div class="modal-sub" id="origemModalSub">Indica a origem da devolução antes de começar.</div>
     <div class="field">
       <label>Loja de origem</label>
@@ -1321,7 +1321,7 @@ select.input{appearance:auto;cursor:pointer;}
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="origemCancel()">Cancelar</button>
-      <button class="btn btn-purple" onclick="origemConfirm()">Iniciar ?</button>
+      <button class="btn btn-purple" onclick="origemConfirm()">Iniciar →</button>
     </div>
   </div>
 </div>
@@ -1332,7 +1332,7 @@ select.input{appearance:auto;cursor:pointer;}
     <div class="search-panel-head">
       <input id="spInput" placeholder="Nome, marca, categoria, EAN, SKU..." autocomplete="off"
         oninput="spSearch()" onkeydown="spKey(event)">
-      <button class="btn btn-ghost btn-sm" type="button" onclick="event.stopPropagation();closeSearchPanel()">?</button>
+      <button class="btn btn-ghost btn-sm" type="button" onclick="event.stopPropagation();closeSearchPanel()">✕</button>
     </div>
     <div class="search-panel-results" id="spResults">
       <div class="sp-empty">Começa a escrever para pesquisar no catálogo...</div>
@@ -1344,7 +1344,7 @@ select.input{appearance:auto;cursor:pointer;}
       </div>
       <label style="margin:0;text-transform:none;font-size:12px;color:var(--muted);">Qty</label>
       <input class="input qty-in" id="spQty" type="number" inputmode="numeric" min="1" placeholder="" style="width:68px;">
-      <button class="btn btn-primary" id="spAddBtn" onclick="spConfirm()">+ Adicionar</button>
+      <button class="btn btn-primary" id="spAddBtn" onclick="spConfirm()">＋ Adicionar</button>
     </div>
   </div>
 </div>
@@ -1372,7 +1372,7 @@ let scanCD={order:false,return:false,inv:false,ent:false};
 let curPick=null;
 let invPos='',invBox='mista',invLines=[],invSess=[];
 
-// -- Firebase helpers (compat SDK) --
+// ── Firebase helpers (compat SDK) ──
 // ArmazemNH uses its own Firestore namespace so it does not share data with WarehouseNH.
 const APP_DB_PREFIX = 'armazemnh_';
 function dbCollection(col) {
@@ -1396,7 +1396,7 @@ function fbListen(col, cb) {
   });
 }
 
-// -- Save functions (write to Firestore) --
+// ── Save functions (write to Firestore) ──
 async function saveDb()  { await fbSet('config', 'skuDb',  {items: skuDb}); }
 async function saveStk() { await fbSet('config', 'stock',  {items: stock}); }
 async function saveOrd() { await fbSet('config', 'orders', {items: orders}); }
@@ -1404,7 +1404,7 @@ async function saveRet() { await fbSet('config', 'returns',{items: rets}); }
 async function saveTeorico() { await fbSet('config', 'teorico', {items: teorico}); }
 async function saveWarehouseMap() { await fbSet('config', 'warehouseMap', {items: warehouseMap}); }
 
-// -- Audit log --
+// ── Audit log ──
 function logAction(action, detail) {
   if (!currentUser) return;
   const entry = {
@@ -1663,7 +1663,7 @@ function renderSkuDb(){
   const q=document.getElementById('dbSearch').value;
   const f=skuDb.filter(d=>productMatches(d,q));
   const body=document.getElementById('skuDbBody');
-  if(!f.length){body.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">??</div>${skuDb.length?'Sem resultados.':'Base vazia.'}</div></td></tr>`;enableResizableTables();return;}
+  if(!f.length){body.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">🗃</div>${skuDb.length?'Sem resultados.':'Base vazia.'}</div></td></tr>`;enableResizableTables();return;}
   body.innerHTML=f.map(d=>`<tr>
     <td class="mono" style="font-weight:700">${d.sku}</td>
     <td class="mono" style="color:var(--muted)">${d.ean||'—'}</td>
@@ -1671,7 +1671,7 @@ function renderSkuDb(){
     <td>${d.brand||'—'}</td>
     <td>${d.category?`<span class="badge bdg-sk">${d.category}</span>`:'—'}</td>
     <td class="mono">${d.ml||'—'}</td>
-    <td><button class="btn btn-ghost btn-sm" onclick="delSku('${d.sku}')">?</button></td>
+    <td><button class="btn btn-ghost btn-sm" onclick="delSku('${d.sku}')">✕</button></td>
   </tr>`).join('');
   enableResizableTables();
 }
@@ -1681,8 +1681,8 @@ function dlSkuTpl(){
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'SKUs');XLSX.writeFile(wb,'template_skus.xlsx');
 }
 
-// -- STOCK TABLE --
-// -- STOCK METRICS --
+// ══ STOCK TABLE ══
+// ══ STOCK METRICS ══
 function aggregateGuideLines(lines) {
   const map = {};
   (lines || []).forEach(l => {
@@ -1915,20 +1915,21 @@ function renderStock(){
     th('qty','Real','Stock físico contado no armazém');
   thCols += th('stockInicial','Inicial',tr('tip_stock_initial_adjusted'));
   thCols += th('teorico','Teórico','Stock teórico carregado por Excel; fica em branco até ser importado');
-  thCols += th('diff','Diferença','Real - teórico atual');
-  thCols += th('disponivel','Disponível','Nesta posição/EAN: stock real - carteira alocada - preparação alocada','background:#e8f4f0;color:#065f46;font-weight:800;');
+  thCols += th('diff','Diferença','Real − teórico atual');
+  thCols += th('disponivel','Disponível','Nesta posição/EAN: stock real − carteira alocada − preparação alocada','background:#e8f4f0;color:#065f46;font-weight:800;');
   thCols += th('carteira','Cart.','Quantidade deste EAN alocada virtualmente a esta localização para pedidos abertos');
-  thCols += th('emPrep','Prep.','Quantidade deste EAN nesta localização com guia emitida/em preparação');
-  thCols += th('faturado','Fact.','Quantidade deste EAN já confirmada a partir desta localização');
-  thCols += th('devPedidas','Dev. Ped.','Reservado para futuras devoluções quando existir localização definida');
-  thCols += th('devPrep','Dev. Col.','Quantidade deste EAN prevista para recolocar nesta localização');
-  thCols += th('devFeitas','Dev. OK','Quantidade deste EAN já recolocada nesta localização');
+    thCols += th('emPrep','Prep.','Quantidade deste EAN nesta localização com guia emitida/em preparação');
+    thCols += th('faturado','Fact.','Quantidade deste EAN já confirmada a partir desta localização');
+    thCols += th('devPedidas','Dev. Ped.','Reservado para futuras devoluções quando existir localização definida');
+    thCols += th('devPrep','Dev. Col.','Quantidade deste EAN prevista para recolocar nesta localização');
+    thCols += th('devFeitas','Dev. OK','Quantidade deste EAN já recolocada nesta localização');
+
   thCols += '<th>Tipo</th><th></th></tr>';
   thead.innerHTML = thCols;
 
   const totalCols = 4 + 3 + 1 + 6 + 2;
   const body=document.getElementById('stockBody');
-  if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">??</div>'+tr('misc_no_stock')+'</div></td></tr>';enableResizableTables();setTimeout(setupStockScrollSync,0);return;}
+  if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">📦</div>'+tr('misc_no_stock')+'</div></td></tr>';enableResizableTables();setTimeout(setupStockScrollSync,0);return;}
 
   body.innerHTML=filtered.map(s=>{
     const bb=normBoxType(s.boxType)==='mista'?'<span class="badge bdg-mx">'+tr('box_mixed')+'</span>':'<span class="badge bdg-ex">'+tr('box_excl')+'</span>';
@@ -1952,7 +1953,7 @@ function renderStock(){
     return '<tr style="'+rowWarn+'"><td class="mono stock-col-ean" style="font-weight:700">'+(info?.ean||s.sku)+'</td><td class="stock-product-cell stock-col-product">'+skuPill(s.sku)+'</td><td class="mono stock-col-pos">'+s.position+'</td>'+
       '<td class="mono" style="font-weight:700">'+s.qty+'</td>'+tCols+dispCol+movCols+
       '<td>'+bb+'</td>'+
-      '<td><button class="btn btn-ghost btn-sm" onclick="delStk('+JSON.stringify(s.id)+')">?</button></td></tr>';
+      '<td><button class="btn btn-ghost btn-sm" onclick="delStk('+JSON.stringify(s.id)+')">✕</button></td></tr>';
   }).join('');
   enableResizableTables();
   setTimeout(setupStockScrollSync,0);
@@ -2086,7 +2087,7 @@ function dlStockTpl(){
 }
 
 
-// -- STOCK TEÓRICO --
+// ══ STOCK TEÓRICO ══
 let teorico = [];
 let teoricoRaw = [];
 
@@ -2108,7 +2109,7 @@ function exportTeoricoExcel(){
   toast('Excel exportado','win');
 }
 
-// -- DAR ENTRADA / SAÍDA — FLOATING PANEL --
+// ══ DAR ENTRADA / SAÍDA — FLOATING PANEL ══
 let entSku=null, entQty=1, entBoxType='exclusiva', entRecap=[], entAction='in';
 
 function openEntrada(){ openStockMovement('in'); }
@@ -2125,7 +2126,7 @@ function openStockMovement(action){
   const boxWrap=document.getElementById('ent-box-type-wrap'); if(boxWrap) boxWrap.style.display='';
   document.getElementById('ent-panel-title').textContent=entAction==='out'?'Dar Saída de Stock':'Dar Entrada de Stock';
   document.getElementById('ent-qty-label').textContent=entAction==='out'?'Quantidade a dar saída':'Quantidade a dar entrada';
-  document.getElementById('ent-confirm-btn').textContent=entAction==='out'?'? Confirmar saída':'? Confirmar entrada';
+  document.getElementById('ent-confirm-btn').textContent=entAction==='out'?'✓ Confirmar saída':'✓ Confirmar entrada';
   document.getElementById('ent-recap-title').textContent=entAction==='out'?'Saídas desta sessão':'Entradas desta sessão';
   document.getElementById('ent-excel-help').innerHTML=entAction==='out'
     ? 'Colunas: <strong>EAN | Posição | Quantidade</strong>'
@@ -2246,7 +2247,7 @@ function entSelectFromAc(sku){
     html += '<div style="font-weight:600;margin-top:3px">'+info.name+'</div>';
     html += '<div style="font-size:12px;color:var(--muted)">'+info.brand+(info.ml?' · '+info.ml:'')+'</div>';
   } else {
-    html += '<div class="alert a-warn" style="margin-top:8px;font-size:12px;">?? Código não encontrado na base de dados. O stock será registado apenas com este código.</div>';
+    html += '<div class="alert a-warn" style="margin-top:8px;font-size:12px;">⚠️ Código não encontrado na base de dados. O stock será registado apenas com este código.</div>';
   }
   document.getElementById('ent-sku-preview').innerHTML = html;
   entGoStep(2);
@@ -2334,12 +2335,12 @@ function entUpdatePosWarning(){
     const same=stock.find(s=>sameProductCode(s.sku, entSku)&&s.position===pos);
     if(!same){
       warn.style.display='flex';
-      warn.textContent='?? Este SKU não tem stock nesta posição.';
+      warn.textContent='⚠️ Este SKU não tem stock nesta posição.';
       info.textContent='';
       return;
     }
     warn.style.display=(parseInt(same.qty)||0)<entQty?'flex':'none';
-    warn.textContent='?? Stock insuficiente nesta posição: '+same.qty+' unid. disponíveis.';
+    warn.textContent='⚠️ Stock insuficiente nesta posição: '+same.qty+' unid. disponíveis.';
     info.textContent='Disponível nesta posição: '+same.qty+' unid.';
     return;
   }
@@ -2350,10 +2351,10 @@ function entUpdatePosWarning(){
     const existingType = normBoxType(existing[0].boxType)==='mista'?'Mixed':'Mono';
     entSetBoxType(normBoxType(existing[0].boxType));
     warn.style.display='flex';
-    warn.textContent='?? Esta posição já tem '+existing[0].qty+' unid. deste EAN como '+existingType+'. A entrada será somada a essa linha; não é possível criar Mixed e Mono para o mesmo EAN na mesma posição. Para usar outro tipo de caixa, escolhe outra localização.';
+    warn.textContent='⚠️ Esta posição já tem '+existing[0].qty+' unid. deste EAN como '+existingType+'. A entrada será somada a essa linha; não é possível criar Mixed e Mono para o mesmo EAN na mesma posição. Para usar outro tipo de caixa, escolhe outra localização.';
   } else warn.style.display='none';
   if(otherSkus.length) info.innerHTML='<span style="color:var(--muted)">Outros SKUs aqui: '+otherSkus.map(s=>s.sku+' ('+s.qty+')').join(', ')+'. A posição ficará como caixa mista.</span>';
-  else info.textContent=existing.length?'A localização existente será reutilizada para este EAN.':(isKnownWarehousePosition(pos)?'? Posição livre no mapa':'?? Posição fora do mapa configurado');
+  else info.textContent=existing.length?'A localização existente será reutilizada para este EAN.':(isKnownWarehousePosition(pos)?'✓ Posição livre no mapa':'⚠️ Posição fora do mapa configurado');
 }
 
 function entConfirm(){
@@ -2372,7 +2373,7 @@ function entConfirm(){
     const info=skuInfo(entSku);
     entRecap.unshift({sku:entSku,name:info?.name||'',qty:entQty,pos});
     renderEntRecap();
-    toast('? saída '+entSku+' · '+entQty+' unid. @ '+pos,'win');
+    toast('✓ saída '+entSku+' · '+entQty+' unid. @ '+pos,'win');
     entSku=null;entQty=1;
     document.getElementById('ent-qty').value='';
     document.getElementById('ent-pos-manual').value='';
@@ -2412,7 +2413,7 @@ function entConfirm(){
   const info=skuInfo(entSku);
   entRecap.unshift({sku:entSku,name:info?.name||'',qty:entQty,pos});
   renderEntRecap();
-  toast('? '+entSku+' · '+entQty+' unid. @ '+pos,'win');
+  toast('✓ '+entSku+' · '+entQty+' unid. @ '+pos,'win');
   entSku=null;entQty=1;entSetBoxType('exclusiva');
   document.getElementById('ent-qty').value='';
   document.getElementById('ent-pos-manual').value='';
@@ -2613,7 +2614,7 @@ function sortDocsBy(t, col) {
 
 function docSortButton(t, col, label) {
   const s = docSort[t] || {};
-  const mark = s.col === col ? (s.dir === 1 ? ' ?' : ' ?') : '';
+  const mark = s.col === col ? (s.dir === 1 ? ' ↑' : ' ↓') : '';
   return `<button class="doc-sort" onclick="sortDocsBy('${t}','${col}')">${label}${mark}</button>`;
 }
 
@@ -2632,7 +2633,7 @@ let _pendingDocType = null;
 function newDoc(t){
   _pendingDocType = t;
   const isOrder = t==='order';
-  document.getElementById('clientModalTitle').textContent = isOrder ? '?? Novo pedido' : '?? Nova devolução';
+  document.getElementById('clientModalTitle').textContent = isOrder ? '🛒 Novo pedido' : '↩️ Nova devolução';
   const list = document.getElementById('clientBtnList');
   list.innerHTML = CLIENTS.map(c => {
     // Count existing docs for this client+type to get next number
@@ -2641,7 +2642,7 @@ function newDoc(t){
     const preview = prefix+' '+c+' '+count;
     return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" data-client="'+c.replace(/"/g,'&quot;')+'" onclick="selectClientByData(this)">' +
       '<span style="font-weight:600">'+c+'</span>' +
-      '<span style="font-size:11px;color:var(--muted)">? '+preview+'</span>' +
+      '<span style="font-size:11px;color:var(--muted)">→ '+preview+'</span>' +
       '</button>';
   }).join('');
   document.getElementById('clientModal').classList.add('visible');
@@ -2686,7 +2687,7 @@ function selectClient(client){
 function renderDocs(t){
   const el=document.getElementById(t==='order'?'ordersList':'returnsList');
   const st=docSt(t);
-  if(!st.length){el.innerHTML=`<div class="empty"><div class="empty-icon">${t==='order'?'??':'??'}</div>Sem ${t==='order'?'encomendas':'devoluções'}.</div>`;return;}
+  if(!st.length){el.innerHTML=`<div class="empty"><div class="empty-icon">${t==='order'?'🛒':'↩️'}</div>Sem ${t==='order'?'encomendas':'devoluções'}.</div>`;return;}
   const sorted = [...st].sort((a,b)=>{
     const s = docSort[t] || {col:'createdAt',dir:-1};
     const va = docSortValue(a,s.col), vb = docSortValue(b,s.col);
@@ -2706,7 +2707,7 @@ function renderDocs(t){
   el.innerHTML='<div class="doc-list"><table class="doc-table">'+header+'<tbody>'+sorted.map(d=>{
     const _stMap={open:'st_open',picked:'st_picked',cancelled:'st_cancelled',returned:'st_returned','guia-emitida':'st_emitted','em-preparacao':'st_prep','em-colocacao':'st_coloc','parcial':'st_parcial','guia-recolha':'st_collect_issued','em-recolha':'st_collecting','recolha-parcial':'st_partial_collect'};
     const sl=tr(_stMap[d.status]||d.status)||d.status;
-    const slSuffix = d.confirmedBy&&['picked','returned','parcial'].includes(d.status)?' · ?? '+d.confirmedBy:d.cancelledBy&&d.status==='cancelled'?' · ?? '+d.cancelledBy:'';
+    const slSuffix = d.confirmedBy&&['picked','returned','parcial'].includes(d.status)?' · 👤 '+d.confirmedBy:d.cancelledBy&&d.status==='cancelled'?' · 👤 '+d.cancelledBy:'';
     const tq=d.lines.reduce((a,l)=>a+l.qty,0);
     const canEdit=d.status==='open'||d.status==='recolha-parcial';
     const ownerLabel = t==='order' ? 'Pedido por' : 'Criado por';
@@ -2722,10 +2723,10 @@ function renderDocs(t){
       <td class="col-user doc-user">${escHtml(d.createdBy||'—')}</td>
       <td class="col-actions"><div class="doc-actions">
         <span class="badge s-${d.status}">${escHtml(sl)}${slSuffix}</span>
-        <button class="btn btn-ghost btn-sm" data-docid="${safeId}" onclick="docActionFromButton('export','${t}',this)">? Excel</button>
-        ${canEdit?`<button class="btn btn-ghost btn-sm" data-docid="${safeId}" onclick="docActionFromButton('edit','${t}',this)">??</button>`:''}
-        ${(d.status==='open'||d.status==='guia-emitida'||d.status==='guia-recolha')?`<button class="btn btn-danger btn-sm" data-docid="${safeId}" onclick="docActionFromButton('cancel','${t}',this)">? Cancelar</button>`:''}
-        <button class="btn btn-ghost btn-sm" data-docid="${safeId}" onclick="docActionFromButton('delete','${t}',this)">??</button>
+        <button class="btn btn-ghost btn-sm" data-docid="${safeId}" onclick="docActionFromButton('export','${t}',this)">⬇ Excel</button>
+        ${canEdit?`<button class="btn btn-ghost btn-sm" data-docid="${safeId}" onclick="docActionFromButton('edit','${t}',this)">✏️</button>`:''}
+        ${(d.status==='open'||d.status==='guia-emitida'||d.status==='guia-recolha')?`<button class="btn btn-danger btn-sm" data-docid="${safeId}" onclick="docActionFromButton('cancel','${t}',this)">✕ Cancelar</button>`:''}
+        <button class="btn btn-ghost btn-sm" data-docid="${safeId}" onclick="docActionFromButton('delete','${t}',this)">🗑</button>
       </div></td>
     </tr>`;
   }).join('')+'</tbody></table></div>';
@@ -2803,8 +2804,8 @@ function _addLine(t,sku,qty){
   if(ex) ex.qty=newQty; else doc.lines.push({sku,qty:newQty});
   renderDocLines(t);
   renderDocs(t);
-  toast('? '+sku+' +'+qty,'win');
-  logAction(t==='order'?'Linha encomenda':'Linha devolução', sku+' +'+qty+' ? '+actId(t));
+  toast('✓ '+sku+' +'+qty,'win');
+  logAction(t==='order'?'Linha encomenda':'Linha devolução', sku+' +'+qty+' → '+actId(t));
 }
 function rmDocLine(t,sku){
   const doc=docSt(t).find(d=>d.id===actId(t));if(!doc)return;
@@ -2831,7 +2832,7 @@ function renderDocLines(t){
     const ab=t==='order'?(av===0?`<span class="badge bdg-rd">0</span>`:av<l.qty?`<span class="badge bdg-or">${av}</span>`:`<span class="badge bdg-gn">${av}</span>`):`<span class="badge bdg-bl">${av}</span>`;
     return `<tr><td class="mono" style="color:var(--muted)">${info?.ean||'—'}</td><td class="mono" style="font-weight:700">${l.sku}</td>
       <td><input class="input qty-in" type="number" min="1" value="${l.qty}" onchange="updDocQty('${t}','${l.sku}',this.value)"></td>
-      <td>${ab}</td><td><button class="btn btn-ghost btn-sm" onclick="rmDocLine('${t}','${l.sku}')">?</button></td></tr>`;
+      <td>${ab}</td><td><button class="btn btn-ghost btn-sm" onclick="rmDocLine('${t}','${l.sku}')">✕</button></td></tr>`;
   }).join('');
   enableResizableTables();
 }
@@ -2869,7 +2870,7 @@ function scannerUnavailable(t, msg) {
   if(boxEl) document.getElementById(boxEl)?.classList.remove('visible');
   if(dotEl) document.getElementById(dotEl)?.classList.remove('on');
   if(stEl) document.getElementById(stEl).textContent=msg;
-  if(btnEl) document.getElementById(btnEl).textContent='?? '+(t==='inv'||t==='ent'?'Scanner':'Iniciar');
+  if(btnEl) document.getElementById(btnEl).textContent='📷 '+(t==='inv'||t==='ent'?'Scanner':'Iniciar');
   scanning[t]=false;
   toast(msg,'err');
 }
@@ -2891,7 +2892,7 @@ function startScan(t){
   document.getElementById(boxEl).classList.add('visible');
   document.getElementById(dotEl).classList.add('on');
   document.getElementById(stEl).textContent='A iniciar...';
-  document.getElementById(btnEl).textContent='? Parar';
+  document.getElementById(btnEl).textContent='⏹ Parar';
   scanning[t]=true;
   Quagga.init({
     inputStream:{
@@ -2938,7 +2939,7 @@ function startScan(t){
       if(!skuInfo(sku)){
         document.getElementById('ent-sku-preview').innerHTML =
           '<div class="mono" style="font-weight:700;font-size:15px;color:var(--accent)">'+sku+'</div>'+
-          '<div class="alert a-warn" style="margin-top:6px;font-size:12px;">?? SKU/EAN não encontrado na base de dados. Podes continuar com o código: '+rawCode+'</div>';
+          '<div class="alert a-warn" style="margin-top:6px;font-size:12px;">⚠️ SKU/EAN não encontrado na base de dados. Podes continuar com o código: '+rawCode+'</div>';
         entGoStep(2);
       }
     }
@@ -2960,14 +2961,14 @@ function stopScan(t){
   const statusEl=document.getElementById(stEl);
   if(statusEl) statusEl.textContent='Inativo';
   const btn=document.getElementById(btnEl);
-  if(btn) btn.textContent='?? '+(t==='inv'||t==='ent'?'Scanner':'Iniciar');
+  if(btn) btn.textContent='📷 '+(t==='inv'||t==='ent'?'Scanner':'Iniciar');
   scanning[t]=false;
 }
 
 // PICKING GENERATION
 
-// -- WAREHOUSE POSITION SORT --
-// Format: A11 = estante A, andar 1, posição 1 ? sort: estante(A-K), andar(1-5), pos(1-4)
+// ══ WAREHOUSE POSITION SORT ══
+// Format: A11 = estante A, andar 1, posição 1 → sort: estante(A-K), andar(1-5), pos(1-4)
 function normBoxType(type) {
   const v = String(type || 'mista').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   return /excl|unic|mono|single/.test(v) ? 'exclusiva' : 'mista';
@@ -3004,13 +3005,13 @@ function reservedStockById(excludeOrderId) {
   return reserved;
 }
 function parsePos(pos) {
-  // e.g. A11 ? shelf=A, shelf level=1, slot=1 | B34 ? shelf=B, level=3, slot=4
+  // e.g. A11 → shelf=A, shelf level=1, slot=1 | B34 → shelf=B, level=3, slot=4
   const m = String(pos).match(/^([A-Za-z]+)([1-9])([1-9])$/);
   if (!m) return {shelf: pos, floor: 0, slot: 0};
   return {shelf: m[1].toUpperCase(), floor: parseInt(m[2]), slot: parseInt(m[3])};
 }
 
-// -- EMITIR GUIA (order only — no stock deduction yet) --
+// ══ EMITIR GUIA (order only — no stock deduction yet) ══
 function emitirGuia() {
   const doc = docSt('order').find(d => d.id === actId('order'));
   if (!doc || !doc.lines.length) { toast('Sem linhas na encomenda', 'err'); return; }
@@ -3105,12 +3106,12 @@ function renderGuideCard(opts) {
     '</div>';
 }
 
-// -- PICKING GUIDES LIST --
+// ══ PICKING GUIDES LIST ══
 function renderPickingGuides() {
   const el = document.getElementById('pickingGuidesList');
   const guias = orders.filter(d => d.guide && ['guia-emitida','em-preparacao'].includes(d.status));
   if (!guias.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">??</div>'+tr('misc_no_guides_pick')+'</div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>'+tr('misc_no_guides_pick')+'</div>';
     return;
   }
   el.innerHTML = guias.map(d => {
@@ -3118,16 +3119,16 @@ function renderPickingGuides() {
     const total = g.lines.length;
     const done = g.lines.filter(l => l.status === 'confirmed').length;
     const rupt = g.lines.filter(l => l.ruptura).length;
-    const stLbl = d.status === 'em-preparacao' ? tr('st_prep') : '?? '+tr('misc_awaiting_prep');
+    const stLbl = d.status === 'em-preparacao' ? tr('st_prep') : '📋 '+tr('misc_awaiting_prep');
     const stCls = d.status === 'em-preparacao' ? 'bdg-bl' : 'bdg-or';
     return renderGuideCard({
       id:d.id, client:d.client, emittedBy:g.emittedBy, emittedAt:g.emittedAt,
       done, total, color:'var(--success)', statusClass:stCls, statusLabel:stLbl,
-      warning: rupt ? '?? '+rupt+' rutura'+(rupt>1?'s':'') : '',
+      warning: rupt ? '⚠️ '+rupt+' rutura'+(rupt>1?'s':'') : '',
       actions:
         '<button class="btn btn-primary btn-sm" data-orderid="'+escHtml(d.id)+'" onclick="iniciarPrepFromButton(this)">'+tr('btn_start_pick')+'</button>'+
-        '<button class="btn btn-ghost btn-sm" data-orderid="'+escHtml(d.id)+'" onclick="exportGuiaFromButton(this)">? Excel</button>'+
-        '<button class="btn btn-danger btn-sm" data-orderid="'+escHtml(d.id)+'" onclick="cancelGuiaFromButton(this)">?</button>'
+        '<button class="btn btn-ghost btn-sm" data-orderid="'+escHtml(d.id)+'" onclick="exportGuiaFromButton(this)">⬇ Excel</button>'+
+        '<button class="btn btn-danger btn-sm" data-orderid="'+escHtml(d.id)+'" onclick="cancelGuiaFromButton(this)">✕</button>'
     });
   }).join('');
 }
@@ -3148,7 +3149,7 @@ function cancelGuia(orderId) {
   toast('Guia cancelada', 'ok');
 }
 
-// -- PREPARAÇÃO — ACTIVE PICKING --
+// ══ PREPARAÇÃO — ACTIVE PICKING ══
 let prepOrderId = null;
 let prepLines = [];
 let prepPendingOrderId = null; // waiting for loja confirmation
@@ -3192,8 +3193,8 @@ function renderPrepContent() {
     '<div>' +
     '<div class="pick-id">' + doc.id + '</div>' +
     '<div class="pick-meta">' +
-      (doc.client ? '?? ' + doc.client + ' · ' : '') +
-      '?? ' + (doc.guide.emittedBy || '—') + ' · ' + (doc.guide.emittedAt || '') +
+      (doc.client ? '🏪 ' + doc.client + ' · ' : '') +
+      '🏷 ' + (doc.guide.emittedBy || '—') + ' · ' + (doc.guide.emittedAt || '') +
     '</div>' +
     '</div>' +
     '<div style="text-align:right">' +
@@ -3211,7 +3212,7 @@ function renderPrepLines() {
   document.getElementById('prepProgressLabel').textContent = `${done} / ${total} linhas confirmadas`;
   const ruptTotal = prepLines.filter(l => l.ruptura || l.status === 'ruptura').length;
   const ruptEl = document.getElementById('prepRupturaLabel');
-  if (ruptTotal) { ruptEl.style.display=''; ruptEl.textContent = `?? ${ruptTotal} rutura${ruptTotal>1?'s':''}`; }
+  if (ruptTotal) { ruptEl.style.display=''; ruptEl.textContent = `⚠️ ${ruptTotal} rutura${ruptTotal>1?'s':''}`; }
   else ruptEl.style.display = 'none';
 
   const container = document.getElementById('prepLines');
@@ -3222,7 +3223,7 @@ function renderPrepLines() {
     const isRuptura = l.ruptura || l.status === 'ruptura';
     const posClass = isConfirmed ? 'confirmed' : isRuptura ? 'ruptura' : '';
     const lineClass = isConfirmed ? 'confirmed' : isRuptura ? 'ruptura' : '';
-    const checkIcon = isConfirmed ? '?' : isRuptura ? '!' : idx + 1;
+    const checkIcon = isConfirmed ? '✓' : isRuptura ? '!' : idx + 1;
     const checkCls = isConfirmed ? 'done' : isRuptura ? 'rupt' : '';
 
     return `<div class="prep-line ${lineClass}" id="prepline-${idx}">
@@ -3241,7 +3242,7 @@ function renderPrepLines() {
       ${!isConfirmed && !isRuptura ? `
       <div class="prep-line-body" id="prepbody-${idx}" style="display:none;">
         <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:10px;">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Pedido: <strong>${l.qty} unid.</strong> &nbsp;·&nbsp; Caixa: ${l.boxType==='mista'?'?? Mixed':'?? Mono'}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Pedido: <strong>${l.qty} unid.</strong> &nbsp;·&nbsp; Caixa: ${l.boxType==='mista'?'📦 Mixed':'🔹 Mono'}</div>
           <div style="display:flex;align-items:center;gap:10px;">
             <label style="font-size:12px;margin:0;text-transform:none;">Recolhido:</label>
             <input class="input qty-in" type="number" min="0" max="${l.qty}" value="${l.qtyDone}"
@@ -3250,8 +3251,8 @@ function renderPrepLines() {
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-success" style="flex:1;" onclick="confirmPrepLine(${idx})">? Confirmar recolha</button>
-          <button class="btn btn-danger btn-sm" onclick="markRuptura(${idx})">?? Rutura</button>
+          <button class="btn btn-success" style="flex:1;" onclick="confirmPrepLine(${idx})">✓ Confirmar recolha</button>
+          <button class="btn btn-danger btn-sm" onclick="markRuptura(${idx})">⚠️ Rutura</button>
           <button class="btn btn-ghost btn-sm" onclick="togglePrepLine(${idx})">Fechar</button>
         </div>
       </div>` : ''}
@@ -3337,7 +3338,7 @@ function finalizePicking() {
   document.getElementById('prepContent').style.display = 'none';
   renderPickingGuides();
   renderDocs('order');
-  toast('Stock atualizado! ?', 'win');
+  toast('Stock atualizado! ✓', 'win');
 }
 
 function cancelPrep() {
@@ -3359,7 +3360,7 @@ function exportGuiaExcelById(orderId) {
   const doc = orders.find(d => d.id === orderId);
   if (!doc || !doc.guide) { toast('Guia não encontrada', 'err'); return; }
   const rows = [
-    ['Guia de Picking: '+doc.id+(doc.client?' — '+doc.client:'')+(doc.guide?.loja?' ? '+doc.guide.loja:'')],
+    ['Guia de Picking: '+doc.id+(doc.client?' — '+doc.client:'')+(doc.guide?.loja?' → '+doc.guide.loja:'')],
     ['Emitida por: '+(doc.guide.emittedBy||'—')+' · '+doc.guide.emittedAt],
     [],
     ['Posição', 'EAN', 'SKU', 'Nome', 'Marca', 'ML', 'Qty pedida', 'Qty recolhida', 'Estado']
@@ -3376,7 +3377,7 @@ function exportGuiaExcelById(orderId) {
   toast('Excel exportado', 'win');
 }
 
-// -- RETURNS PICK UP — GUIA DE RECOLHA --
+// ══ RETURNS PICK UP — GUIA DE RECOLHA ══
 let returnPickupId = null;
 let returnPickupLines = [];
 let returnPickupSort = {col:'brand', dir:1};
@@ -3505,7 +3506,7 @@ function renderReturnPickupGuides() {
   if (!el) return;
   const guias = rets.filter(d => d.pickupGuide && !['done','partial'].includes(d.pickupGuide.status) && ['guia-recolha','em-recolha'].includes(d.status));
   if (!guias.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">??</div>'+tr('misc_no_return_pickups')+'</div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🚚</div>'+tr('misc_no_return_pickups')+'</div>';
     return;
   }
   el.innerHTML = guias.map(d => {
@@ -3524,7 +3525,7 @@ function renderReturnPickupGuides() {
       '<div style="font-size:11px;color:var(--muted);margin-top:3px">'+tr('misc_issued_by')+' '+escHtml(g.emittedBy||'—')+' · '+escHtml(g.emittedAt||'')+' · '+collected+'/'+expected+' '+tr('lbl_units')+'</div></div>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
       '<span class="badge '+stCls+'">'+stLbl+'</span>'+
-      '<button class="btn btn-warn btn-sm" data-retid="'+escHtml(d.id)+'" onclick="startReturnPickupFromButton(this)">'+(doneGuide?'Ver':'? Iniciar')+'</button>'+
+      '<button class="btn btn-warn btn-sm" data-retid="'+escHtml(d.id)+'" onclick="startReturnPickupFromButton(this)">'+(doneGuide?'Ver':'▶ Iniciar')+'</button>'+
       '</div></div>'+
       '<div style="margin-top:8px;background:var(--surface2);border-radius:20px;height:6px;overflow:hidden;">'+
       '<div style="height:100%;background:#d97706;border-radius:20px;width:'+pct+'%;transition:width .4s;"></div></div>'+
@@ -3576,9 +3577,9 @@ function renderReturnPickupContent() {
   const sources = doc.pickupGuide?.sourceOrderIds || doc.sourceOrderIds || [];
   document.getElementById('returnPickupHeader').innerHTML =
     '<div><div class="pick-id">'+escHtml(doc.id)+'</div>'+
-    '<div class="pick-meta">'+(doc.client?'?? '+escHtml(doc.client)+' · ':'')+
+    '<div class="pick-meta">'+(doc.client?'👤 '+escHtml(doc.client)+' · ':'')+
     (sources.length?'Pedidos: '+sources.map(escHtml).join(', ')+' · ':'')+
-    '?? '+escHtml(doc.pickupGuide.emittedBy||'—')+'</div></div>'+
+    '🏷 '+escHtml(doc.pickupGuide.emittedBy||'—')+'</div></div>'+
     '<div style="text-align:right"><div style="font-size:20px;font-weight:800">'+returnPickupLines.length+'</div>'+
     '<div style="font-size:11px;opacity:.6">linhas</div></div>';
   renderReturnPickupLines();
@@ -3634,7 +3635,7 @@ function renderReturnPickupLines() {
       '<td class="mono" style="font-weight:700">'+l.qty+'</td>'+
       '<td><input class="input mono qty-in" type="number" inputmode="numeric" min="0" value="'+collected+'" onchange="setReturnPickupCollected(&quot;'+l.rid+'&quot;,this.value)" style="width:92px;padding:6px 8px;"></td>'+
       '<td><span class="badge '+(diff===0?'bdg-gn':'bdg-or')+'">'+(diff>0?'+'+diff:diff)+'</span></td>'+
-      '<td><button class="btn '+(isConfirmed?'btn-success':'btn-warn')+' btn-sm" onclick="confirmReturnPickupLineById(&quot;'+l.rid+'&quot;)">'+(isConfirmed?'? OK':'Confirmar')+'</button> <span class="badge '+statusCls+'">'+statusText+'</span></td>'+
+      '<td><button class="btn '+(isConfirmed?'btn-success':'btn-warn')+' btn-sm" onclick="confirmReturnPickupLineById(&quot;'+l.rid+'&quot;)">'+(isConfirmed?'✓ OK':'Confirmar')+'</button> <span class="badge '+statusCls+'">'+statusText+'</span></td>'+
       '</tr>';
   }).join('');
   enableResizableTables();
@@ -3751,8 +3752,8 @@ function exportReturnPickupExcel() {
   XLSX.writeFile(wb, 'Recolha_'+doc.id+'.xlsx');
 }
 
-// -- Keep putaway/return flow (unchanged) --
-// -- DEVOLUÇÃO — EMITIR GUIA (mirrors emitirGuia for orders) --
+// ── Keep putaway/return flow (unchanged) ──
+// ══ DEVOLUÇÃO — EMITIR GUIA (mirrors emitirGuia for orders) ══
 function putawayPositionOptionsForSku(sku) {
   sku = canonicalLineSku(sku);
   const seen = new Set();
@@ -3856,29 +3857,29 @@ function genDoc(t) {
   issuePutawayGuideForReturn(doc);
 }
 
-// -- PUTAWAY GUIDES LIST --
+// ══ PUTAWAY GUIDES LIST ══
 function renderPutawayGuides() {
   const el = document.getElementById('putawayGuidesList');
   const guias = rets.filter(d => d.putawayGuide && ['guia-emitida','em-colocacao'].includes(d.status));
   if (!guias.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">??</div>'+tr('misc_no_guides_put')+'</div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">↩️</div>'+tr('misc_no_guides_put')+'</div>';
     return;
   }
   el.innerHTML = guias.map(d => {
     const g = d.putawayGuide;
     const total = g.lines.length;
     const done = g.lines.filter(l=>l.status==='confirmed').length;
-    const stLbl = d.status==='em-colocacao' ? tr('st_coloc') : '?? '+tr('misc_awaiting_put');
+    const stLbl = d.status==='em-colocacao' ? tr('st_coloc') : '↩️ '+tr('misc_awaiting_put');
     const stCls = d.status==='em-colocacao' ? 'bdg-pu' : 'bdg-or';
     return renderGuideCard({
       id:d.id, client:d.client, emittedBy:g.emittedBy, emittedAt:g.emittedAt,
       done, total, color:'var(--purple)', statusClass:stCls, statusLabel:stLbl,
-      warning: g.warns?.length ? '?? '+g.warns.length+' para TRIAGEM' : '',
+      warning: g.warns?.length ? '⚠️ '+g.warns.length+' para TRIAGEM' : '',
       warningColor:'#d97706',
       actions:
         '<button class="btn btn-purple btn-sm" data-retid="'+escHtml(d.id)+'" onclick="iniciarPutawayFromButton(this)">'+tr('btn_start_put')+'</button>'+
-        '<button class="btn btn-ghost btn-sm" data-retid="'+escHtml(d.id)+'" onclick="exportPutawayFromButton(this)">? Excel</button>'+
-        '<button class="btn btn-danger btn-sm" data-retid="'+escHtml(d.id)+'" onclick="cancelPutawayFromButton(this)">?</button>'
+        '<button class="btn btn-ghost btn-sm" data-retid="'+escHtml(d.id)+'" onclick="exportPutawayFromButton(this)">⬇ Excel</button>'+
+        '<button class="btn btn-danger btn-sm" data-retid="'+escHtml(d.id)+'" onclick="cancelPutawayFromButton(this)">✕</button>'
     });
   }).join('');
 }
@@ -3906,7 +3907,7 @@ function cancelPutawayGuia(retId) {
   toast('Guia cancelada','ok');
 }
 
-// -- PUTAWAY ACTIVE SESSION --
+// ══ PUTAWAY ACTIVE SESSION ══
 let putawayOrderId = null, putawayLines = [], putawayPendingId = null;
 
 function iniciarPutaway(retId) {
@@ -3964,8 +3965,8 @@ function renderPutawayContent() {
   const loja = doc.putawayGuide?.loja||'';
   document.getElementById('putawayPrepHeader').innerHTML =
     '<div><div class="pick-id">'+doc.id+'</div>'+
-    '<div class="pick-meta">'+(doc.client?'?? '+doc.client+' · ':'')+
-    (loja?'?? '+loja+' · ':'')+'?? '+(doc.putawayGuide.emittedBy||'—')+'</div></div>'+
+    '<div class="pick-meta">'+(doc.client?'👤 '+doc.client+' · ':'')+
+    (loja?'🏪 '+loja+' · ':'')+'🏷 '+(doc.putawayGuide.emittedBy||'—')+'</div></div>'+
     '<div style="text-align:right"><div style="font-size:20px;font-weight:800">'+putawayLines.length+'</div>'+
     '<div style="font-size:11px;opacity:.6">linhas</div></div>';
   renderPutawayLines();
@@ -3984,7 +3985,7 @@ function renderPutawayLines() {
     const isNoPos = l.noPos;
     const altCount = Array.isArray(l.positionOptions) ? l.positionOptions.length : 0;
     const posClass = isConfirmed?'confirmed':isNoPos?'':'';
-    const checkIcon = isConfirmed?'?':idx+1;
+    const checkIcon = isConfirmed?'✓':idx+1;
     const checkCls = isConfirmed?'done':'';
     return '<div class="prep-line '+posClass+'" id="pway-'+idx+'">'+
       '<div class="prep-line-header" onclick="togglePutawayLine('+idx+')">'+
@@ -4007,7 +4008,7 @@ function renderPutawayLines() {
         '<span style="font-size:12px;color:var(--muted)">de '+l.qty+'</span></div></div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
         (altCount>1?'<button class="btn btn-ghost btn-sm" onclick="chooseNextPutawayLocation('+idx+')">Outra localização</button>':'')+
-        '<button class="btn btn-purple" style="flex:1;" onclick="confirmPutawayLine('+idx+')">? Confirmar colocação</button>'+
+        '<button class="btn btn-purple" style="flex:1;" onclick="confirmPutawayLine('+idx+')">✓ Confirmar colocação</button>'+
         '<button class="btn btn-ghost btn-sm" onclick="togglePutawayLine('+idx+')">Fechar</button>'+
         '</div></div>':'')+'</div>';
   }).join('');
@@ -4091,7 +4092,7 @@ function finalizePutaway() {
   document.getElementById('putawayListSection').style.display='';
   document.getElementById('putawayPrepContent').style.display='none';
   renderPutawayGuides(); renderDocs('return'); renderStock();
-  toast('Stock atualizado! ?','pur');
+  toast('Stock atualizado! ✓','pur');
 }
 
 function cancelPutawayPrep() {
@@ -4131,7 +4132,7 @@ function exportDocXls(t){}
 
 
 
-// ??  FIRESTORE RULES — set these in Firebase Console ? Firestore ? Rules:
+// ⚠️  FIRESTORE RULES — set these in Firebase Console → Firestore → Rules:
 // rules_version = '2';
 // service cloud.firestore {
 //   match /databases/{database}/documents {
@@ -4141,8 +4142,8 @@ function exportDocXls(t){}
 //   }
 // }
 
-// -- LOGIN --
-// -- PREDEFINED USERS --
+// ══ LOGIN ══
+// ── PREDEFINED USERS ──
 const PRESET_USERS = [
   {name:'Constança', initials:'Co', color:'#7c3aed'},
   {name:'Nuno F.',   initials:'NF', color:'#e8420a'},
@@ -4198,7 +4199,7 @@ function renderAvatarGrid() {
     const label = u.label || u.name;
     const clickFn = isOutro ? 'showOutro()' : 'doLoginPreset(' + JSON.stringify(u.name) + ')';
     const removeBtn = u.isExtra
-      ? '<button data-remove-user="' + u.name + '" style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:#dc2626;border:2px solid #1a1a2e;color:#fff;font-size:11px;cursor:pointer;text-align:center;line-height:16px;padding:0;z-index:20;font-weight:700;">?</button>'
+      ? '<button data-remove-user="' + u.name + '" style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:#dc2626;border:2px solid #1a1a2e;color:#fff;font-size:11px;cursor:pointer;text-align:center;line-height:16px;padding:0;z-index:20;font-weight:700;">✕</button>'
       : '';
     var fs = u.initials.length>2?'16':'20';
     return '<div onclick="'+clickFn+'" class="av-item">'+
@@ -4244,10 +4245,10 @@ function _doLogin(name) {
   currentUser = {name, loginAt: new Date().toLocaleString('pt-PT')};
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('userBadge').style.display='flex';
-  document.getElementById('userBadgeName').textContent = '?? ' + name;
+  document.getElementById('userBadgeName').textContent = '👤 ' + name;
   // Update mobile menu user section
   const _mobUser = document.getElementById('mobileMenuUser');
-  if (_mobUser) _mobUser.textContent = '?? ' + name;
+  if (_mobUser) _mobUser.textContent = '👤 ' + name;
   logAction('Login', 'Sessão iniciada');
   localStorage.setItem('wms_session', JSON.stringify({name, loginAt: new Date().toLocaleString('pt-PT')}));
   initApp();
@@ -4267,7 +4268,7 @@ function doLogout() {
 
 function renderRecentUsers() { /* replaced by avatar grid */ }
 
-// -- FIRESTORE SYNC --
+// ══ FIRESTORE SYNC ══
 function initApp() {
   if (!window._db) { toast('Erro: Firebase não carregou. Recarrega a página.', 'err'); return; }
   renderWarehouseMapForm();
@@ -4288,7 +4289,7 @@ function initApp() {
   toast('Ligado · ' + currentUser.name, 'win');
 }
 
-// -- AUDIT LOG UI --
+// ══ AUDIT LOG UI ══
 function showAuditLog() {
   // Load from Firestore
   if (window._db) {
@@ -4333,11 +4334,11 @@ function _exportAudit(entries) {
 
 
 
-// -- i18n --
+// ══ i18n ══
 const LANGS = {
   pt: {
-    nav_skudb:'?? Base de Dados Geral', nav_stock:'?? Stock', nav_orders:'?? Encomendas',
-    nav_pick:'?? Para Preparação', nav_ret:'?? Devoluções', nav_ret_pickup:'?? Returns Pick Up', nav_putaway:'?? Dar Entrada',
+    nav_skudb:'🗂 Base de Dados Geral', nav_stock:'📦 Stock', nav_orders:'🛒 Encomendas',
+    nav_pick:'📦 Para Preparação', nav_ret:'↩️ Devoluções', nav_ret_pickup:'🚚 Returns Pick Up', nav_putaway:'📥 Dar Entrada',
     nav_activity_lbl:'Atividade',
     // Page titles & subs
     skudb_title:'Base de Dados Geral', skudb_sub:'Catálogo central de produtos — EAN, nome, marca, categoria, ml',
@@ -4348,22 +4349,22 @@ const LANGS = {
     ret_pickup_title:'Returns Pick Up', ret_pickup_sub:'Guias de recolha de devoluções',
     putaway_title:'Dar Entrada', putaway_sub:'Guias de entrada de stock — colocação linha a linha',
     skudb_desc:'Catálogo central de produtos. Importa ou cria SKUs com EAN, nome, marca, categoria e ml. Esta base alimenta a <strong>pesquisa inteligente</strong>, a leitura por scanner, a resolução de EAN para SKU e a identificação de produtos em stock, encomendas, picking e devoluções. Sem esta base, os SKUs continuam a funcionar, mas aparecem com menos detalhe.',
-    stock_desc:'Consulta e gere o stock real por SKU, posição e tipo de caixa. A gaveta <strong>Mapa do armazém</strong> define as posições válidas a partir de estantes, prateleiras e posições por prateleira, podendo também aceitar estantes personalizadas. Usa <strong>Dar Entrada</strong> para registar stock peça a peça ou por Excel, indicando se a posição é <em>mista</em> ou <em>exclusiva</em>. Usa <strong>?? Inserir Stock Teórico</strong> para comparar o stock recebido com o ficheiro do fornecedor. As colunas de <em>Em carteira</em>, <em>Em preparação</em>, devoluções e <em>Disponível</em> atualizam automaticamente com os movimentos em curso.',
+    stock_desc:'Consulta e gere o stock real por SKU, posição e tipo de caixa. A gaveta <strong>Mapa do armazém</strong> define as posições válidas a partir de estantes, prateleiras e posições por prateleira, podendo também aceitar estantes personalizadas. Usa <strong>Dar Entrada</strong> para registar stock peça a peça ou por Excel, indicando se a posição é <em>mista</em> ou <em>exclusiva</em>. Usa <strong>📊 Inserir Stock Teórico</strong> para comparar o stock recebido com o ficheiro do fornecedor. As colunas de <em>Em carteira</em>, <em>Em preparação</em>, devoluções e <em>Disponível</em> atualizam automaticamente com os movimentos em curso.',
     orders_desc:'Cria pedidos de saída de stock por cliente. Adiciona SKUs por scanner, pesquisa, inserção manual ou Excel. As quantidades entram em <em>Em carteira</em> e reduzem o <strong>stock disponível</strong> para evitar dupla reserva. Ao emitir a guia, a preparação prioriza posições em caixas mistas e segue o percurso do armazém. O stock real só é deduzido quando o picking é confirmado linha a linha; pedidos ainda não concluídos podem libertar as unidades ao serem cancelados.',
     pick_desc:'Acompanha as guias de preparação emitidas a partir das encomendas. Cada guia organiza as linhas por prioridade de caixa mista e percurso de armazém, mostrando posição, SKU, quantidade pedida e eventuais ruturas. O operador confirma linha a linha durante o picking. O stock físico só sai do sistema ao finalizar a guia, mantendo rastreabilidade entre pedido, preparação e faturação.',
     returns_desc:'Cria pedidos de devolução a partir de um ou vários pedidos já preparados, ou adiciona artigos manualmente por scanner, pesquisa ou Excel. Ao emitir a <strong>guia de recolha</strong>, as linhas seguem para <strong>Returns Pick Up</strong>, onde a loja/armazém confirma o que foi efetivamente recolhido. Pedidos que já deram origem a devolução ficam bloqueados para evitar duplicação.',
     ret_pickup_desc:'Acompanha as guias de recolha emitidas nas devoluções. A lista soma os artigos dos pedidos incluídos e pode ser organizada por EAN, produto, categoria, marca, ml ou quantidade para facilitar a recolha por zona de loja. Todas as linhas têm de ser confirmadas, mesmo a zero; ao finalizar, a app mostra diferenças face ao esperado e gera automaticamente a guia de <strong>Stock In</strong> apenas com as quantidades recolhidas.',
     putaway_desc:'Lista de guias de entrada geradas depois da recolha de devoluções. Ao iniciar, o operador começa diretamente a recolocação em stock e segue uma rota otimizada pelo armazém. A sugestão prioriza caixas <strong>Mono</strong> e depois <strong>Mixed</strong>; quando há mais do que uma localização possível para o SKU, pode pedir outra localização antes de confirmar. Só as linhas confirmadas acrescentam stock real.',
     // Buttons
-    btn_new_order:'+ Nova encomenda', btn_new_ret:'+ Nova devolução',
-    btn_emit_pick:'?? Emitir Guia Preparação', btn_emit_put:'?? Emitir Guia Entrada',
-    btn_start_pick:'? Iniciar picking', btn_start_put:'? Iniciar',
-    btn_finalize_pick:'? Finalizar e deduzir stock', btn_finalize_put:'? Finalizar e acrescentar ao stock',
-    btn_confirm:'? Confirmar', btn_cancel:'? Cancelar', btn_close:'Fechar',
-    btn_dar_entrada:'Dar Entrada', btn_dar_saida:'Dar Saída', btn_teorico:'?? Inserir Stock Teórico',
-    btn_export:'? Excel', btn_template:'? Modelo', btn_template_excel:'? Modelo Excel',
+    btn_new_order:'＋ Nova encomenda', btn_new_ret:'＋ Nova devolução',
+    btn_emit_pick:'📦 Emitir Guia Preparação', btn_emit_put:'📥 Emitir Guia Entrada',
+    btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
+    btn_finalize_pick:'✓ Finalizar e deduzir stock', btn_finalize_put:'✓ Finalizar e acrescentar ao stock',
+    btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Fechar',
+    btn_dar_entrada:'Dar Entrada', btn_dar_saida:'Dar Saída', btn_teorico:'📊 Inserir Stock Teórico',
+    btn_export:'⬇ Excel', btn_template:'⬇ Modelo', btn_template_excel:'⬇ Modelo Excel',
     btn_choose_file:'Escolher ficheiro', file_none:'Nenhum ficheiro selecionado',
-    btn_login:'Entrar ?', btn_outro:'Outro', btn_back:'? Voltar', btn_save:'Guardar',
+    btn_login:'Entrar →', btn_outro:'Outro', btn_back:'← Voltar', btn_save:'Guardar',
     card_import_catalog:'Importar catálogo',
     card_catalog:'Catálogo',
     card_current_stock:'Stock atual',
@@ -4391,19 +4392,19 @@ const LANGS = {
     wm_empty_position:'Livre',
     // Status
     st_open:'Aberta', st_picked:'Concluída', st_cancelled:'Anulada',
-    st_returned:'Concluída', st_emitted:'?? Guia emitida',
-    st_collect_issued:'?? Guia recolha', st_collecting:'?? Em recolha', st_collected:'? Recolhida', st_partial_collect:'?? Recolha parcial',
-    st_prep:'?? Em preparação', st_coloc:'?? Em colocação', st_parcial:'?? Parcial',
+    st_returned:'Concluída', st_emitted:'📋 Guia emitida',
+    st_collect_issued:'🚚 Guia recolha', st_collecting:'🚚 Em recolha', st_collected:'✓ Recolhida', st_partial_collect:'⚠️ Recolha parcial',
+    st_prep:'🚶 Em preparação', st_coloc:'🚶 Em colocação', st_parcial:'⚠️ Parcial',
     // Stock
     st_ok:'OK', st_low:'Baixo', st_empty:'Esgotado',
-    box_mixed:'?? Mixed', box_excl:'?? Mono',
+    box_mixed:'📦 Mixed', box_excl:'🔹 Mono',
     // Labels
     lbl_client:'Cliente', lbl_store_dest:'Loja de destino', lbl_store_orig:'Loja de origem',
     lbl_sku:'SKU', lbl_pos:'Posição', lbl_qty:'Quantidade', lbl_type:'Tipo',
     lbl_product:'Produto', lbl_status:'Estado', lbl_diff:'Diferença',
     lbl_theorical:'Teórico', lbl_real:'Real',
     lbl_lines:'linhas', lbl_units:'unid.', lbl_skus:'SKUs',
-    tab_import:'?? Importar',
+    tab_import:'📂 Importar',
     // Tooltips
     tip_skudb:'Catálogo de produtos com EAN, nome, marca, categoria e ml. Importa via Excel.',
     tip_stock:'Mapa de stock real por posição. Usa "Dar entrada" para registar artigos recebidos.',
@@ -4443,11 +4444,11 @@ const LANGS = {
     misc_ret_put:'Dev. em colocação',
     misc_ret_done:'Dev. realizadas',
     misc_start_pick:'Iniciar',
-    diff_ok:'? Conforme', diff_over:'? Excesso', diff_under:'? Em falta', diff_missing:'? Não recebido',
+    diff_ok:'✓ Conforme', diff_over:'▲ Excesso', diff_under:'▼ Em falta', diff_missing:'✕ Não recebido',
   },
   en: {
-    nav_skudb:'?? General Database', nav_stock:'?? Stock', nav_orders:'?? Orders',
-    nav_pick:'?? For Preparation', nav_ret:'?? Returns', nav_ret_pickup:'?? Returns Pick Up', nav_putaway:'?? Stock In',
+    nav_skudb:'🗂 General Database', nav_stock:'📦 Stock', nav_orders:'🛒 Orders',
+    nav_pick:'📦 For Preparation', nav_ret:'↩️ Returns', nav_ret_pickup:'🚚 Returns Pick Up', nav_putaway:'📥 Stock In',
     nav_activity_lbl:'Activity',
     skudb_title:'General Database', skudb_sub:'Product catalogue — EAN, name, brand, category, ml',
     stock_title:'Stock', stock_sub:'Stock by warehouse position',
@@ -4457,21 +4458,21 @@ const LANGS = {
     ret_pickup_title:'Returns Pick Up', ret_pickup_sub:'Return collection guides',
     putaway_title:'Stock In', putaway_sub:'Inbound stock guides — line by line putaway',
     skudb_desc:'Central product catalogue. Import or create SKUs with EAN, name, brand, category and ml. This database powers <strong>smart search</strong>, scanner lookup, EAN-to-SKU resolution and product identification across stock, orders, picking and returns. Without it, SKUs still work, but appear with less detail.',
-    stock_desc:'View and manage real stock by SKU, position and box type. The <strong>Warehouse map</strong> drawer defines valid locations from shelves, levels and positions per level, with optional custom shelf names. Use <strong>Stock In</strong> to register stock item by item or by Excel, marking each location as <em>mixed</em> or <em>exclusive</em>. Use <strong>?? Insert Theoretical Stock</strong> to compare received stock against the supplier file. <em>In cart</em>, <em>In preparation</em>, returns and <em>Available</em> update automatically from active movements.',
+    stock_desc:'View and manage real stock by SKU, position and box type. The <strong>Warehouse map</strong> drawer defines valid locations from shelves, levels and positions per level, with optional custom shelf names. Use <strong>Stock In</strong> to register stock item by item or by Excel, marking each location as <em>mixed</em> or <em>exclusive</em>. Use <strong>📊 Insert Theoretical Stock</strong> to compare received stock against the supplier file. <em>In cart</em>, <em>In preparation</em>, returns and <em>Available</em> update automatically from active movements.',
     orders_desc:'Create outbound stock orders by client. Add SKUs by scanner, search, manual entry or Excel. Quantities move to <em>In cart</em> and reduce <strong>available stock</strong> to avoid double reservation. When the guide is issued, preparation prioritizes mixed-box positions and follows the warehouse route. Real stock is deducted only when picking is confirmed line by line; unfinished orders can release their units when cancelled.',
     pick_desc:'Track preparation guides issued from orders. Each guide sorts lines by mixed-box priority and warehouse route, showing position, SKU, requested quantity and any shortages. The operator confirms each line during picking. Physical stock only leaves the system when the guide is finalized, keeping traceability between order, preparation and invoicing.',
     returns_desc:'Create return requests from one or more already picked orders, or add items manually by scanner, search or Excel. When the <strong>collection guide</strong> is issued, the lines move to <strong>Returns Pick Up</strong>, where the store/warehouse confirms what was actually collected. Orders that have already generated a return are blocked to avoid duplication.',
     ret_pickup_desc:'Track collection guides issued from returns. The list combines items from the included orders and can be sorted by EAN, product, category, brand, ml or quantity to support collection by store area. Every line must be confirmed, even at zero; when finalized, the app shows differences against expected quantities and automatically creates the <strong>Stock In</strong> guide only with collected quantities.',
     putaway_desc:'List of inbound guides generated after return collection. When started, the operator begins stock putaway directly and follows an optimized warehouse route. Suggested locations prioritize <strong>Mono</strong> boxes and then <strong>Mixed</strong>; when more than one location is available for the SKU, another location can be requested before confirmation. Only confirmed lines add real stock.',
-    btn_new_order:'+ New order', btn_new_ret:'+ New return',
-    btn_emit_pick:'?? Issue Picking Guide', btn_emit_put:'?? Issue Entry Guide',
-    btn_start_pick:'? Start picking', btn_start_put:'? Start',
-    btn_finalize_pick:'? Finalize & deduct stock', btn_finalize_put:'? Finalize & add to stock',
-    btn_confirm:'? Confirm', btn_cancel:'? Cancel', btn_close:'Close',
-    btn_dar_entrada:'Stock In', btn_dar_saida:'Stock Out', btn_teorico:'?? Insert Theoretical Stock',
-    btn_export:'? Excel', btn_template:'? Template', btn_template_excel:'? Excel template',
+    btn_new_order:'＋ New order', btn_new_ret:'＋ New return',
+    btn_emit_pick:'📦 Issue Picking Guide', btn_emit_put:'📥 Issue Entry Guide',
+    btn_start_pick:'▶ Start picking', btn_start_put:'▶ Start',
+    btn_finalize_pick:'✓ Finalize & deduct stock', btn_finalize_put:'✓ Finalize & add to stock',
+    btn_confirm:'✓ Confirm', btn_cancel:'✕ Cancel', btn_close:'Close',
+    btn_dar_entrada:'Stock In', btn_dar_saida:'Stock Out', btn_teorico:'📊 Insert Theoretical Stock',
+    btn_export:'⬇ Excel', btn_template:'⬇ Template', btn_template_excel:'⬇ Excel template',
     btn_choose_file:'Choose file', file_none:'No file selected',
-    btn_login:'Enter ?', btn_outro:'Other', btn_back:'? Back', btn_save:'Save',
+    btn_login:'Enter →', btn_outro:'Other', btn_back:'← Back', btn_save:'Save',
     card_import_catalog:'Import catalogue',
     card_catalog:'Catalogue',
     card_current_stock:'Current stock',
@@ -4498,17 +4499,17 @@ const LANGS = {
     wm_legend_empty_stock:'No available',
     wm_empty_position:'Free',
     st_open:'Open', st_picked:'Done', st_cancelled:'Cancelled',
-    st_returned:'Done', st_emitted:'?? Guide issued',
-    st_collect_issued:'?? Collection guide', st_collecting:'?? Collecting', st_collected:'? Collected', st_partial_collect:'?? Partial collection',
-    st_prep:'?? In preparation', st_coloc:'?? In putaway', st_parcial:'?? Partial',
+    st_returned:'Done', st_emitted:'📋 Guide issued',
+    st_collect_issued:'🚚 Collection guide', st_collecting:'🚚 Collecting', st_collected:'✓ Collected', st_partial_collect:'⚠️ Partial collection',
+    st_prep:'🚶 In preparation', st_coloc:'🚶 In putaway', st_parcial:'⚠️ Partial',
     st_ok:'OK', st_low:'Low', st_empty:'Out of stock',
-    box_mixed:'?? Mixed', box_excl:'?? Mono',
+    box_mixed:'📦 Mixed', box_excl:'🔹 Mono',
     lbl_client:'Client', lbl_store_dest:'Destination store', lbl_store_orig:'Origin store',
     lbl_sku:'SKU', lbl_pos:'Position', lbl_qty:'Quantity', lbl_type:'Type',
     lbl_product:'Product', lbl_status:'Status', lbl_diff:'Difference',
     lbl_theorical:'Theoretical', lbl_real:'Actual',
     lbl_lines:'lines', lbl_units:'units', lbl_skus:'SKUs',
-    tab_import:'?? Import',
+    tab_import:'📂 Import',
     tip_skudb:'Product catalogue with EAN, name, brand, category and ml. Import via Excel.',
     tip_stock:'Actual stock by position. Use "Stock in" to register received items.',
     tip_stock_initial_adjusted:'Adjusted initial stock for this position/EAN: original initial stock + stock entries made from the stock map - stock exits made from the stock map.',
@@ -4545,11 +4546,11 @@ const LANGS = {
     misc_ret_put:'Ret. in putaway',
     misc_ret_done:'Ret. completed',
     misc_start_pick:'Start',
-    diff_ok:'? Correct', diff_over:'? Excess', diff_under:'? Short', diff_missing:'? Not received',
+    diff_ok:'✓ Correct', diff_over:'▲ Excess', diff_under:'▼ Short', diff_missing:'✕ Not received',
   },
   es: {
-    nav_skudb:'?? Base de Dados Geral', nav_stock:'?? Stock', nav_orders:'?? Pedidos',
-    nav_pick:'?? Para Preparación', nav_ret:'?? Devoluciones', nav_ret_pickup:'?? Returns Pick Up', nav_putaway:'?? Entrada Stock',
+    nav_skudb:'🗂 Base de Dados Geral', nav_stock:'📦 Stock', nav_orders:'🛒 Pedidos',
+    nav_pick:'📦 Para Preparación', nav_ret:'↩️ Devoluciones', nav_ret_pickup:'🚚 Returns Pick Up', nav_putaway:'📥 Entrada Stock',
     nav_activity_lbl:'Actividad',
     skudb_title:'Base de Datos General', skudb_sub:'Catálogo de productos — EAN, nombre, marca, categoría, ml',
     stock_title:'Stock', stock_sub:'Stock por posición en almacén',
@@ -4559,21 +4560,21 @@ const LANGS = {
     ret_pickup_title:'Returns Pick Up', ret_pickup_sub:'Guías de recogida de devoluciones',
     putaway_title:'Entrada Stock', putaway_sub:'Guías de entrada de stock — colocación línea a línea',
     skudb_desc:'Catálogo central de productos. Importa o crea SKUs con EAN, nombre, marca, categoría y ml. Esta base alimenta la <strong>búsqueda inteligente</strong>, la lectura por escáner, la conversión de EAN a SKU y la identificación de productos en stock, pedidos, picking y devoluciones. Sin esta base, los SKUs siguen funcionando, pero aparecen con menos detalle.',
-    stock_desc:'Consulta y gestiona el stock real por SKU, posición y tipo de caja. El desplegable <strong>Mapa del almacén</strong> define posiciones válidas a partir de estanterías, niveles y posiciones por nivel, pudiendo aceptar estanterías personalizadas. Usa <strong>Entrada Stock</strong> para registrar stock artículo a artículo o por Excel, indicando si la posición es <em>mixta</em> o <em>exclusiva</em>. Usa <strong>?? Insertar Stock Teórico</strong> para comparar el stock recibido con el archivo del proveedor. Las columnas de <em>En cartera</em>, <em>En preparación</em>, devoluciones y <em>Disponible</em> se actualizan automáticamente con los movimientos en curso.',
+    stock_desc:'Consulta y gestiona el stock real por SKU, posición y tipo de caja. El desplegable <strong>Mapa del almacén</strong> define posiciones válidas a partir de estanterías, niveles y posiciones por nivel, pudiendo aceptar estanterías personalizadas. Usa <strong>Entrada Stock</strong> para registrar stock artículo a artículo o por Excel, indicando si la posición es <em>mixta</em> o <em>exclusiva</em>. Usa <strong>📊 Insertar Stock Teórico</strong> para comparar el stock recibido con el archivo del proveedor. Las columnas de <em>En cartera</em>, <em>En preparación</em>, devoluciones y <em>Disponible</em> se actualizan automáticamente con los movimientos en curso.',
     orders_desc:'Crea pedidos de salida de stock por cliente. Añade SKUs por escáner, búsqueda, entrada manual o Excel. Las cantidades pasan a <em>En cartera</em> y reducen el <strong>stock disponible</strong> para evitar doble reserva. Al emitir la guía, la preparación prioriza posiciones en cajas mixtas y sigue el recorrido del almacén. El stock real solo se descuenta cuando el picking se confirma línea a línea; los pedidos no concluidos pueden liberar unidades al cancelarse.',
     pick_desc:'Controla las guías de preparación emitidas desde pedidos. Cada guía ordena las líneas por prioridad de caja mixta y recorrido de almacén, mostrando posición, SKU, cantidad pedida y posibles roturas. El operador confirma línea a línea durante el picking. El stock físico solo sale del sistema al finalizar la guía, manteniendo trazabilidad entre pedido, preparación y facturación.',
     returns_desc:'Crea solicitudes de devolución a partir de uno o varios pedidos ya preparados, o añade artículos manualmente por escáner, búsqueda o Excel. Al emitir la <strong>guía de recogida</strong>, las líneas pasan a <strong>Returns Pick Up</strong>, donde la tienda/almacén confirma lo que realmente se recogió. Los pedidos que ya generaron devolución quedan bloqueados para evitar duplicados.',
     ret_pickup_desc:'Controla las guías de recogida emitidas en devoluciones. La lista suma los artículos de los pedidos incluidos y puede ordenarse por EAN, producto, categoría, marca, ml o cantidad para facilitar la recogida por zona de tienda. Todas las líneas deben confirmarse, incluso a cero; al finalizar, la app muestra diferencias frente a lo esperado y genera automáticamente la guía de <strong>Stock In</strong> solo con las cantidades recogidas.',
     putaway_desc:'Lista de guías de entrada generadas después de la recogida de devoluciones. Al iniciar, el operador empieza directamente la recolocación en stock y sigue una ruta optimizada por el almacén. La sugerencia prioriza cajas <strong>Mono</strong> y después <strong>Mixed</strong>; cuando hay más de una ubicación posible para el SKU, puede pedir otra ubicación antes de confirmar. Solo las líneas confirmadas añaden stock real.',
-    btn_new_order:'+ Nuevo pedido', btn_new_ret:'+ Nueva devolución',
-    btn_emit_pick:'?? Emitir Guía Preparación', btn_emit_put:'?? Emitir Guía Entrada',
-    btn_start_pick:'? Iniciar picking', btn_start_put:'? Iniciar',
-    btn_finalize_pick:'? Finalizar y deducir stock', btn_finalize_put:'? Finalizar y añadir al stock',
-    btn_confirm:'? Confirmar', btn_cancel:'? Cancelar', btn_close:'Cerrar',
-    btn_dar_entrada:'Entrada Stock', btn_dar_saida:'Salida Stock', btn_teorico:'?? Inserir Stock Teórico',
-    btn_export:'? Excel', btn_template:'? Plantilla', btn_template_excel:'? Plantilla Excel',
+    btn_new_order:'＋ Nuevo pedido', btn_new_ret:'＋ Nueva devolución',
+    btn_emit_pick:'📦 Emitir Guía Preparación', btn_emit_put:'📥 Emitir Guía Entrada',
+    btn_start_pick:'▶ Iniciar picking', btn_start_put:'▶ Iniciar',
+    btn_finalize_pick:'✓ Finalizar y deducir stock', btn_finalize_put:'✓ Finalizar y añadir al stock',
+    btn_confirm:'✓ Confirmar', btn_cancel:'✕ Cancelar', btn_close:'Cerrar',
+    btn_dar_entrada:'Entrada Stock', btn_dar_saida:'Salida Stock', btn_teorico:'📊 Inserir Stock Teórico',
+    btn_export:'⬇ Excel', btn_template:'⬇ Plantilla', btn_template_excel:'⬇ Plantilla Excel',
     btn_choose_file:'Elegir archivo', file_none:'Ningún archivo seleccionado',
-    btn_login:'Entrar ?', btn_outro:'Otro', btn_back:'? Volver', btn_save:'Guardar',
+    btn_login:'Entrar →', btn_outro:'Otro', btn_back:'← Volver', btn_save:'Guardar',
     card_import_catalog:'Importar catálogo',
     card_catalog:'Catálogo',
     card_current_stock:'Stock actual',
@@ -4600,17 +4601,17 @@ const LANGS = {
     wm_legend_empty_stock:'Sin disponible',
     wm_empty_position:'Libre',
     st_open:'Abierto', st_picked:'Completado', st_cancelled:'Anulado',
-    st_returned:'Completado', st_emitted:'?? Guía emitida',
-    st_collect_issued:'?? Guía recogida', st_collecting:'?? En recogida', st_collected:'? Recogida', st_partial_collect:'?? Recogida parcial',
-    st_prep:'?? En preparación', st_coloc:'?? En colocación', st_parcial:'?? Parcial',
+    st_returned:'Completado', st_emitted:'📋 Guía emitida',
+    st_collect_issued:'🚚 Guía recogida', st_collecting:'🚚 En recogida', st_collected:'✓ Recogida', st_partial_collect:'⚠️ Recogida parcial',
+    st_prep:'🚶 En preparación', st_coloc:'🚶 En colocación', st_parcial:'⚠️ Parcial',
     st_ok:'OK', st_low:'Bajo', st_empty:'Sin stock',
-    box_mixed:'?? Mixed', box_excl:'?? Mono',
+    box_mixed:'📦 Mixed', box_excl:'🔹 Mono',
     lbl_client:'Cliente', lbl_store_dest:'Tienda destino', lbl_store_orig:'Tienda origen',
     lbl_sku:'SKU', lbl_pos:'Posición', lbl_qty:'Cantidad', lbl_type:'Tipo',
     lbl_product:'Producto', lbl_status:'Estado', lbl_diff:'Diferencia',
     lbl_theorical:'Teórico', lbl_real:'Real',
     lbl_lines:'líneas', lbl_units:'unid.', lbl_skus:'SKUs',
-    tab_import:'?? Importar',
+    tab_import:'📂 Importar',
     tip_skudb:'Catálogo de productos con EAN, nombre, marca, categoría y ml. Importa vía Excel.',
     tip_stock:'Mapa de stock real por posición. Usa "Entrada de stock" para registrar artículos.',
     tip_stock_initial_adjusted:'Stock inicial ajustado de esta posición/EAN: stock inicial original + entradas hechas desde el mapa de stock - salidas hechas desde el mapa de stock.',
@@ -4647,7 +4648,7 @@ const LANGS = {
     misc_ret_put:'Dev. en colocación',
     misc_ret_done:'Dev. realizadas',
     misc_start_pick:'Iniciar',
-    diff_ok:'? Correcto', diff_over:'? Exceso', diff_under:'? Falta', diff_missing:'? No recibido',
+    diff_ok:'✓ Correcto', diff_over:'▲ Exceso', diff_under:'▼ Falta', diff_missing:'✕ No recibido',
   }
 };
 
@@ -4797,7 +4798,7 @@ function updateFileLabels() {
 }
 
 
-// -- BACKUP & RESTORE --
+// ══ BACKUP & RESTORE ══
 async function readCollectionDocs(col) {
   if (!window._db) return [];
   const snap = await dbCollection(col).get();
@@ -4841,7 +4842,7 @@ function downloadBackupJson(backup) {
 async function exportBackup() {
   const backup = await createBackupPayload();
   downloadBackupJson(backup);
-  toast('Backup exportado ?', 'win');
+  toast('Backup exportado ✓', 'win');
   logAction('Backup exportado', backup.exportedAt.slice(0,16).replace('T',' '));
 }
 
@@ -4879,7 +4880,7 @@ async function createManualCloudBackup() {
     const status = document.getElementById('backupManagerStatus');
     if (status) { status.style.display = 'flex'; status.textContent = 'A criar backup no Firebase...'; }
     await createCloudBackup('manual');
-    toast('Backup cloud criado ?', 'win');
+    toast('Backup cloud criado ✓', 'win');
     logAction('Backup cloud criado', 'manual');
     await loadCloudBackups();
   } catch (err) {
@@ -4942,7 +4943,7 @@ async function loadCloudBackups() {
         <td>${escHtml(b.createdBy || '—')}</td>
         <td style="color:var(--muted);">${escHtml(b.summary || backupContentSummary(b.payload || {}))}</td>
         <td style="white-space:nowrap;">
-          <button class="btn btn-ghost btn-sm" onclick="downloadCloudBackup('${b.id}')">? JSON</button>
+          <button class="btn btn-ghost btn-sm" onclick="downloadCloudBackup('${b.id}')">⬇ JSON</button>
           <button class="btn btn-primary btn-sm" onclick="restoreCloudBackup('${b.id}')">Restaurar</button>
         </td>
       </tr>`).join('');
@@ -5004,7 +5005,7 @@ async function restoreBackupPayload(backup, label) {
   await writeLineCollection('return_pickup_lines', backup.returnPickupLines || []);
   renderSkuDb(); renderStock(); renderDocs('order'); renderDocs('return');
   renderPickingGuides(); renderReturnPickupGuides(); renderPutawayGuides(); renderWarehouseMapForm(); updateTeoricoStatus();
-  toast('Backup restaurado ? — ' + label, 'win');
+  toast('Backup restaurado ✓ — ' + label, 'win');
   logAction('Backup restaurado', label);
 }
 
@@ -5126,7 +5127,7 @@ async function resetPlatformData() {
     document.getElementById('returnEditor').style.display='none';
     renderSkuDb(); renderStock(); renderDocs('order'); renderDocs('return');
     renderPickingGuides(); renderPutawayGuides(); renderWarehouseMapForm(); updateTeoricoStatus();
-    toast('Plataforma limpa ?', 'win');
+    toast('Plataforma limpa ✓', 'win');
   } catch (err) {
     toast('Erro no reset: ' + err.message, 'err');
   }
@@ -5190,7 +5191,7 @@ function confirmBackupPw() {
 }
 
 
-// -- MOBILE MENU --
+// ══ MOBILE MENU ══
 function toggleMobileMenu() {
   const menu = document.getElementById('mobileMenu');
   const overlay = document.getElementById('mobileMenuOverlay');
@@ -5222,7 +5223,7 @@ function syncMobileLang() {
   });
 }
 
-// -- PRESENCE (who is editing this doc) --
+// ══ PRESENCE (who is editing this doc) ══
 let _presenceRef = null;
 let _presenceInterval = null;
 let _presenceUnsub = null;
@@ -5307,7 +5308,7 @@ function renderPresenceBar(t, activeUsers) {
 }
 
 
-// -- MERGE-SAFE LINE OPERATIONS --
+// ══ MERGE-SAFE LINE OPERATIONS ══
 // Each line is stored as its own Firestore doc: orders_lines/{docId}_{sku}
 // This prevents concurrent edits overwriting each other.
 
@@ -5382,7 +5383,7 @@ function stopLinesListener() {
 }
 
 
-// -- DEVOLUÇÃO DE PEDIDO --
+// ══ DEVOLUÇÃO DE PEDIDO ══
 let _selectedImportOrderIds = new Set();
 let _pendingImportSourceOrderIds = [];
 
@@ -5497,12 +5498,12 @@ function renderImportOrderList(q) {
       '<div style="min-width:0;">' +
       '<div style="font-weight:700;font-size:13px;">' + safeId + '</div>' +
       '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' +
-        (o.client ? '?? ' + escHtml(o.client) + ' · ' : '') +
+        (o.client ? '👤 ' + escHtml(o.client) + ' · ' : '') +
         skus + ' SKUs · ' + total + ' unid. · ' + escHtml(o.createdAt||'') +
       '</div>' +
       (disabled ? '<div style="font-size:11px;color:#991b1b;margin-top:4px;">Já incluído em '+escHtml(existingReturn.id)+'</div>' : '') +
       '</div>' +
-      '<span class="badge '+(disabled?'bdg-rd':o.status==='parcial'?'bdg-or':'bdg-gn')+'">'+(disabled?'Devolução emitida':'? '+statusText)+'</span>' +
+      '<span class="badge '+(disabled?'bdg-rd':o.status==='parcial'?'bdg-or':'bdg-gn')+'">'+(disabled?'Devolução emitida':'✓ '+statusText)+'</span>' +
       '</div>' +
       '</div>' +
       '</div>';
@@ -5521,7 +5522,7 @@ function importOrderAsReturn(orderId) {
   _pendingImportLines = returnableLinesForOrder(order);
   _pendingImportSourceOrderIds = [order.id];
 
-  document.getElementById('clientModalTitle').textContent = '?? Devolução de pedido';
+  document.getElementById('clientModalTitle').textContent = '↩️ Devolução de pedido';
   document.getElementById('clientBtnList').innerHTML = '';
 
   // Pre-select same client if exists in CLIENTS list
@@ -5542,7 +5543,7 @@ function importOrderAsReturn(orderId) {
     const preview = 'Devolução ' + c + ' ' + count;
     return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" data-client="'+c.replace(/&/g,'&amp;')+'" onclick="selectClientForImportByData(this)">' +
       '<span style="font-weight:600">' + c + '</span>' +
-      '<span style="font-size:11px;color:var(--muted)">? ' + preview + '</span>' +
+      '<span style="font-size:11px;color:var(--muted)">→ ' + preview + '</span>' +
       '</button>';
   }).join('');
 
@@ -5584,12 +5585,12 @@ function createSelectedReturnFromOrders() {
   _pendingDocType = 'return';
   _pendingImportLines = lines;
   _pendingImportSourceOrderIds = sourceIds;
-  document.getElementById('clientModalTitle').textContent = '?? Devolução de pedidos';
+  document.getElementById('clientModalTitle').textContent = '↩️ Devolução de pedidos';
   document.getElementById('clientBtnList').innerHTML = CLIENTS.map(c => {
     const count = docSt('return').filter(d=>d.client===c).length + 1;
     return '<button class="btn btn-ghost" style="justify-content:space-between;padding:10px 14px;" data-client="'+escHtml(c)+'" onclick="selectClientForImportByData(this)">' +
       '<span style="font-weight:600">'+escHtml(c)+'</span>' +
-      '<span style="font-size:11px;color:var(--muted)">? Devolução '+escHtml(c)+' '+count+'</span>' +
+      '<span style="font-size:11px;color:var(--muted)">→ Devolução '+escHtml(c)+' '+count+'</span>' +
       '</button>';
   }).join('');
   document.getElementById('clientModal').classList.add('visible');
@@ -5620,12 +5621,12 @@ function createReturnFromOrder(client, lines, sourceOrderIds = []) {
   saveRet();
   renderDocs('return');
   openEd('return', id);
-  toast('? Devolução criada com ' + lines.length + ' SKUs de ' + (sourceOrderIds.length || 1) + ' pedido(s)', 'win');
-  logAction('Devolução de pedido', id + ' ? ' + (sourceOrderIds.length ? sourceOrderIds.join(', ') : lines.length + ' linhas'));
+  toast('✓ Devolução criada com ' + lines.length + ' SKUs de ' + (sourceOrderIds.length || 1) + ' pedido(s)', 'win');
+  logAction('Devolução de pedido', id + ' ← ' + (sourceOrderIds.length ? sourceOrderIds.join(', ') : lines.length + ' linhas'));
 }
 
 
-// -- Global handler for avatar remove buttons --
+// ── Global handler for avatar remove buttons ──
 document.addEventListener('click', function(e) {
   const btn = e.target.closest('[data-remove-user]');
   if (!btn) return;
@@ -5637,7 +5638,7 @@ document.addEventListener('click', function(e) {
 }, true); // capture phase — fires before parent handlers
 
 
-// -- SCAN QTY MODAL --
+// ══ SCAN QTY MODAL ══
 let _scanQtyType = null, _scanQtySku = null;
 
 function showScanQtyModal(t, sku) {
@@ -5670,7 +5671,7 @@ function scanQtyCancel() {
 }
 
 
-// -- SEARCH PANEL --
+// ══ SEARCH PANEL ══
 let spDocType = null;
 let spSelSku = null;
 
@@ -5763,7 +5764,7 @@ function spConfirm() {
   setTimeout(() => document.getElementById('spInput').focus(), 80);
 }
 
-// -- INIT --
+// ══ INIT ══
 function _initApp() {
   setLang(detectDeviceLang());
   renderAvatarGrid();
@@ -5788,4 +5789,3 @@ if (document.readyState === 'loading') {
 </script>
 </body>
 </html>
-
