@@ -1899,7 +1899,6 @@ function renderStock(){
   });
 
   const thead=document.getElementById('stockThead');
-  const hasMov = orders.length>0||rets.length>0;
 
   function th(col, label, tip, style) {
     const cls = stockSort.col===col ? (stockSort.dir===1?'asc':'desc') : '';
@@ -1918,18 +1917,16 @@ function renderStock(){
   thCols += th('teorico','Teórico','Stock teórico carregado por Excel; fica em branco até ser importado');
   thCols += th('diff','Diferença','Real - teórico atual');
   thCols += th('disponivel','Disponível','Nesta posição/EAN: stock real - carteira alocada - preparação alocada','background:#e8f4f0;color:#065f46;font-weight:800;');
-  if(hasMov){
-    thCols += th('carteira','Cart.','Quantidade deste EAN alocada virtualmente a esta localização para pedidos abertos');
-    thCols += th('emPrep','Prep.','Quantidade deste EAN nesta localização com guia emitida/em preparação');
-    thCols += th('faturado','Fact.','Quantidade deste EAN já confirmada a partir desta localização');
-    thCols += th('devPedidas','Dev. Ped.','Reservado para futuras devoluções quando existir localização definida');
-    thCols += th('devPrep','Dev. Col.','Quantidade deste EAN prevista para recolocar nesta localização');
-    thCols += th('devFeitas','Dev. OK','Quantidade deste EAN já recolocada nesta localização');
-  }
+  thCols += th('carteira','Cart.','Quantidade deste EAN alocada virtualmente a esta localização para pedidos abertos');
+  thCols += th('emPrep','Prep.','Quantidade deste EAN nesta localização com guia emitida/em preparação');
+  thCols += th('faturado','Fact.','Quantidade deste EAN já confirmada a partir desta localização');
+  thCols += th('devPedidas','Dev. Ped.','Reservado para futuras devoluções quando existir localização definida');
+  thCols += th('devPrep','Dev. Col.','Quantidade deste EAN prevista para recolocar nesta localização');
+  thCols += th('devFeitas','Dev. OK','Quantidade deste EAN já recolocada nesta localização');
   thCols += '<th>Tipo</th><th></th></tr>';
   thead.innerHTML = thCols;
 
-  const totalCols = 4 + 3 + 1 + (hasMov?6:0) + 2;
+  const totalCols = 4 + 3 + 1 + 6 + 2;
   const body=document.getElementById('stockBody');
   if(!filtered.length){body.innerHTML='<tr><td colspan="'+totalCols+'"><div class="empty"><div class="empty-icon">??</div>'+tr('misc_no_stock')+'</div></td></tr>';enableResizableTables();setTimeout(setupStockScrollSync,0);return;}
 
@@ -1940,12 +1937,9 @@ function renderStock(){
     const dispClass=disponivel<=0?'color:#991b1b;font-weight:800;background:#fee2e2':disponivel<3?'color:#92400e;font-weight:800;background:#fef3c7':'color:#065f46;font-weight:700;background:#f0fdf4';
     const rowWarn=disponivel<=0?'background:linear-gradient(90deg,rgba(254,226,226,.72),rgba(254,226,226,.2));':disponivel<3?'background:linear-gradient(90deg,rgba(254,243,199,.72),rgba(254,243,199,.2));':'';
     const dispCol='<td class="mono" style="'+dispClass+';padding:8px 10px;">'+disponivel+'</td>';
-    let movCols='';
-    if(hasMov){
-      const m=metrics[stockMetricKey(s)]||emptyStockMetric();
-      const cell = v => v>0?'<td class="mono" style="color:#1e40af">'+v+'</td>':'<td class="mono" style="color:var(--muted)">—</td>';
-      movCols=cell(m.carteira||0)+cell(m.emPrep||0)+cell(m.faturado||0)+cell(m.devPedidas||0)+cell(m.devPrep||0)+cell(m.devFeitas||0);
-    }
+    const m=metrics[stockMetricKey(s)]||emptyStockMetric();
+    const cell = v => v>0?'<td class="mono" style="color:#1e40af">'+v+'</td>':'<td class="mono" style="color:var(--muted)">—</td>';
+    const movCols=cell(m.carteira||0)+cell(m.emPrep||0)+cell(m.faturado||0)+cell(m.devPedidas||0)+cell(m.devPrep||0)+cell(m.devFeitas||0);
 
     const ti=stockCapacityQty(s);
     const tq=teorico[s.sku]!==undefined?teorico[s.sku]:null;
